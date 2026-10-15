@@ -66,7 +66,7 @@ struct ContentView: View {
                 Image(systemName: "square.stack.3d.up.fill").font(.title).foregroundStyle(.teal)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("OpenGuest").font(.headline)
-                    Text("DEVELOPMENT 0.3.3").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
+                    Text("DEVELOPMENT 0.3.4").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
                 }
             }
             ForEach(WorkspaceTab.allCases) { tab in
@@ -142,7 +142,6 @@ struct ContentView: View {
                     }.disabled(model.running || model.busy)
                     Toggle("Kaltstart beim nächsten Start", isOn: $model.settings.coldBoot)
                         .disabled(model.running || model.busy)
-                    Toggle("Android beim Öffnen von OpenGuest automatisch starten", isOn: $model.settings.autoStartAndroid)
                     if let device = model.selectedDevice {
                         Label(device.googlePlay ? "Google-Play-Systemabbild im Profil erkannt" : "Dieses Profil enthält keinen erkannten Google Play Store",
                               systemImage: device.googlePlay ? "checkmark.seal" : "info.circle")
@@ -188,8 +187,8 @@ struct ContentView: View {
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
-            notice("Öffnen → Android startet → Apps nutzen",
-                   "Einmalig ein offizielles Google-Play-Gerät einrichten. Danach startet OpenGuest dein ausgewähltes Android direkt im Android Player. Apps, Google-Anmeldung und Einstellungen bleiben gespeichert. Die Google-Webseite lässt sich zusätzlich im normalen Mac-Browser öffnen; die Android-Anmeldung erfolgt separat im Gastsystem.", color: .teal)
+            notice("Android auswählen → Starten → Apps nutzen",
+                   "Einmalig ein offizielles Google-Play-Gerät einrichten. Mit „Android starten“ öffnest du dein ausgewähltes Android im eigenen Playerfenster. Apps, Google-Anmeldung und Einstellungen bleiben gespeichert. Die Google-Webseite lässt sich zusätzlich im normalen Mac-Browser öffnen; die Android-Anmeldung erfolgt separat im Gastsystem.", color: .teal)
         }
     }
 

@@ -1,3 +1,7 @@
+# Neu in 0.3.4: Hauptfenster ohne Gast-Autostart
+
+Beim Öffnen von OpenGuest erscheint nur das Hauptfenster. Android und Windows starten ausschließlich über ihre Start-Schaltflächen. Auch eine früher gespeicherte Android-Autostart-Einstellung wird nicht mehr verwendet; die Option wurde entfernt. Erst der manuelle Gaststart öffnet das eigene frei skalierbare Playerfenster. Playerfenster werden nicht über die macOS-Fensterwiederherstellung automatisch geöffnet. Die neue Google-Kontoauswahl im externen Mac-Browser aus 0.3.3 ist enthalten.
+
 # Neu in 0.3.3: Google im normalen Mac-Browser
 
 Im Android-Bereich öffnet „Google im Mac-Browser öffnen“ die offizielle Google-Kontoauswahl über den macOS-Standardbrowser. Der Browser verwendet seine normale Sitzung und sein vorhandenes Profil; OpenGuest öffnet keine eingebettete Webseite oder private Anmeldesitzung. Gespeicherte Konten und Zugangsdaten stehen nur zur Verfügung, soweit sie im geöffneten Browserprofil vorhanden sind. OpenGuest liest keine Browserpasswörter, Cookies oder Google-Tokens aus und erkennt den Browser-Anmeldestatus nicht.
@@ -72,7 +76,7 @@ Eine kostenlose Mac-App mit eigenem Android Player und Windows Player. Open Sour
 1. Xcode und **Android Studio für Apple Silicon** installieren. Android Studio einmal starten und den SDK einrichten. Im SDK Manager unter SDK Tools auch **Android SDK Command-line Tools (latest)** installieren.
 2. **Android_einrichten.command** ausführen. Die Google-/SDK-Lizenzen selbst bestätigen. Das Skript lädt ein offizielles Android-15-ARM64-Abbild mit Google Play und erstellt das Gerät `OpenGuest_GooglePlay`. Bestehende Geräte werden nicht überschrieben.
 3. **Android_Streaming_einrichten.command** ausführen. Es bezieht den genau passenden scrcpy-4.0-Server aus dem offiziellen Release und prüft den dort veröffentlichten SHA-256-Wert. Fehlt dieser, bricht es ab. Keine Installation eines beliebigen Ersatzpakets.
-4. **Start.command** ausführen. Es führt zunächst die Swift-Tests aus, baut die lokale Test-App und öffnet sie. Sobald alle Voraussetzungen gefunden sind, startet Android im Android Player. Weitere Starts können über `dist/OpenGuest.app` erfolgen.
+4. **Start.command** ausführen. Es führt zunächst die Swift-Tests aus, baut die lokale Test-App und öffnet sie. Danach Android oder Windows auswählen und ausdrücklich über die Start-Schaltfläche starten. Weitere Starts können über `dist/OpenGuest.app` erfolgen.
 
 Alternativ kannst du `Package.swift` in Xcode öffnen und das Schema OpenGuest auf deinem Mac starten. Werden `.command`-Dateien nicht direkt gestartet, lassen sie sich im Terminal mit `bash ` und ihrem hineingezogenen Pfad ausführen. Gatekeeper oder andere Mac-Schutzfunktionen nicht abschalten.
 

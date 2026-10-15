@@ -18,6 +18,7 @@ final class GuestPlayerWindows: NSObject, NSWindowDelegate {
                               backing: .buffered, defer: false)
             window.title = android ? "Android Player · OpenGuest" : "Windows Player · OpenGuest"
             window.isReleasedWhenClosed = false
+            window.isRestorable = false
             window.contentMinSize = NSSize(width: 360, height: 320)
             window.collectionBehavior.insert(.fullScreenPrimary)
             window.delegate = self

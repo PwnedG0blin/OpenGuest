@@ -16,7 +16,6 @@ struct AppSettings: Codable {
     var localWindowsAccount = true
     var localWindowsUser = "Benutzer"
     var windowsNetwork = false
-    var autoStartAndroid = true
     var selectedAVD = ""
     var memoryGB = 4
     var cores = 4
@@ -53,7 +52,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var apkBusy = false
     @Published private(set) var apkStatus = ""
     @Published private(set) var sessionName = "Kein Gast gestartet"
-    @Published private(set) var log = "OpenGuest 0.3.3 · Entwicklungsprototyp\nSystem prüfen, dann einen Gast auswählen."
+    @Published private(set) var log = "OpenGuest 0.3.4 · Entwicklungsprototyp\nSystem prüfen, dann einen Gast auswählen."
     @Published private(set) var lastCommand = ""
     @Published var errorMessage: String?
     @Published private(set) var storage = GuestStorage.load()
@@ -213,9 +212,7 @@ final class AppModel: ObservableObject {
         guard storage != nil else { showStorageSetup = true; return }
         updateBackupPaths()
         await refresh()
-        // Once dependencies and an AVD exist, opening the app boots Android directly.
-        // A failed boot is reported; there is no automatic restart loop.
-        if settings.autoStartAndroid && canStartAndroid { startAndroid() }
+        // Launching OpenGuest only prepares the main window. Guests always start on an explicit click.
     }
 
     func refresh() async {
