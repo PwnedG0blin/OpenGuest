@@ -19,14 +19,15 @@ final class WindowsSession {
     private var answerDirectory: URL?
 
     static var root: URL {
-        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("OpenGuest/Windows11ProArm", isDirectory: true)
+        GuestStorage.load()?.windows ?? GuestStorage.pointer.deletingLastPathComponent().appendingPathComponent("Windows11ProArm")
     }
 
     func prepare(qemuImg: String, swtpm: String, variablesTemplate: String, selectPro: Bool,
                  localAccount: WindowsEdition.LocalAccount?) async throws -> Files {
+        guard let storage = GuestStorage.load() else { throw failure("Speicherort fehlt.") }
+        try storage.validate()
         let fm = FileManager.default
-        let root = Self.root
+        let root = storage.windows
         try fm.createDirectory(at: root, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
         let fd = Darwin.open(root.appendingPathComponent("session.lock").path, O_CREAT | O_RDWR, 0o600)
         guard fd >= 0 else { throw failure("Die Windows-VM konnte nicht gesperrt werden.") }

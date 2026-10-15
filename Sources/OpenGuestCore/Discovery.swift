@@ -73,8 +73,8 @@ public enum RuntimeDiscovery {
         return [:]
     }
 
-    public static func device(name: String) -> AndroidDevice {
-        let values = avdConfig(name: name)
+    public static func device(name: String, environment: [String: String] = ProcessInfo.processInfo.environment) -> AndroidDevice {
+        let values = avdConfig(name: name, environment: environment)
         let abi = values["abi.type"] ?? (["arm64", "aarch64"].contains(values["hw.cpu.arch"] ?? "") ? "arm64-v8a" : "unbekannt")
         let play = values["tag.id"] == "google_apis_playstore" || values["image.sysdir.1"]?.contains("google_apis_playstore") == true
         return AndroidDevice(name: name, abi: abi, googlePlay: play)

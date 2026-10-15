@@ -1,46 +1,9 @@
-# OpenGuest
+# OpenGuest 0.2.0
 
-Free, open-source macOS guest players for Apple Silicon. Native SwiftUI interface, separate Android and Windows workspaces, no app subscription. **Version 0.1.0 is an experimental prototype, not a production emulator release.**
+Native macOS test player for Android ARM64 and Windows ARM64, MIT licensed, free and without subscription.
 
-German setup guide: [LIES_MICH_ZUERST.md](LIES_MICH_ZUERST.md).
+Version 0.2 asks for a data folder before guest setup or auto-start. It can copy and SHA-256 verify legacy default SDK/AVD/Windows/runtime/log directories and explicitly selected ISO files from Downloads, redirect legacy paths, retain originals, and remove only receipt-backed unchanged backups after user review. Missing data drives block guest launches and downloads rather than falling back internally. Nine dedicated storage migration tests cover recovery, conflicts, lost destinations, changed backups, ISO scope and persistence. Native CI supplies the executable test app.
 
-## Implemented source paths
+Read **LIES_MICH_ZUERST.md** for the external SSD migration and cleanup steps. macOS 14+, Apple Silicon. Guests, firmware, Google sign-in, driver integration, OOBE and performance remain integration-test work. Engines and OS images are not bundled. Windows ARM64 ISO and separate UTM ARM64 guest-tools ISO are selected independently. Windows 11 requires appropriate firmware and a separate license. Not Developer ID signed/notarized.
 
-| Android Player | Windows Player |
-| --- | --- |
-| Existing ARM64 AVD, automatic boot | Persistent 80-GiB qcow2 disk, NVMe |
-| Official Google Play image setup via SDK tools | User-supplied Windows 11 Arm64 ISO |
-| APK install with explicit emulator serial | Pro image selection, optional local user |
-| Play Games, account sync and backup settings | Persistent UEFI variables and TPM 2.0 |
-| Pinned scrcpy 4.0 H.264 transport and controls | Minimal embedded RFB 3.8 player |
-| Native AVSampleBufferDisplayLayer output | Private Unix sockets for display and QMP |
-| 60-FPS stream target; not benchmarked | HVF CPU acceleration; no 3D acceleration |
-
-Guest data is persistent. No reset, disk reformat or snapshot-discard feature is exposed. Cloud sync remains application-dependent. Only one guest runs at a time in this prototype.
-
-## Build
-
-Apple Silicon Mac, macOS 14+, Swift 5.9+ / Xcode required. No third-party Swift packages.
-
-```sh
-swift test
-swift build
-```
-
-`Start.command` runs tests, compiles and packages a locally ad-hoc-signed `.app`. It does not create a Developer ID signature or notarization. No Mac security settings are disabled.
-
-Android's SDK and Google Play image are installed separately. Streaming setup downloads the exact upstream scrcpy server and verifies its upstream release digest. Windows requires external QEMU, swtpm, a suitable Secure-Boot-capable ARM64 firmware/variable pair, optional ARM64 drivers and a Windows license. These components are not included in the source archive.
-
-## Status and validation
-
-See [docs/TESTPLAN.md](docs/TESTPLAN.md) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Syntax and static package checks were possible in the authoring environment. **Native ARM64 compilation and all 13 Swift unit tests passed** in [macOS CI](https://github.com/PwnedG0blin/OpenGuest/actions/runs/38802745791). Android/Windows guest runtime, cloud-sync and performance tests remain open.
-
-The UI and source contain complete first implementations of these paths; API compatibility and real guest behavior still require Mac testing. In particular, Windows firmware selection, setup answer-file pickup, OOBE local-account creation and Google services must be validated before claiming working end-to-end support.
-
-The prepared `Build macOS test app` Actions workflow uses an Apple Silicon macOS runner, runs tests, builds the app bundle and uploads `OpenGuest-macOS-AppleSilicon.app.zip` only if these steps succeed. The first native build and unit-test run succeeded. Its resulting binary would still require external engines/guest setup and native integration testing; it would not be a complete, notarized consumer installer.
-
-## License and distribution
-
-OpenGuest's own code: [MIT](LICENSE). External components: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). No MuMu, BlueStacks or VMware code/assets are included. Their exact Mac graphics implementations have not been established from the public material reviewed.
-
-The source archive can be shared freely under MIT. Public source repository: https://github.com/PwnedG0blin/OpenGuest. Test artifacts are produced by Actions; no notarized production release is published. Before a public binary release: run the tests, review dependency versions, complete native runtime tests, sign with Developer ID and notarize.
+Source: https://github.com/PwnedG0blin/OpenGuest

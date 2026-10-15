@@ -53,9 +53,20 @@ final class AppModel: ObservableObject {
     @Published private(set) var apkBusy = false
     @Published private(set) var apkStatus = ""
     @Published private(set) var sessionName = "Kein Gast gestartet"
-    @Published private(set) var log = "OpenGuest 0.1.0 · Entwicklungsprototyp\nSystem prüfen, dann einen Gast auswählen."
+    @Published private(set) var log = "OpenGuest 0.2.0 · Entwicklungsprototyp\nSystem prüfen, dann einen Gast auswählen."
     @Published private(set) var lastCommand = ""
     @Published var errorMessage: String?
+    @Published private(set) var storage = GuestStorage.load()
+    @Published var showStorageSetup = GuestStorage.load() == nil
+    @Published var proposedStoragePath = ""
+    @Published private(set) var storageStatus = "Wähle einen Datenordner, bevor Android oder Windows eingerichtet wird."
+    @Published private(set) var backupPaths: [String] = []
+    @Published var storageTested = false
+    var storageReady: Bool { guard let storage else { return false }; return (try? storage.validate()) != nil }
+    var storageFree: String {
+        guard let bytes = storage?.freeBytes, storageReady else { return "Speicherort nicht erreichbar" }
+        return ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file) + " frei"
+    }
     @Published var localPassword = ""
     @Published var localPasswordConfirmation = ""
     @Published private(set) var playerImage: NSImage?
@@ -99,10 +110,10 @@ final class AppModel: ObservableObject {
     }
     var selectedDevice: AndroidDevice? { devices.first { $0.name == settings.selectedAVD } }
     var canStartAndroid: Bool {
-        supportedHost && hypervisorAvailable && androidReady && selectedDevice?.supported == true && adb != nil && ScrcpySession.installed && !busy && !running
+        storageReady && supportedHost && hypervisorAvailable && androidReady && selectedDevice?.supported == true && adb != nil && ScrcpySession.installed && !busy && !running
     }
     var canStartWindows: Bool {
-        supportedHost && hypervisorAvailable && windowsReady && firmware != nil && settings.memoryGB >= 4 &&
+        storageReady && supportedHost && hypervisorAvailable && windowsReady && firmware != nil && settings.memoryGB >= 4 &&
         (!settings.installWindows || !settings.iso.isEmpty) && !busy && !running
     }
     var canInstallAPK: Bool { running && androidBooted && androidPort != nil && !apkBusy && !busy && adb != nil }
@@ -121,6 +132,8 @@ final class AppModel: ObservableObject {
     func open() async {
         guard !opened else { return }
         opened = true
+        guard storage != nil else { showStorageSetup = true; return }
+        updateBackupPaths()
         await refresh()
         // Once dependencies and an AVD exist, opening the app boots Android directly.
         // A failed boot is reported; there is no automatic restart loop.
@@ -129,12 +142,14 @@ final class AppModel: ObservableObject {
 
     func refresh() async {
         guard !busy, !running else { return }
+        guard let storage else { showStorageSetup = true; return }
+        do { try storage.validate() } catch { errorMessage = error.localizedDescription; return }
         busy = true
         defer { busy = false }
         androidReady = false
         windowsReady = false
         devices = []
-        sdk = RuntimeDiscovery.sdk(preferred: settings.sdk)
+        sdk = RuntimeDiscovery.sdk(preferred: storage.sdk.path, environment: storage.environment)
         qemu = RuntimeDiscovery.qemu(preferred: settings.qemu)
         swtpm = RuntimeDiscovery.swtpm(preferred: settings.swtpm)
         qemuImg = qemu.flatMap { RuntimeDiscovery.sibling(executable: $0, name: "qemu-img") }
@@ -146,7 +161,7 @@ final class AppModel: ObservableObject {
 
         if let sdk {
             let engine = URL(fileURLWithPath: sdk).appendingPathComponent("emulator/emulator").path
-            let environment = ["ANDROID_HOME": sdk, "ANDROID_SDK_ROOT": sdk]
+            let environment = storage.environment
             do {
                 let result = try await Self.capture(CommandSpec(executable: engine, arguments: ["-accel-check"], environment: environment))
                 androidReady = result.status == 0
@@ -157,9 +172,9 @@ final class AppModel: ObservableObject {
                 devices = list.output.components(separatedBy: .newlines)
                     .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
                     .filter { !$0.isEmpty && !$0.contains(" ") && !$0.contains(":") && !$0.contains("/") }
-                    .map { RuntimeDiscovery.device(name: $0) }
+                    .map { RuntimeDiscovery.device(name: $0, environment: environment) }
                 if !devices.contains(where: { $0.name == settings.selectedAVD }) {
-                    settings.selectedAVD = devices.first(where: { $0.supported && $0.googlePlay })?.name ?? devices.first(where: \.supported)?.name ?? devices.first?.name ?? ""
+                    settings.selectedAVD = devices.first(where: { $0.name == "OpenGuest_GooglePlay" && $0.supported })?.name ?? devices.first(where: { $0.supported && $0.googlePlay })?.name ?? devices.first(where: \.supported)?.name ?? devices.first?.name ?? ""
                 }
                 if devices.isEmpty { log += "Kein AVD gefunden. In Android Studio ein arm64-v8a-Gerät erstellen.\n" }
             } catch {
@@ -182,6 +197,15 @@ final class AppModel: ObservableObject {
                 if firmware == nil { log += "ARM64-UEFI-Firmware fehlt. Bitte eine edk2-aarch64-code.fd auswählen.\n" }
                 if swtpm == nil { log += "swtpm fehlt. Für Windows wird ein dauerhaftes TPM 2.0 benötigt.\n" }
                 if !hasTPM { log += "QEMU-Build enthält kein tpm-crb-device.\n" }
+                var missing: [String] = []
+                if !hasHVF { missing.append("HVF") }
+                if !hasCocoa { missing.append("VNC") }
+                if !hasTPM { missing.append("TPM-Gerät") }
+                if swtpm == nil { missing.append("swtpm") }
+                if qemuImg == nil { missing.append("qemu-img") }
+                if firmware == nil { missing.append("ARM64-UEFI") }
+                if variablesTemplate == nil { missing.append("passende UEFI-Variablen") }
+                if !missing.isEmpty { windowsAcceleration = "Fehlt: " + missing.joined(separator: ", ") }
                 if variablesTemplate == nil { log += "edk2-arm-vars.fd fehlt neben der gewählten Firmware.\n" }
             } catch {
                 windowsAcceleration = "QEMU-Prüfung fehlgeschlagen"
@@ -195,11 +219,13 @@ final class AppModel: ObservableObject {
     }
 
     func startAndroid() {
-        guard canStartAndroid, let sdk, let device = selectedDevice else { return }
+        guard canStartAndroid, let sdk, let storage, let device = selectedDevice else { return }
         do {
+            try checkStorageSpace(minimumGB: 16)
             let port = try AndroidPorts.available()
-            let spec = try LaunchPlan.android(sdk: sdk, device: device, resources: resources,
+            let base = try LaunchPlan.android(sdk: sdk, device: device, resources: resources,
                                               coldBoot: settings.coldBoot, gpu: settings.gpu, port: port)
+            let spec = CommandSpec(executable: base.executable, arguments: base.arguments, environment: storage.environment)
             try start(spec, title: "Android · \(device.name)")
             activeGuest = "android"
             playerStatus = "Android startet …"
@@ -220,6 +246,7 @@ final class AppModel: ObservableObject {
         defer { busy = false }
         let session = WindowsSession()
         do {
+            try checkStorageSpace(minimumGB: settings.installWindows ? 25 : 2)
             var account: WindowsEdition.LocalAccount?
             if settings.installWindows && settings.localWindowsAccount {
                 guard localPassword == localPasswordConfirmation else {
@@ -231,6 +258,9 @@ final class AppModel: ObservableObject {
             guard FileManager.default.isReadableFile(atPath: firmware) else { throw GuestError.missingFile(firmware) }
             if settings.installWindows, !FileManager.default.isReadableFile(atPath: settings.iso) {
                 throw GuestError.missingFile(settings.iso)
+            }
+            if !settings.driversISO.isEmpty, settings.driversISO == settings.iso {
+                throw StorageMigration.failure("Windows-ISO und Treiber-ISO sind identisch. Bitte die Treiber-Auswahl entfernen oder eine separate ARM64-Treiber-ISO wählen.")
             }
             if !settings.driversISO.isEmpty, !FileManager.default.isReadableFile(atPath: settings.driversISO) {
                 throw GuestError.missingFile(settings.driversISO)
@@ -417,8 +447,9 @@ final class AppModel: ObservableObject {
     private func start(_ spec: CommandSpec, title: String) throws {
         guard process == nil else { return }
         guard FileManager.default.isExecutableFile(atPath: spec.executable) else { throw GuestError.missingFile(spec.executable) }
-        let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("OpenGuest/Logs", isDirectory: true)
+        guard let storage else { throw StorageMigration.failure("Bitte zuerst einen Speicherort wählen.") }
+        try storage.validate()
+        let directory = storage.logs
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let url = directory.appendingPathComponent("session-\(UUID().uuidString).log")
         guard FileManager.default.createFile(atPath: url.path, contents: nil) else { throw GuestError.missingFile(url.path) }
@@ -505,7 +536,8 @@ final class AppModel: ObservableObject {
     }
 
     func openSetupScript(_ name: String) {
-        guard ["Android_einrichten.command", "Android_Streaming_einrichten.command"].contains(name) else { return }
+        guard storageReady else { showStorageSetup = true; return }
+        guard ["Android_einrichten.command", "Android_Streaming_einrichten.command", "Windows_Treiber_einrichten.command"].contains(name) else { return }
         let bundled = Bundle.main.resourceURL?.appendingPathComponent(name)
         let development = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
             .deletingLastPathComponent().appendingPathComponent(name)
@@ -515,6 +547,110 @@ final class AppModel: ObservableObject {
         }
         NSWorkspace.shared.open([script], withApplicationAt: URL(fileURLWithPath: "/System/Applications/Utilities/Terminal.app"),
                                 configuration: NSWorkspace.OpenConfiguration())
+    }
+
+    func chooseStorageFolder() {
+        let panel = NSOpenPanel()
+        panel.title = "Speicherort für Android, Windows und Downloads"
+        panel.prompt = "Diesen Ort verwenden"
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.canCreateDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.directoryURL = URL(fileURLWithPath: FileManager.default.fileExists(atPath: "/Volumes/Extern") ? "/Volumes/Extern" : NSHomeDirectory())
+        if panel.runModal() == .OK, let parent = panel.url {
+            proposedStoragePath = (parent.lastPathComponent == "OpenGuest" ? parent : parent.appendingPathComponent("OpenGuest")).path
+        }
+    }
+
+    func configureStorage() {
+        guard !busy, !running, !proposedStoragePath.isEmpty else { return }
+        let root = URL(fileURLWithPath: proposedStoragePath, isDirectory: true)
+        let downloads = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Downloads").path + "/"
+        let media = [settings.iso, settings.driversISO].filter { $0.hasPrefix(downloads) && $0.lowercased().hasSuffix(".iso") }
+        busy = true
+        errorMessage = nil
+        storageStatus = "Prüfe laufende Programme …"
+        Task {
+            do {
+                try await assertNoStorageWriters()
+                let result = try await Task.detached(priority: .userInitiated) { [weak self] in
+                    try StorageMigration.prepare(root: root, mediaSources: media) { status in
+                        Task { @MainActor [weak self] in self?.storageStatus = status }
+                    }
+                }.value
+                try result.save()
+                storage = result
+                settings.sdk = result.sdk.path
+                if media.contains(settings.iso) { settings.iso = result.url.appendingPathComponent("Installationsmedien").appendingPathComponent(URL(fileURLWithPath: settings.iso).lastPathComponent).path }
+                if media.contains(settings.driversISO) { settings.driversISO = result.url.appendingPathComponent("Installationsmedien").appendingPathComponent(URL(fileURLWithPath: settings.driversISO).lastPathComponent).path }
+                settings.selectedAVD = ""
+                storageTested = false
+                updateBackupPaths()
+                storageStatus = "Speicherort eingerichtet. Vorhandene Daten sind kopiert und per SHA-256 geprüft. Interne Sicherungen bleiben bis zur Bereinigung erhalten."
+                showStorageSetup = false
+            } catch { errorMessage = error.localizedDescription; storageStatus = error.localizedDescription }
+            busy = false
+            if storageReady { await refresh() }
+        }
+    }
+
+    func updateBackupPaths() {
+        backupPaths = storage.flatMap { try? StorageMigration.backupPaths($0) } ?? []
+    }
+
+    func confirmStorageCleanup() {
+        guard storageTested, !busy, !running, !backupPaths.isEmpty else { return }
+        let alert = NSAlert()
+        alert.messageText = "Geprüfte interne Sicherungen endgültig entfernen?"
+        alert.informativeText = backupPaths.joined(separator: "\n") + "\n\nDie aktiven Daten im gewählten Datenordner bleiben erhalten. Diese Kopien werden ohne Papierkorb entfernt und geben dadurch Speicherplatz frei."
+        alert.addButton(withTitle: "Interne Sicherungen entfernen")
+        alert.addButton(withTitle: "Abbrechen")
+        if alert.runModal() == .alertFirstButtonReturn { cleanupInternalCopies() }
+    }
+
+    func cleanupInternalCopies() {
+        guard !busy, !running, storageTested, let storage else { return }
+        busy = true
+        Task {
+            do {
+                try await assertNoStorageWriters()
+                try await Task.detached(priority: .userInitiated) { [weak self] in
+                    try StorageMigration.cleanup(storage) { status in
+                        Task { @MainActor [weak self] in self?.storageStatus = status }
+                    }
+                }.value
+                updateBackupPaths()
+                storageStatus = "Geprüfte interne Sicherungen entfernt. Die aktiven Daten bleiben im gewählten Speicherordner."
+            } catch { errorMessage = error.localizedDescription; storageStatus = error.localizedDescription }
+            busy = false
+        }
+    }
+
+    private func assertNoStorageWriters() async throws {
+        let result = try await Self.capture(CommandSpec(executable: "/bin/ps", arguments: ["-axo", "pid=,comm="]))
+        guard result.status == 0 else { throw StorageMigration.failure("Laufende Programme konnten nicht geprüft werden.") }
+        for line in result.output.components(separatedBy: .newlines) {
+            let parts = line.trimmingCharacters(in: .whitespaces).split(maxSplits: 1, whereSeparator: { $0.isWhitespace })
+            guard parts.count == 2, let pid = Int32(parts[0]), pid != getpid() else { continue }
+            let name = String(parts[1])
+            if name.contains("/emulator/") || name.hasSuffix("/qemu-system-aarch64") ||
+                name.contains("Android Studio.app/") || name.hasSuffix("/OpenGuest") {
+                throw StorageMigration.failure("Bitte Android/Windows herunterfahren, Android Studio und weitere OpenGuest-Fenster beenden. Noch aktiv: \(name)")
+            }
+        }
+    }
+
+    private func checkStorageSpace(minimumGB: Int64) throws {
+        guard let storage else { throw StorageMigration.failure("Speicherort fehlt.") }
+        try storage.validate()
+        if let free = storage.freeBytes, free < minimumGB * 1_000_000_000 {
+            throw StorageMigration.failure("Am gewählten Speicherort \(storage.root) sind nur \(ByteCountFormatter.string(fromByteCount: free, countStyle: .file)) frei. Für diesen Start sind mindestens \(minimumGB) GB Reserve vorgesehen.")
+        }
+    }
+
+    func revealStorage() {
+        if let storage, storageReady { NSWorkspace.shared.open(storage.url) }
     }
 
     func chooseFolder() -> String? {

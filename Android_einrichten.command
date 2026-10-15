@@ -3,7 +3,16 @@ set -euo pipefail
 if [[ "$(uname -s)" != "Darwin" || "$(uname -m)" != "arm64" ]]; then
     echo "Dieses Skript benötigt einen Apple-Silicon-Mac." >&2; exit 1
 fi
-sdk_path="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
+storage_config="$HOME/Library/Application Support/OpenGuest/storage.json"
+if [[ ! -f "$storage_config" ]]; then echo "Bitte zuerst in OpenGuest einen Datenordner wählen."; exit 1; fi
+storage_root="$(/usr/bin/plutil -extract root raw -o - "$storage_config")"
+storage_id="$(/usr/bin/plutil -extract id raw -o - "$storage_config")"
+if [[ ! -f "$storage_root/.openguest-storage-id" ]] || [[ "$(cat "$storage_root/.openguest-storage-id")" != "$storage_id" ]]; then
+    echo "Gewählter Datenordner fehlt. Bitte SSD anschließen. Kein interner Ersatzdownload."; exit 1
+fi
+sdk_path="$storage_root/Android/sdk"
+export ANDROID_AVD_HOME="$storage_root/Android/avd"
+mkdir -p "$ANDROID_AVD_HOME"
 sdk_manager="$sdk_path/cmdline-tools/latest/bin/sdkmanager"
 avd_manager="$sdk_path/cmdline-tools/latest/bin/avdmanager"
 if [[ ! -x "$sdk_manager" || ! -x "$avd_manager" ]]; then

@@ -19,3 +19,9 @@ If redistributing dependency binaries later, include their full applicable licen
 Product names are references to compatibility and architecture, not endorsements or affiliations.
 
 Using a Google Play SDK image does not certify OpenGuest as a Google-approved consumer emulator or grant a general GMS redistribution license. Review SDK/GMS terms before a public consumer release. The current route is a user-installed development AVD.
+
+
+## UTM Windows Guest Tools (optional download)
+Not bundled. Official ISO: https://getutm.app/downloads/utm-guest-tools-latest.iso
+Documentation: https://docs.getutm.app/guest-support/windows/
+Includes independently licensed guest drivers and utilities; their original licenses remain applicable. Download occurs only on user action to the selected data volume. No claim of UTM affiliation or complete SPICE support.

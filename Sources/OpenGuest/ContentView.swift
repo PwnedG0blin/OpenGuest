@@ -32,6 +32,9 @@ struct ContentView: View {
                         notice("Apple Silicon und Hardwarevirtualisierung benötigt",
                                "Starte die native ARM64-Version auf einem Mac mit M-Chip. Intel-Macs und Rosetta sind in Version 0.1 nicht unterstützt.", color: .orange)
                     }
+                    if !model.storageReady && model.storage != nil {
+                        notice("Datenordner nicht erreichbar", "Bitte die gewählte SSD anschließen. Android, Windows und Downloads bleiben bis dahin gesperrt.", color: .orange)
+                    }
                     switch selection {
                     case .android: android
                     case .windows: windows
@@ -45,6 +48,7 @@ struct ContentView: View {
         }
         .frame(minWidth: 900, minHeight: 680)
         .tint(.teal)
+        .sheet(isPresented: $model.showStorageSetup) { storageSetup.interactiveDismissDisabled() }
         .alert("OpenGuest", isPresented: Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })) {
             Button("OK") { model.errorMessage = nil }
         } message: { Text(model.errorMessage ?? "") }
@@ -62,7 +66,7 @@ struct ContentView: View {
                 Image(systemName: "square.stack.3d.up.fill").font(.title).foregroundStyle(.teal)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("OpenGuest").font(.headline)
-                    Text("DEVELOPMENT 0.1").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
+                    Text("DEVELOPMENT 0.2").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
                 }
             }
             ForEach(WorkspaceTab.allCases) { tab in
@@ -215,6 +219,13 @@ struct ContentView: View {
                     fileRow(title: "ARM64-Treiber-ISO (empfohlen)", value: model.settings.driversISO.isEmpty ? "Windows-Gastwerkzeuge / VirtIO-Netzwerktreiber" : model.settings.driversISO) {
                         if let file = model.chooseFile(title: "ARM64-Windows-Gasttreiber-ISO auswählen") { model.settings.driversISO = file }
                     }.disabled(model.running || model.busy)
+                    if !model.settings.driversISO.isEmpty {
+                        Button("Treiber-ISO aus Auswahl entfernen") { model.settings.driversISO = "" }
+                            .font(.caption).disabled(model.running || model.busy)
+                    }
+                    if model.settings.driversISO == model.settings.iso && !model.settings.iso.isEmpty {
+                        Text("Hier ist dieselbe ISO zweimal ausgewählt. Eine Windows-ISO ist keine Treiber-ISO.").font(.caption).foregroundStyle(.orange)
+                    }
                     Toggle("Windows 11 Pro vorauswählen", isOn: $model.settings.selectPro)
                         .disabled(model.running || model.busy || !model.settings.installWindows)
                     Toggle("Lokales Windows-Konto · ohne Microsoft-Anmeldung", isOn: $model.settings.localWindowsAccount)
@@ -254,6 +265,7 @@ struct ContentView: View {
 
     private var setup: some View {
         VStack(alignment: .leading, spacing: 18) {
+            storageCard
             card {
                 VStack(alignment: .leading, spacing: 18) {
                     Text("Lokale Engines").font(.title2.bold())
@@ -262,11 +274,14 @@ struct ContentView: View {
                     HStack {
                         Button("Android vorbereiten …") { model.openSetupScript("Android_einrichten.command") }
                         Button("Videostream einrichten …") { model.openSetupScript("Android_Streaming_einrichten.command") }
+                        Button("Windows-Treiber laden …") { model.openSetupScript("Windows_Treiber_einrichten.command") }
                     }
                     Text("Die Einrichtung öffnet Terminal für Downloads und Lizenzbestätigungen. Android Studio mit SDK Command-line Tools muss bereits installiert sein. Danach „System prüfen“ wählen.")
                         .font(.caption).foregroundStyle(.secondary)
-                    fileRow(title: "Android SDK", value: model.sdk ?? "Nicht gefunden") {
-                        if let path = model.chooseFolder() { model.settings.sdk = path; Task { await model.refresh() } }
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text("Android SDK").font(.subheadline.bold())
+                        Text(model.sdk ?? model.storage?.sdk.path ?? "Zuerst Speicherort wählen").font(.system(size: 11, design: .monospaced)).textSelection(.enabled)
+                        Text(model.sdk == nil ? "Android Studio installiert die SDK über den umgeleiteten Standardpfad auf dem gewählten Laufwerk. SDK Tools: Command-line Tools, Platform-Tools und Emulator installieren." : "SDK gefunden").font(.caption).foregroundStyle(.secondary)
                     }
                     fileRow(title: "qemu-system-aarch64", value: model.qemu ?? "Nicht gefunden") {
                         if let path = model.chooseFile(title: "qemu-system-aarch64 auswählen") { model.settings.qemu = path; Task { await model.refresh() } }
@@ -278,7 +293,7 @@ struct ContentView: View {
                         if let path = model.chooseFile(title: "swtpm auswählen") { model.settings.swtpm = path; Task { await model.refresh() } }
                     }
                     Button("Standardpfade verwenden") {
-                        model.settings.sdk = ""; model.settings.qemu = ""; model.settings.firmware = ""; model.settings.swtpm = ""
+                        model.settings.qemu = ""; model.settings.firmware = ""; model.settings.swtpm = ""
                         Task { await model.refresh() }
                     }
                 }
@@ -296,6 +311,58 @@ struct ContentView: View {
             Text("OpenGuest enthält keine Telemetrie. Android, QEMU und das Gastbetriebssystem haben eigene Netzwerk- und Datenschutzeinstellungen. Protokolle und Einstellungen liegen lokal auf diesem Mac.")
                 .font(.caption).foregroundStyle(.secondary)
         }
+    }
+
+    private var storageSetup: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            Label("Wo sollen deine Systeme gespeichert werden?", systemImage: "externaldrive.fill").font(.title2.bold())
+            Text("Wähle ein Laufwerk oder einen Ordner. OpenGuest legt dort einen eigenen Ordner „OpenGuest“ für SDK, Android-Geräte, Windows, Streaming und Protokolle an.")
+            Text("Vorhandene Daten aus den bisherigen Standardordnern sowie ausgewählte ISO-Dateien aus Downloads werden übernommen und per SHA-256 geprüft. Die Originale bleiben zunächst als interne Sicherungen erhalten.")
+                .font(.callout).foregroundStyle(.secondary)
+            Text("Vor dem Umzug Android und Windows herunterfahren und Android Studio beenden.").font(.callout.bold())
+            HStack {
+                Text(model.proposedStoragePath.isEmpty ? "Noch kein Ziel ausgewählt" : model.proposedStoragePath)
+                    .font(.system(size: 12, design: .monospaced)).textSelection(.enabled)
+                Spacer()
+                Button("Ordner wählen …", action: model.chooseStorageFolder)
+            }
+            Text(model.storageStatus).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
+            if model.busy { ProgressView().controlSize(.small) }
+            HStack {
+                Text("Kleine Einstellungen und macOS-Auslagerungsdateien können intern bleiben.").font(.caption).foregroundStyle(.secondary)
+                Spacer()
+                Button("Speicherort einrichten und Daten übernehmen", action: model.configureStorage)
+                    .buttonStyle(.borderedProminent).disabled(model.proposedStoragePath.isEmpty)
+            }
+        }.padding(28).frame(width: 730).disabled(model.busy)
+    }
+
+    private var storageCard: some View {
+        card {
+            VStack(alignment: .leading, spacing: 14) {
+                Label("Daten und Speicherplatz", systemImage: "externaldrive.fill").font(.title2.bold())
+                Text(model.storage?.root ?? "Noch kein Speicherort gewählt").font(.system(size: 12, design: .monospaced)).textSelection(.enabled)
+                Text(model.storageFree).foregroundStyle(model.storageReady ? Color.teal : Color.orange)
+                Text("SDK, Android-Geräte, Windows-Festplatte, TPM, Streaming und neue Protokolle verwenden diesen Ordner. Die App und Homebrew-Werkzeuge können intern bleiben.").font(.caption).foregroundStyle(.secondary)
+                Text(model.storageStatus).font(.caption).textSelection(.enabled)
+                HStack {
+                    if model.storage == nil { Button("Speicherort wählen …") { model.showStorageSetup = true } }
+                    Button("Datenordner öffnen", action: model.revealStorage).disabled(!model.storageReady)
+                }
+                if !model.backupPaths.isEmpty {
+                    Divider()
+                    Text("Diese internen Kopien können nach dem Test entfernt werden:").font(.subheadline.bold())
+                    ForEach(model.backupPaths, id: \.self) { path in
+                        Text(path).font(.system(size: 10, design: .monospaced)).textSelection(.enabled)
+                    }
+                    Toggle("Android/Windows mit dem neuen Speicherort geprüft; interne Sicherungen dürfen entfernt werden", isOn: $model.storageTested)
+                        .font(.caption)
+                    Button("Geprüfte interne Kopien endgültig entfernen …", role: .destructive, action: model.confirmStorageCleanup)
+                        .disabled(!model.storageTested || !model.storageReady)
+                    Text("Entfernt ausschließlich die oben gelisteten Sicherungen. Aktive Daten auf der SSD, andere Downloads, Xcode und Homebrew werden nicht gelöscht.").font(.caption).foregroundStyle(.secondary)
+                }
+            }
+        }.disabled(model.running || model.busy)
     }
 
     private var resourceControls: some View {

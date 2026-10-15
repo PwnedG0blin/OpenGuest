@@ -7,8 +7,8 @@ import OpenGuestCore
 @MainActor
 final class ScrcpySession {
     static var runtime: URL {
-        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("OpenGuest/Runtime/scrcpy-4.0", isDirectory: true)
+        (GuestStorage.load()?.runtime ?? GuestStorage.pointer.deletingLastPathComponent().appendingPathComponent("Runtime"))
+            .appendingPathComponent("scrcpy-4.0", isDirectory: true)
     }
     static var installed: Bool {
         FileManager.default.isReadableFile(atPath: runtime.appendingPathComponent("scrcpy-server-v4.0").path) &&
@@ -32,6 +32,8 @@ final class ScrcpySession {
     private var touchDown = false
 
     func start(adb: String, serial: String) async throws {
+        guard let storage = GuestStorage.load() else { throw failure("Speicherort fehlt.") }
+        try storage.validate()
         self.adb = adb; self.serial = serial
         let jar = Self.runtime.appendingPathComponent("scrcpy-server-v4.0")
         struct Manifest: Decodable { let version: String; let sha256: String }

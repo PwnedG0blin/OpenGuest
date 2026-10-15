@@ -4,7 +4,14 @@ if [[ "$(uname -s)" != "Darwin" ]]; then echo "Bitte auf deinem Mac ausführen."
 if ! command -v python3 >/dev/null; then
     echo "Python 3 wird für die Download-Prüfung benötigt (z. B. aus Xcode Command Line Tools)." >&2; exit 1
 fi
-runtime_dir="$HOME/Library/Application Support/OpenGuest/Runtime/scrcpy-4.0"
+storage_config="$HOME/Library/Application Support/OpenGuest/storage.json"
+if [[ ! -f "$storage_config" ]]; then echo "Bitte zuerst in OpenGuest einen Datenordner wählen."; exit 1; fi
+storage_root="$(/usr/bin/plutil -extract root raw -o - "$storage_config")"
+storage_id="$(/usr/bin/plutil -extract id raw -o - "$storage_config")"
+if [[ ! -f "$storage_root/.openguest-storage-id" ]] || [[ "$(cat "$storage_root/.openguest-storage-id")" != "$storage_id" ]]; then
+    echo "Gewählter Datenordner fehlt. Bitte SSD anschließen. Kein interner Ersatzdownload."; exit 1
+fi
+runtime_dir="$storage_root/Runtime/scrcpy-4.0"
 mkdir -p "$runtime_dir"
 chmod 700 "$runtime_dir"
 work_dir="$(mktemp -d "$runtime_dir/download.XXXXXXXX")"

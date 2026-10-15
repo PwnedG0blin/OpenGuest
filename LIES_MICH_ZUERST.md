@@ -1,3 +1,30 @@
+# OpenGuest 0.2.0 – Speicherort und Umzug
+
+Beim ersten Start dieser Version (auch nach 0.1) wählst du den Datenordner. Wähle auf dem Mac im Dialog die externe SSD **Extern**. OpenGuest legt dort **OpenGuest** an.
+
+1. Android/Windows herunterfahren, die alte OpenGuest-App und Android Studio sowie laufende Einrichtungsskripte beenden.
+2. Neue App nach Programme kopieren und von dort öffnen. Die DMG danach auswerfen.
+3. Ordner **Extern** wählen → **Speicherort einrichten und Daten übernehmen**. Kopieren und SHA-256-Prüfung können bei großen Geräten dauern. SSD währenddessen angeschlossen lassen.
+4. Bisherige Standardordner für SDK, Android-Geräte, Windows-Festplatte/TPM, Streaming und Protokolle werden übernommen. In OpenGuest ausgewählte Windows-/Treiber-ISOs aus Downloads werden ebenfalls übernommen. Kompatibilitäts-Verknüpfungen halten bisherige Android-Studio- und AVD-Pfade gültig.
+5. Unter Einrichtung **System prüfen**, dann bei Android bevorzugt **OpenGuest_GooglePlay** wählen. Falls es fehlt: **Android vorbereiten …**, anschließend **Videostream einrichten …**.
+6. Nach erfolgreichem Test Gast herunterfahren und Android Studio beenden. Unter **Einrichtung → Daten und Speicherplatz** die gelisteten internen Sicherungen kontrollieren, den Test bestätigen und **Geprüfte interne Kopien endgültig entfernen …** wählen. Erst dabei wird interner Platz frei; die aktiven SSD-Daten bleiben erhalten. Geänderte Sicherungen oder fehlende Ziele blockieren die Bereinigung.
+
+Auf Extern liegen SDK/Systemabbilder, Android-Apps/Spielstände, Windows-Datenträger/TPM, Streaming, Protokolle sowie die ausgewählten Installations-ISOs. Ein kleiner Pfadzeiger und App-Einstellungen bleiben intern. Die Mac-App, Android Studio, Homebrew/QEMU und macOS-Caches/Auslagerungsdateien werden nicht automatisch verschoben oder gelöscht. Keine pauschale Bereinigung von Downloads, Xcode oder Homebrew.
+
+### Windows-Treiber
+
+Unter Einrichtung **Windows-Treiber laden …**. Das Skript lädt die offizielle UTM-Guest-Tools-ISO direkt nach **OpenGuest/Installationsmedien/utm-guest-tools.iso**. Diese ISO bei **ARM64-Treiber-ISO** auswählen. Bei **Windows-Arm64-ISO** die echte Microsoft-ISO verwenden. Identische Dateien in beiden Feldern werden als Fehler erkannt. Die Treiber enthalten ARM64-Unterstützung; Einbindung, Installation und Kompatibilität mit OpenGuest müssen weiterhin im Gast getestet werden. Die vollständige SPICE-Integration von UTM ist nicht Bestandteil von OpenGuest.
+
+QEMU, swtpm, qemu-img und geeignete ARM64-UEFI-Firmware samt passenden Variablen werden weiterhin separat benötigt. Die Systemprüfung nennt fehlende Komponenten genauer. Normale Homebrew-UEFI-Dateien garantieren kein Secure Boot; Windows-Installation bleibt ein noch nicht vollständig getesteter Prototyp. Windows-Lizenz erforderlich. Nicht behauptet: fertiges Windows-System oder MuMu-Leistung.
+
+### Grenzen und Sicherheit
+
+SDK und virtuelle Geräte sind getrennte Datenbereiche. Eine SDK-Auswahl allein lagert Spielstände nicht aus. Bei fehlender SSD werden Gäste und Einrichtungsskripte gesperrt; es wird kein interner Ersatzordner angelegt. Bei Konflikten bleiben Quellen erhalten. Vorhandene Daten außerhalb der Standardpfade werden nicht automatisch übernommen; dafür zuerst eine gesonderte Migration planen.
+
+Google-Konto, Synchronisierung und Cloud-Spielstände funktionieren nur, soweit offizielles Abbild und jeweilige App sie unterstützen. Keine Garantie für jedes Spiel oder Play Integrity. Die App ist ad-hoc signiert und nicht Apple-notarisiert.
+
+## Hinweise aus Version 0.1
+
 # OpenGuest 0.1.0 – erster Quellcode-Prototyp
 
 Eine kostenlose Mac-App mit eigenem Android Player und Windows Player. Open Source unter MIT, ohne Abo. Zielplattform: Apple Silicon, macOS 14 oder neuer. Das ist ein Entwicklungsstand, keine fertig veröffentlichte Alternative zu MuMu oder VMware. Der native Mac-Build und die 13 Unit-Tests sind inzwischen im GitHub-Build erfolgreich.
