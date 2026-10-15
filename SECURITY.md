@@ -1,6 +1,6 @@
 # Stability and security status
 
-OpenGuest 0.1 is a source prototype. It has not passed native compilation, guest integration tests, a security audit or stability tests. No crash-free or isolation guarantee is made.
+OpenGuest 0.1 is a source prototype. Native ARM64 compilation and all 13 unit tests passed in GitHub Actions. Guest integration tests, a security audit and extended stability tests remain open. No crash-free or isolation guarantee is made.
 
 Guest state is persistent: Android user data, Windows disk, UEFI variables and TPM state are not reset between sessions. Prefer normal guest shutdown. Forced termination and host/guest crashes can still lose recent changes. The app does not supply automatic backups or recover game cloud saves itself.
 

@@ -12,12 +12,30 @@ jobs:
         run: bash -n Start.command Android_einrichten.command Android_Streaming_einrichten.command scripts/build-app.sh
       - name: Test, compile and package Apple Silicon app
         run: bash scripts/build-app.sh
+      - name: Application launch smoke test
+        run: |
+          dist/OpenGuest.app/Contents/MacOS/OpenGuest > dist/launch-smoke.log 2>&1 &
+          app_pid=$!
+          trap 'kill -TERM "$app_pid" 2>/dev/null || true' EXIT
+          sleep 5
+          if ! kill -0 "$app_pid" 2>/dev/null; then
+            cat dist/launch-smoke.log
+            exit 1
+          fi
+          echo "App stayed running for 5 seconds on a clean macOS runner. Guest integration is not tested."
       - name: Archive test app
-        run: /usr/bin/ditto -c -k --sequesterRsrc --keepParent dist/OpenGuest.app dist/OpenGuest-macOS-AppleSilicon.app.zip
+        run: |
+          /usr/bin/ditto -c -k --sequesterRsrc --keepParent dist/OpenGuest.app dist/OpenGuest-macOS-AppleSilicon.app.zip
+          mkdir -p dist/installer
+          /usr/bin/ditto dist/OpenGuest.app dist/installer/OpenGuest.app
+          ln -s /Applications dist/installer/Applications
+          /usr/bin/hdiutil create -volname OpenGuest -srcfolder dist/installer -ov -format UDZO dist/OpenGuest_0.1.0_AppleSilicon.dmg
       - name: Upload compiled app
         uses: actions/upload-artifact@v7
         with:
           name: OpenGuest-macOS-AppleSilicon-test-app
-          path: dist/OpenGuest-macOS-AppleSilicon.app.zip
+          path: |
+            dist/OpenGuest-macOS-AppleSilicon.app.zip
+            dist/OpenGuest_0.1.0_AppleSilicon.dmg
           if-no-files-found: error
           retention-days: 14

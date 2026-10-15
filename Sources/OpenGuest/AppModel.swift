@@ -504,6 +504,19 @@ final class AppModel: ObservableObject {
         if let logURL { NSWorkspace.shared.activateFileViewerSelecting([logURL]) }
     }
 
+    func openSetupScript(_ name: String) {
+        guard ["Android_einrichten.command", "Android_Streaming_einrichten.command"].contains(name) else { return }
+        let bundled = Bundle.main.resourceURL?.appendingPathComponent(name)
+        let development = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().appendingPathComponent(name)
+        guard let script = [bundled, development].compactMap({ $0 }).first(where: { FileManager.default.isReadableFile(atPath: $0.path) }) else {
+            errorMessage = "Einrichtungsskript fehlt im App-Paket."
+            return
+        }
+        NSWorkspace.shared.open([script], withApplicationAt: URL(fileURLWithPath: "/System/Applications/Utilities/Terminal.app"),
+                                configuration: NSWorkspace.OpenConfiguration())
+    }
+
     func chooseFolder() -> String? {
         let panel = NSOpenPanel()
         panel.canChooseDirectories = true

@@ -132,7 +132,7 @@ final class ScrcpySession {
             await Task.detached {
                 if server.isRunning { server.terminate() }
                 let deadline = ProcessInfo.processInfo.systemUptime + 2
-                while server.isRunning && ProcessInfo.processInfo.systemUptime < deadline { Thread.sleep(forTimeInterval: 0.02) }
+                while server.isRunning && ProcessInfo.processInfo.systemUptime < deadline { try? await Task.sleep(nanoseconds: 20_000_000) }
                 if server.isRunning { kill(server.processIdentifier, SIGKILL) }
                 server.waitUntilExit()
             }.value

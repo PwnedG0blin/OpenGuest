@@ -161,7 +161,7 @@ struct ContentView: View {
                         if model.apkBusy { ProgressView().controlSize(.small) }
                     }
                     if !ScrcpySession.installed {
-                        Text("Streaming-Modul fehlt: einmalig Android_Streaming_einrichten.command aus dem Projektordner ausführen.")
+                        Text("Streaming-Modul fehlt. Unter „Einrichtung“ kannst du es vorbereiten.")
                             .font(.caption).foregroundStyle(.orange)
                     }
                     if !model.apkStatus.isEmpty { Text(model.apkStatus).font(.caption).foregroundStyle(.secondary) }
@@ -259,6 +259,12 @@ struct ContentView: View {
                     Text("Lokale Engines").font(.title2.bold())
                     Text("OpenGuest lädt keine Engines oder Betriebssysteme selbst herunter. Installiere Android Studio beziehungsweise QEMU separat.")
                         .foregroundStyle(.secondary)
+                    HStack {
+                        Button("Android vorbereiten …") { model.openSetupScript("Android_einrichten.command") }
+                        Button("Videostream einrichten …") { model.openSetupScript("Android_Streaming_einrichten.command") }
+                    }
+                    Text("Die Einrichtung öffnet Terminal für Downloads und Lizenzbestätigungen. Android Studio mit SDK Command-line Tools muss bereits installiert sein. Danach „System prüfen“ wählen.")
+                        .font(.caption).foregroundStyle(.secondary)
                     fileRow(title: "Android SDK", value: model.sdk ?? "Nicht gefunden") {
                         if let path = model.chooseFolder() { model.settings.sdk = path; Task { await model.refresh() } }
                     }

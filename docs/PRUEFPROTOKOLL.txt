@@ -11,8 +11,12 @@ Durchgeführt:
   falscher Wert und fehlender Wert abgelehnt; vorhandene Datei blieb bei Fehler erhalten.
 - ZIP-Inhalt und ZIP-Prüfsummen geprüft.
 
+Zusätzlich erfolgreich in GitHub Actions 38802745791:
+- Native ARM64-Kompilierung mit Apple-SDK.
+- 13 Swift-Unit-Tests, 0 Fehler.
+- Release-App-Paket und lokale Signaturprüfung.
+
 Nicht durchgeführt:
-- Swift-Compiler / Apple-SDK-Typprüfung / swift test.
 - Native Mac-Oberfläche und Hypervisor-Ausführung.
 - Android- und Windows-Installation oder echter Systemstart.
 - Google-Anmeldung, Cloud-Synchronisierung und Play Integrity.
@@ -22,4 +26,4 @@ Nicht durchgeführt:
 
 Begründung: Die Authoring-Umgebung ist Linux und enthält kein macOS/Xcode.
 Die beiliegenden 13 Swift-Tests und der macOS-CI-Workflow wurden vorbereitet,
-aber hier nicht ausgeführt. Dieses Paket ist ein unbestätigter Entwicklungsprototyp.
+inzwischen auf dem macOS-Runner erfolgreich ausgeführt. Gastintegration und Leistung bleiben ungeprüft.

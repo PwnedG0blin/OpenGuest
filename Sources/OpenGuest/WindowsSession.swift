@@ -108,7 +108,7 @@ final class WindowsSession {
             await Task.detached {
                 if tpm.isRunning { tpm.terminate() }
                 let deadline = ProcessInfo.processInfo.systemUptime + 2
-                while tpm.isRunning && ProcessInfo.processInfo.systemUptime < deadline { Thread.sleep(forTimeInterval: 0.02) }
+                while tpm.isRunning && ProcessInfo.processInfo.systemUptime < deadline { try? await Task.sleep(nanoseconds: 20_000_000) }
                 if tpm.isRunning { kill(tpm.processIdentifier, SIGKILL) }
                 tpm.waitUntilExit()
             }.value

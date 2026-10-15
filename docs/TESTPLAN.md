@@ -10,7 +10,7 @@
 
 ## Not performed
 
-There is no Swift toolchain or macOS SDK in the Linux authoring environment. No native build, Swift unit-test execution, Mac UI inspection, actual Android/Windows boot, Google login, app-cloud-sync test, Windows Pro/local-account setup, firmware Secure Boot check, audio test, crash/stress test or performance benchmark has been completed. The source must not be described as end-to-end tested.
+There is no Swift toolchain or macOS SDK in the Linux authoring environment. Native ARM64 compilation and all 13 Swift tests have now passed in GitHub Actions run 38802745791. Still not performed: Mac UI inspection, actual Android/Windows boot, Google login, app-cloud-sync test, Windows Pro/local-account setup, firmware Secure Boot check, audio test, crash/stress test or performance benchmark has been completed. The source must not be described as end-to-end tested.
 
 ## Mac acceptance tests before a release
 
@@ -28,4 +28,4 @@ There is no Swift toolchain or macOS SDK in the Linux authoring environment. No 
 12. Verify graceful shutdown from both players and Cmd-Q behavior. Emergency stop must warn about unsaved guest data. Stress-test long sessions, low disk space and log growth.
 13. Complete license review, native code review, Developer ID signing, notarization and Gatekeeper verification before shipping a public `.app`.
 
-The CI workflow runs compile/tests after the project is uploaded to a repository; it has not run yet. Its unit tests cover resource bounds, argument handling, serial targeting, persistence flags, XML account settings and bounded protocol parsing, but cannot validate a real guest OS.
+The first macOS CI run has passed compilation and all 13 unit tests. Its unit tests cover resource bounds, argument handling, serial targeting, persistence flags, XML account settings and bounded protocol parsing, but cannot validate a real guest OS.

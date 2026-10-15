@@ -1,6 +1,6 @@
 # OpenGuest 0.1.0 – erster Quellcode-Prototyp
 
-Eine kostenlose Mac-App mit eigenem Android Player und Windows Player. Open Source unter MIT, ohne Abo. Zielplattform: Apple Silicon, macOS 14 oder neuer. Das ist ein Entwicklungsstand, keine bereits auf einem Mac geprüfte, fertig veröffentlichte Alternative zu MuMu oder VMware.
+Eine kostenlose Mac-App mit eigenem Android Player und Windows Player. Open Source unter MIT, ohne Abo. Zielplattform: Apple Silicon, macOS 14 oder neuer. Das ist ein Entwicklungsstand, keine fertig veröffentlichte Alternative zu MuMu oder VMware. Der native Mac-Build und die 13 Unit-Tests sind inzwischen im GitHub-Build erfolgreich.
 
 ## Android zum ersten Mal einrichten
 
@@ -40,10 +40,10 @@ Android: ARM64-CPU mit Hypervisor.framework, Grafikmodus auto/host, H.264-Stream
 
 Windows: ARM64-CPU mit HVF, einfacher Framebuffer und eigener lokaler Player. Beschleunigte Windows-3D-Grafik, Audio, komfortable Treiberinstallation, Zwischenablage, Multitouch und Spiele-Tastenbelegung sind noch nicht implementiert. Auf dem 16-GB-Mac startet jeweils ein Gast; für den Wechsel den bisherigen Gast herunterfahren.
 
-**Prüfstand:** Swift-Dateien wurden syntaktisch geprüft, Shell-Skripte geprüft und Paketmetadaten kontrolliert. In dieser Arbeitsumgebung gibt es kein macOS/Xcode: Der native Build, Swift-Tests, Android-Start, Google-Anmeldung, Windows-Installation/OOBE und Leistungstests sind **noch nicht ausgeführt**. Ein macOS-CI-Workflow und ein Testplan liegen bei. Keine Behauptung „absturzfrei“ oder „so schnell wie MuMu“.
+**Prüfstand:** Swift-Dateien wurden syntaktisch geprüft, Shell-Skripte geprüft und Paketmetadaten kontrolliert. In dieser Arbeitsumgebung gibt es kein macOS/Xcode: Der native ARM64-Mac-Build und alle 13 Swift-Tests sind im GitHub-Build **erfolgreich ausgeführt**. Android-Start, Google-Anmeldung, Windows-Installation/OOBE und Leistungstests sind weiterhin offen. Ein macOS-CI-Workflow und ein Testplan liegen bei. Keine Behauptung „absturzfrei“ oder „so schnell wie MuMu“.
 
 ## Frei verfügbar
 
-Der komplette eigene Quellcode liegt im ZIP und darf nach MIT weitergegeben und verändert werden. OpenGuest kostet nichts und hat kein Abo. Dieses Paket ist noch kein öffentlich angelegtes GitHub-Repository und keine signierte/notarisierte Download-App. Google-/Microsoft-Systemdateien und fremde Engines behalten ihre eigenen Lizenzbedingungen; Windows selbst wird dadurch nicht kostenlos.
+Der komplette eigene Quellcode liegt im ZIP und darf nach MIT weitergegeben und verändert werden. OpenGuest kostet nichts und hat kein Abo. Der Quellcode liegt öffentlich auf https://github.com/PwnedG0blin/OpenGuest. Die Test-App ist lokal/ad-hoc signiert, aber noch nicht mit Developer ID signiert oder Apple-notarisiert. Google-/Microsoft-Systemdateien und fremde Engines behalten ihre eigenen Lizenzbedingungen; Windows selbst wird dadurch nicht kostenlos.
 
-Der vorbereitete GitHub-Workflow „Build macOS test app“ kann nach Einrichtung eines Repositorys auf einem Apple-Silicon-Mac testen, kompilieren und eine `.app.zip` als Build-Artefakt bereitstellen. Er wurde noch nicht gestartet. Das wäre zunächst die kompilierte Test-App; Engines und Betriebssysteme müssten weiterhin separat eingerichtet werden. Ein vollständiger Installer mit komfortabler Ersteinrichtung ist noch nicht fertig.
+Der vorbereitete GitHub-Workflow „Build macOS test app“ kann nach Einrichtung eines Repositorys auf einem Apple-Silicon-Mac testen, kompilieren und eine `.app.zip` als Build-Artefakt bereitstellen. Der erste Build ist erfolgreich abgeschlossen. Das wäre zunächst die kompilierte Test-App; Engines und Betriebssysteme müssten weiterhin separat eingerichtet werden. Ein vollständiger Installer mit komfortabler Ersteinrichtung ist noch nicht fertig.
