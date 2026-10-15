@@ -16,7 +16,7 @@ public enum DiagnosticReport {
         let rules: [(String, String)] = [
             (#"(?i)(password|passwd|passwort|authorization|cookie|access_token|refresh_token|id_token|client_secret)\s*[:=].*"#, "$1=[ausgeblendet]"),
             (#"https://[^\s'\"<>?]+\?[^\s'\"<>]+"#, "[HTTPS-Adresse mit Parametern ausgeblendet]"),
-            (#"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}"#, "[E-Mail ausgeblendet]"),
+            (#"[A-Za-z0-9._%+\-]{1,64}@[A-Za-z0-9.\-]{1,253}\.[A-Za-z]{2,63}"#, "[E-Mail ausgeblendet]"),
             (#"/Users/[^/\s'\"]+"#, "/Users/[Benutzer]")
         ]
         for (pattern, replacement) in rules {
