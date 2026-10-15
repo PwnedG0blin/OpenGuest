@@ -109,6 +109,33 @@ final class CoreTests: XCTestCase {
         XCTAssertThrowsError(try WindowsEdition.setupXML(selectPro: true, localAccount: .init(name: "Alex", password: "")))
     }
 
+    func testWindowsSetupAcceptsValidEightCharacterPasswordForUserName() throws {
+        let account = try WindowsEdition.validateSetupAccount(name: "PwnedG0blin", password: "Test123!", confirmation: "Test123!")
+        XCTAssertEqual(account.name, "PwnedG0blin")
+        XCTAssertNoThrow(try WindowsEdition.setupXML(selectPro: true, localAccount: account))
+    }
+
+    func testAccountValidationExplainsShortPasswordsAndMismatchWithoutLeakingThem() {
+        XCTAssertThrowsError(try WindowsEdition.validateSetupAccount(name: "PwnedG0blin", password: "Short7!", confirmation: "Short7!")) { error in
+            XCTAssertTrue(error.localizedDescription.contains("7 Zeichen"))
+            XCTAssertFalse(error.localizedDescription.contains("Short7!"))
+        }
+        XCTAssertThrowsError(try WindowsEdition.validateSetupAccount(name: "PwnedG0blin", password: "Test123!", confirmation: "Other123!")) { error in
+            XCTAssertTrue(error.localizedDescription.contains("stimmen nicht überein"))
+            XCTAssertFalse(error.localizedDescription.contains("Test123!"))
+            XCTAssertFalse(error.localizedDescription.contains("Other123!"))
+        }
+    }
+
+    func testAccountValidationDistinguishesInvalidAndReservedNames() {
+        for name in ["", "bad/name", "name.", " name", "Administrator", String(repeating: "a", count: 21)] {
+            XCTAssertThrowsError(try WindowsEdition.validateSetupAccount(name: name, password: "Test123!", confirmation: "Test123!")) { error in
+                XCTAssertTrue(error.localizedDescription.contains("Benutzername"))
+                XCTAssertFalse(error.localizedDescription.contains("Test123!"))
+            }
+        }
+    }
+
     func testScrcpySessionAndPacketHeaders() throws {
         XCTAssertEqual(try ScrcpyWire.header(Data([0x80, 0, 0, 0, 0, 0, 7, 128, 0, 0, 4, 56])), .session(width: 1920, height: 1080))
         XCTAssertEqual(try ScrcpyWire.header(Data([0x40, 0, 0, 0, 0, 0, 0, 10, 0, 0, 0, 5])), .packet(size: 5, pts: 10, configuration: true))

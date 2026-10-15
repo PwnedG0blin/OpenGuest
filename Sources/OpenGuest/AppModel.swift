@@ -53,7 +53,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var apkBusy = false
     @Published private(set) var apkStatus = ""
     @Published private(set) var sessionName = "Kein Gast gestartet"
-    @Published private(set) var log = "OpenGuest 0.3.1 · Entwicklungsprototyp\nSystem prüfen, dann einen Gast auswählen."
+    @Published private(set) var log = "OpenGuest 0.3.2 · Entwicklungsprototyp\nSystem prüfen, dann einen Gast auswählen."
     @Published private(set) var lastCommand = ""
     @Published var errorMessage: String?
     @Published private(set) var storage = GuestStorage.load()
@@ -69,6 +69,39 @@ final class AppModel: ObservableObject {
     }
     @Published var localPassword = ""
     @Published var localPasswordConfirmation = ""
+    @Published private(set) var credentialStatus = "Noch keine Kontodaten im Schlüsselbund gespeichert."
+    var localAccountIssue: String? {
+        do {
+            _ = try WindowsEdition.validateSetupAccount(name: settings.localWindowsUser, password: localPassword,
+                                                       confirmation: localPasswordConfirmation)
+            return nil
+        } catch { return error.localizedDescription }
+    }
+    func saveWindowsCredential() async {
+        guard !busy, !running, let storage, storageReady else { return }
+        do {
+            let account = try WindowsEdition.validateSetupAccount(name: settings.localWindowsUser,
+                password: localPassword, confirmation: localPasswordConfirmation)
+            busy = true
+            defer { busy = false }
+            let credential = WindowsSetupKeychain.Credential(name: account.name, password: account.password)
+            try await Task.detached { try WindowsSetupKeychain.save(credential, storageID: storage.id) }.value
+            credentialStatus = "Kontodaten im macOS-Schlüsselbund gespeichert. Das Windows-Konto wird erst während der Installation angelegt."
+        } catch { errorMessage = error.localizedDescription }
+    }
+    func loadWindowsCredential() async {
+        guard !busy, !running, let storage, storageReady else { return }
+        busy = true
+        defer { busy = false }
+        do {
+            if let credential = try await Task.detached(operation: { try WindowsSetupKeychain.load(storageID: storage.id) }).value {
+                settings.localWindowsUser = credential.name
+                localPassword = credential.password
+                localPasswordConfirmation = credential.password
+                credentialStatus = "Kontodaten aus dem macOS-Schlüsselbund geladen."
+            } else { credentialStatus = "Für diesen Datenordner sind noch keine Kontodaten gespeichert." }
+        } catch { errorMessage = error.localizedDescription }
+    }
     @Published private(set) var playerImage: NSImage?
     @Published private(set) var playerSize = CGSize.zero
     @Published private(set) var playerStatus = "Player noch nicht gestartet"
@@ -159,7 +192,7 @@ final class AppModel: ObservableObject {
     }
     var canStartWindows: Bool {
         storageReady && supportedHost && hypervisorAvailable && windowsReady && firmware != nil && settings.memoryGB >= 4 &&
-        (!settings.installWindows || !settings.iso.isEmpty) && !busy && !running
+        (!settings.installWindows || (!settings.iso.isEmpty && (!settings.localWindowsAccount || localAccountIssue == nil))) && !busy && !running
     }
     var canInstallAPK: Bool { running && androidBooted && androidPort != nil && !apkBusy && !busy && adb != nil }
     var adb: String? {
@@ -295,11 +328,8 @@ final class AppModel: ObservableObject {
             try checkStorageSpace(minimumGB: settings.installWindows ? 25 : 2)
             var account: WindowsEdition.LocalAccount?
             if settings.installWindows && settings.localWindowsAccount {
-                guard localPassword == localPasswordConfirmation else {
-                    throw NSError(domain: "OpenGuest.Windows", code: 2, userInfo: [NSLocalizedDescriptionKey: "Die Windows-Passwörter stimmen nicht überein."])
-                }
-                account = WindowsEdition.LocalAccount(name: settings.localWindowsUser, password: localPassword)
-                _ = try WindowsEdition.setupXML(selectPro: settings.selectPro, localAccount: account)
+                account = try WindowsEdition.validateSetupAccount(name: settings.localWindowsUser,
+                    password: localPassword, confirmation: localPasswordConfirmation)
             }
             guard FileManager.default.isReadableFile(atPath: firmware) else { throw GuestError.missingFile(firmware) }
             if settings.installWindows, !FileManager.default.isReadableFile(atPath: settings.iso) {
@@ -313,19 +343,18 @@ final class AppModel: ObservableObject {
             }
             let files = try await session.prepare(qemuImg: qemuImg, swtpm: swtpm, variablesTemplate: variablesTemplate,
                                                   selectPro: settings.installWindows && settings.selectPro, localAccount: account)
-            localPassword = ""; localPasswordConfirmation = ""
             let spec = try LaunchPlan.windowsVM(qemu: qemu, firmware: firmware, variables: files.variables, disk: files.disk,
                                                tpmSocket: files.socket, iso: settings.iso, driversISO: settings.driversISO,
                                                proISO: files.proISO, installing: settings.installWindows, resources: resources,
                                                displaySocket: files.displaySocket, network: settings.windowsNetwork, qmpSocket: files.qmpSocket)
             windowsSession = session
             try start(spec, title: "Windows 11 Pro Arm64")
+            localPassword = ""; localPasswordConfirmation = ""
             activeGuest = "windows"
             showPlayer(kind: "windows")
             qmpSocket = files.qmpSocket
             connectWindowsPlayer(socket: files.displaySocket)
         } catch {
-            localPassword = ""; localPasswordConfirmation = ""
             await session.stop()
             windowsSession = nil
             errorMessage = error.localizedDescription

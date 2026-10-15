@@ -1,3 +1,9 @@
+# Neu in 0.3.2: Windows-Kontodaten
+
+Windows-Benutzername, Passwortlänge und Passwortwiederholung werden unmittelbar im Formular getrennt geprüft. Die Zeichenanzahl beider Passwortfelder ist sichtbar; das Passwort bleibt verdeckt. „Windows einrichten“ wird erst mit gültigen Kontodaten freigegeben. Bei Start- und Vorbereitungsfehlern bleiben beide Eingaben erhalten. Nach erfolgreichem Prozessstart werden sie aus dem Formular entfernt.
+
+Der Benutzername bleibt wie bisher in den App-Einstellungen erhalten. Mit „Im Schlüsselbund speichern“ speicherst du auf Wunsch Benutzername und Passwort im macOS-Schlüsselbund, getrennt nach OpenGuest-Datenordner. „Aus Schlüsselbund laden“ stellt beide Passwortfelder wieder her, auch nach erneutem App-Start. OpenGuest liest nur seinen eigenen Schlüsselbund-Eintrag auf ausdrücklichen Klick; macOS kann um Zugriffserlaubnis bitten. Das ist eine lokale Einrichtungshilfe: Das eigentliche Windows-Konto entsteht während der Windows-Installation und bleibt danach im Gastsystem bestehen. Eine spätere Änderung des gespeicherten Eintrags ändert kein bereits eingerichtetes Windows-Konto. Die kleine Schlüsselbund-Ablage liegt auf dem Mac, die VM bleibt am gewählten Datenort.
+
 # Neu in 0.3.1: Downloads direkt im Programm
 
 Unter Einrichtung die gewünschten Komponenten auswählen und „Auswahl laden und einrichten“ starten. Ziel ist ausschließlich der eingerichtete OpenGuest-Datenordner. Android SDK-Werkzeuge, Java falls nötig, Emulator, Android-15-Google-Play-ARM64-Systemabbild, Streaming-Modul und Windows-Treiber-ISO werden dort heruntergeladen und eingerichtet. Entpackdateien und Java-Temporärdateien liegen ebenfalls dort. Die App verweigert den Download bei fehlendem Datenträger oder zu wenig freiem Platz. Vorhandene Komponenten werden wiederverwendet; eigene ISO-Dateien werden bei Bedarf kopiert und byteweise geprüft, ihre Originale bleiben erhalten.

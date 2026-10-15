@@ -66,7 +66,7 @@ struct ContentView: View {
                 Image(systemName: "square.stack.3d.up.fill").font(.title).foregroundStyle(.teal)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("OpenGuest").font(.headline)
-                    Text("DEVELOPMENT 0.3.1").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
+                    Text("DEVELOPMENT 0.3.2").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
                 }
             }
             ForEach(WorkspaceTab.allCases) { tab in
@@ -235,7 +235,18 @@ struct ContentView: View {
                             TextField("Lokaler Benutzername", text: $model.settings.localWindowsUser)
                             SecureField("Passwort (mindestens 8 Zeichen)", text: $model.localPassword)
                             SecureField("Passwort wiederholen", text: $model.localPasswordConfirmation)
-                            Text("Dieses Konto wird während der Einrichtung angelegt. Region, Tastatur und weitere Windows-Einstellungen richtest du selbst ein. Das Passwort wird nicht in OpenGuest-Einstellungen gespeichert; das temporäre Einrichtungsmedium wird nach Ende der Sitzung entfernt.")
+                            Text("Passwort: \(model.localPassword.count) Zeichen · Wiederholung: \(model.localPasswordConfirmation.count) Zeichen")
+                                .font(.subheadline.monospacedDigit())
+                            Label(model.localAccountIssue ?? "Kontodaten gültig · Passwörter stimmen überein",
+                                  systemImage: model.localAccountIssue == nil ? "checkmark.circle.fill" : "info.circle.fill")
+                                .foregroundStyle(model.localAccountIssue == nil ? Color.teal : Color.orange)
+                            HStack {
+                                Button("Im Schlüsselbund speichern") { Task { await model.saveWindowsCredential() } }
+                                    .disabled(model.localAccountIssue != nil)
+                                Button("Aus Schlüsselbund laden") { Task { await model.loadWindowsCredential() } }
+                            }
+                            Text(model.credentialStatus).font(.subheadline).textSelection(.enabled)
+                            Text("Dieses Konto wird während der Windows-Installation angelegt. Der Benutzername bleibt in OpenGuest gespeichert. Mit „Im Schlüsselbund speichern“ merkst du dir das Passwort auf diesem Mac; es wird nicht in die App-Einstellungen oder Protokolle geschrieben. Bei Startfehlern bleiben deine Eingaben erhalten. Das temporäre Einrichtungsmedium wird nach Ende der Sitzung entfernt.")
                                 .font(.caption).foregroundStyle(.secondary)
                         }.disabled(model.running || model.busy)
                     }

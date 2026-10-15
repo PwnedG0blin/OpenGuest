@@ -6,6 +6,34 @@ public enum WindowsEdition {
         public let password: String
         public init(name: String, password: String) { self.name = name; self.password = password }
     }
+    private static func invalid(_ message: String) -> NSError {
+        NSError(domain: "OpenGuest.Windows", code: 2, userInfo: [NSLocalizedDescriptionKey: message])
+    }
+    public static func validate(_ account: LocalAccount) throws {
+        let invalidCharacters = CharacterSet(charactersIn: "\"/\\[]:;|=,+*?<>@")
+        guard (1...20).contains(account.name.count) else {
+            throw invalid("Der Benutzername muss 1 bis 20 Zeichen enthalten.")
+        }
+        guard !account.name.hasSuffix("."),
+              account.name == account.name.trimmingCharacters(in: .whitespacesAndNewlines),
+              !account.name.unicodeScalars.contains(where: { invalidCharacters.contains($0) || CharacterSet.controlCharacters.contains($0) }) else {
+            throw invalid("Der Benutzername enthält unzulässige Zeichen, äußere Leerzeichen oder einen Punkt am Ende.")
+        }
+        guard !["administrator", "guest", "defaultaccount", "wdagutilityaccount"].contains(account.name.lowercased()) else {
+            throw invalid("Dieser Benutzername ist von Windows reserviert. Bitte einen anderen wählen.")
+        }
+        guard account.password.count >= 8 else {
+            throw invalid("Das Passwort hat \(account.password.count) Zeichen. Benötigt werden mindestens 8 Zeichen.")
+        }
+    }
+    public static func validateSetupAccount(name: String, password: String, confirmation: String) throws -> LocalAccount {
+        let account = LocalAccount(name: name, password: password)
+        try validate(account)
+        guard password == confirmation else {
+            throw invalid("Passwort und Wiederholung stimmen nicht überein. Beide Eingaben bleiben erhalten.")
+        }
+        return account
+    }
     public static func setupXML(selectPro: Bool, localAccount: LocalAccount?) throws -> String {
         var settings = ""
         if selectPro {
@@ -14,14 +42,7 @@ public enum WindowsEdition {
                 .replacingOccurrences(of: "</unattend>", with: "")
         }
         if let account = localAccount {
-            let invalid = CharacterSet(charactersIn: "\"/\\[]:;|=,+*?<>@")
-            guard (1...20).contains(account.name.count), !account.name.hasSuffix("."),
-                  account.name == account.name.trimmingCharacters(in: .whitespacesAndNewlines),
-                  !account.name.unicodeScalars.contains(where: { invalid.contains($0) || CharacterSet.controlCharacters.contains($0) }),
-                  !["administrator", "guest", "defaultaccount", "wdagutilityaccount"].contains(account.name.lowercased()),
-                  account.password.count >= 8 else {
-                throw NSError(domain: "OpenGuest.Windows", code: 2, userInfo: [NSLocalizedDescriptionKey: "Lokalen Benutzernamen (1–20 Zeichen) und Passwort (mindestens 8 Zeichen) prüfen."])
-            }
+            try validate(account)
             let name = account.name.replacingOccurrences(of: "&", with: "&amp;").replacingOccurrences(of: "<", with: "&lt;")
                 .replacingOccurrences(of: ">", with: "&gt;").replacingOccurrences(of: "\"", with: "&quot;").replacingOccurrences(of: "'", with: "&apos;")
             // Windows answer-file encoding is reversible; this is NOT encryption.
