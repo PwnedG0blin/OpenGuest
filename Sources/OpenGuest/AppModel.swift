@@ -53,7 +53,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var apkBusy = false
     @Published private(set) var apkStatus = ""
     @Published private(set) var sessionName = "Kein Gast gestartet"
-    @Published private(set) var log = "OpenGuest 0.2.2 · Entwicklungsprototyp\nSystem prüfen, dann einen Gast auswählen."
+    @Published private(set) var log = "OpenGuest 0.3.0 · Entwicklungsprototyp\nSystem prüfen, dann einen Gast auswählen."
     @Published private(set) var lastCommand = ""
     @Published var errorMessage: String?
     @Published private(set) var storage = GuestStorage.load()
@@ -76,6 +76,10 @@ final class AppModel: ObservableObject {
     @Published private(set) var streamFPS = 0.0
     @Published private(set) var googleServicesStatus = "Google-Dienste werden nach dem Android-Start geprüft."
     let h264Player = H264Player()
+    private let playerWindows = GuestPlayerWindows()
+
+    func showPlayer(kind: String) { playerWindows.show(kind: kind, model: self) }
+    func togglePlayerFullScreen(kind: String) { playerWindows.toggleFullScreen(kind: kind) }
 
     private var process: Process?
     private var output: FileHandle?
@@ -190,17 +194,17 @@ final class AppModel: ObservableObject {
                 let hardware = try await Self.capture(CommandSpec(executable: qemu, arguments: ["-device", "help"]))
                 let hasHVF = acceleration.output.components(separatedBy: .whitespacesAndNewlines).contains("hvf")
                 let hasCocoa = display.output.contains("-vnc")
-                let hasTPM = hardware.output.contains("tpm-crb-device")
+                let hasTPM = RuntimeDiscovery.hasDevice("tpm-tis-device", in: hardware.output)
                 windowsReady = acceleration.status == 0 && display.status == 0 && hardware.status == 0 && hasHVF && hasCocoa && hasTPM && swtpm != nil && qemuImg != nil && variablesTemplate != nil
                 windowsAcceleration = windowsReady ? "HVF, VNC, TPM und UEFI gefunden" : "QEMU, swtpm oder passende UEFI-Dateien fehlen"
-                log += "\nQEMU-Beschleuniger:\n\(acceleration.output)\nQEMU-Anzeige:\n\(display.output)\n"
+                log += "\nQEMU-Beschleuniger:\n\(acceleration.output)\nQEMU-Geräte:\n\(hardware.output)\n"
                 if firmware == nil { log += "ARM64-UEFI-Firmware fehlt. Bitte eine edk2-aarch64-code.fd auswählen.\n" }
                 if swtpm == nil { log += "swtpm fehlt. Für Windows wird ein dauerhaftes TPM 2.0 benötigt.\n" }
-                if !hasTPM { log += "QEMU-Build enthält kein tpm-crb-device.\n" }
+                if !hasTPM { log += "QEMU-Build enthält kein ARM-TPM (tpm-tis-device).\n" }
                 var missing: [String] = []
                 if !hasHVF { missing.append("HVF") }
                 if !hasCocoa { missing.append("VNC") }
-                if !hasTPM { missing.append("TPM-Gerät") }
+                if !hasTPM { missing.append("ARM-TPM (tpm-tis-device)") }
                 if swtpm == nil { missing.append("swtpm") }
                 if qemuImg == nil { missing.append("qemu-img") }
                 if firmware == nil { missing.append("ARM64-UEFI") }
@@ -232,6 +236,7 @@ final class AppModel: ObservableObject {
             androidPort = port
             androidBooted = false
             apkStatus = "Android startet …"
+            showPlayer(kind: "android")
             watchAndroidBoot(port: port)
         } catch { errorMessage = error.localizedDescription }
     }
@@ -275,6 +280,7 @@ final class AppModel: ObservableObject {
             windowsSession = session
             try start(spec, title: "Windows 11 Pro Arm64")
             activeGuest = "windows"
+            showPlayer(kind: "windows")
             qmpSocket = files.qmpSocket
             connectWindowsPlayer(socket: files.displaySocket)
         } catch {

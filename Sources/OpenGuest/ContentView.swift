@@ -66,7 +66,7 @@ struct ContentView: View {
                 Image(systemName: "square.stack.3d.up.fill").font(.title).foregroundStyle(.teal)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("OpenGuest").font(.headline)
-                    Text("DEVELOPMENT 0.2.2").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
+                    Text("DEVELOPMENT 0.3.0").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
                 }
             }
             ForEach(WorkspaceTab.allCases) { tab in
@@ -426,44 +426,22 @@ struct ContentView: View {
 
     private func playerPane(kind: String, title: String) -> some View {
         let active = model.activeGuest == kind
-        return VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Label(title, systemImage: kind == "android" ? "apps.iphone" : "desktopcomputer").font(.headline)
-                Spacer()
-                if active && kind == "android" {
-                    Text("\(Int(model.streamFPS.rounded())) Video-Frames/s · Ziel 60")
-                        .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+        return card {
+            HStack(spacing: 16) {
+                Image(systemName: kind == "android" ? "apps.iphone" : "desktopcomputer")
+                    .font(.title).foregroundStyle(.teal)
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(title).font(.headline)
+                    Text(active ? model.playerStatus : "Eigenes Fenster · frei skalierbar · Vollbild möglich")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                    if active && kind == "android" {
+                        Text("\(Int(model.streamFPS.rounded())) Video-Frames/s · Ziel 60")
+                            .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                    }
                 }
-                Button { NSApp.keyWindow?.toggleFullScreen(nil) } label: { Image(systemName: "arrow.up.left.and.arrow.down.right") }
-                    .help("Programmfenster als Vollbild anzeigen")
+                Spacer(minLength: 0)
+                Button("Player öffnen") { model.showPlayer(kind: kind) }
             }
-            ZStack {
-                Color.black
-                PlayerSurface(image: active && kind == "windows" ? model.playerImage : nil,
-                              videoLayer: active && kind == "android" ? model.h264Player.layer : nil,
-                              sourceSize: active ? model.playerSize : .zero,
-                              pointer: { x, y, mask in if active { model.pointer(x: x, y: y, mask: mask) } },
-                              key: { code, text, down in if active { model.keyboard(code: code, text: text, down: down) } })
-                if !active || model.playerSize == .zero {
-                    VStack(spacing: 12) {
-                        Image(systemName: kind == "android" ? "apps.iphone" : "desktopcomputer").font(.system(size: 42))
-                        Text(active ? "System startet …" : "\(title) ist ausgeschaltet")
-                        Text("Apps, Dateien und Einstellungen bleiben im Gast gespeichert.").font(.caption)
-                    }.foregroundStyle(.white.opacity(0.8)).allowsHitTesting(false)
-                }
-            }
-            .frame(height: 390).clipShape(RoundedRectangle(cornerRadius: 12))
-            HStack {
-                if kind == "android" {
-                    Button { model.androidNavigation(4) } label: { Image(systemName: "chevron.left") }
-                    Button { model.androidNavigation(3) } label: { Image(systemName: "house") }
-                    Button { model.androidNavigation(187) } label: { Image(systemName: "square.on.square") }
-                }
-                Text(active ? model.playerStatus : "Eigenständiger Playerbereich · gespeichertes Gastsystem")
-                    .font(.caption).foregroundStyle(.secondary).lineLimit(2)
-                Spacer()
-                if active { Button("Herunterfahren", action: model.shutdownGuest) }
-            }.disabled(!active)
         }
     }
 

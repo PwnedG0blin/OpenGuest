@@ -1,3 +1,9 @@
+# Neu in 0.3.0
+
+Android und Windows öffnen beim Start jeweils ein eigenes Playerfenster. Du kannst es frei vergrößern, verkleinern und als Vollbild anzeigen; das Bild und die Eingabekoordinaten passen sich mit erhaltenem Seitenverhältnis an. „Player öffnen“ zeigt ein geschlossenes Fenster erneut. Das Schließen eines Playerfensters lässt den Gast weiterlaufen; zum Ausschalten „Herunterfahren“ verwenden. Beide Player bleiben getrennte Bereiche; weiterhin kann ein Gastsystem gleichzeitig laufen. Die Fenstergröße ändert die Darstellung, nicht automatisch die Auflösung im Gastsystem.
+
+Die Windows-Prüfung und der Startbefehl verwenden jetzt das von QEMU für ARM-virt dokumentierte TPM-Gerät `tpm-tis-device` anstelle von `tpm-crb-device`. Das behebt die fälschliche TPM-Sperre bei passenden QEMU-Builds. Quelle: https://www.qemu.org/docs/master/specs/tpm.html . Ein vollständiger Windows-Installationsdurchlauf ist weiterhin auf dem Ziel-Mac zu prüfen.
+
 # Lesbarkeit in 0.2.2
 
 Der Speicherort-Dialog zeigt Texte, Pfad und Status mit größerer Schrift und hohem Kontrast. Fehler werden in einem farblich abgesetzten Bereich mit eigener Überschrift angezeigt. Lange Meldungen lassen sich scrollen und kopieren. Die Korrektur der Kopierprüfung aus 0.2.1 ist enthalten.

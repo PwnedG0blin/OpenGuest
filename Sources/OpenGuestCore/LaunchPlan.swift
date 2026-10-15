@@ -118,7 +118,7 @@ public enum LaunchPlan {
                     "-qmp", "unix:\(qmpSocket),server=on,wait=off",
                     "-chardev", "socket,id=chrtpm,path=\(tpmSocket)",
                     "-tpmdev", "emulator,id=tpm0,chardev=chrtpm",
-                    "-device", "tpm-crb-device,tpmdev=tpm0",
+                    "-device", "tpm-tis-device,tpmdev=tpm0",
                     "-device", "virtio-rng-pci"]
         if network { args += ["-netdev", "user,id=net0", "-device", "virtio-net-pci,netdev=net0"] }
         else { args += ["-nic", "none"] }

@@ -46,7 +46,13 @@ final class GuestSurface: NSView {
         else { layer?.contents = nil }
         needsLayout = true
     }
-    override func layout() { super.layout(); video?.frame = bounds }
+    override func layout() {
+        super.layout()
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        video?.frame = bounds
+        CATransaction.commit()
+    }
     func detach() { releaseKeys(); video?.removeFromSuperlayer(); video = nil }
     override func resignFirstResponder() -> Bool { releaseKeys(); return super.resignFirstResponder() }
     private func releaseKeys() {
@@ -56,6 +62,7 @@ final class GuestSurface: NSView {
     private func point(_ event: NSEvent, mask: UInt8) {
         guard sourceSize.width > 0, sourceSize.height > 0 else { return }
         let scale = min(bounds.width / sourceSize.width, bounds.height / sourceSize.height)
+        guard scale.isFinite, scale > 0 else { return }
         let size = CGSize(width: sourceSize.width * scale, height: sourceSize.height * scale)
         let origin = CGPoint(x: (bounds.width - size.width) / 2, y: (bounds.height - size.height) / 2)
         let p = convert(event.locationInWindow, from: nil)

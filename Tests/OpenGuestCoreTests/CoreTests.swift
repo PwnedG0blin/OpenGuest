@@ -53,7 +53,7 @@ final class CoreTests: XCTestCase {
         let system = try XCTUnwrap(blocks.first { $0["node-name"] as? String == "systemdisk" })
         XCTAssertEqual((system["file"] as? [String: Any])?["filename"] as? String, disk)
         XCTAssertEqual(system["read-only"] as? Bool, false)
-        XCTAssertTrue(spec.arguments.contains("tpm-crb-device,tpmdev=tpm0"))
+        XCTAssertTrue(spec.arguments.contains("tpm-tis-device,tpmdev=tpm0"))
     }
 
     func testNormalWindowsStartDoesNotReattachInstaller() throws {
@@ -62,6 +62,14 @@ final class CoreTests: XCTestCase {
         XCTAssertFalse(blocks.contains { $0["node-name"] as? String == "installer" })
         XCTAssertFalse(blocks.contains { $0["node-name"] as? String == "edition" })
         XCTAssertEqual(value("-netdev", in: spec), "user,id=net0")
+    }
+
+    func testARMTPMDetectionRejectsPCDevicesAndSimilarNames() {
+        let arm = "TPM devices:\nname \"tpm-tis-device\", bus System, desc \"TPM TIS\"\n"
+        XCTAssertTrue(RuntimeDiscovery.hasDevice("tpm-tis-device", in: arm))
+        XCTAssertFalse(RuntimeDiscovery.hasDevice("tpm-tis-device", in: "name \"tpm-tis\", bus ISA\nname \"tpm-crb\""))
+        XCTAssertFalse(RuntimeDiscovery.hasDevice("tpm-tis-device", in: "name \"tpm-tis-device-extra\""))
+        XCTAssertFalse(RuntimeDiscovery.hasDevice("tpm-tis-device", in: ""))
     }
 
     func testProAnswerFileKeepsNormalSetup() throws {

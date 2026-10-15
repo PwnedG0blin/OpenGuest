@@ -1,6 +1,14 @@
 import Foundation
 
 public enum RuntimeDiscovery {
+    /// Match QEMU's exact quoted device name, never a similarly named variant.
+    public static func hasDevice(_ name: String, in help: String) -> Bool {
+        help.components(separatedBy: .newlines).contains { line in
+            let text = line.trimmingCharacters(in: .whitespaces)
+            return text.hasPrefix("name \"\(name)\"")
+        }
+    }
+
     public static func sdk(preferred: String = "", environment: [String: String] = ProcessInfo.processInfo.environment,
                            home: URL = FileManager.default.homeDirectoryForCurrentUser) -> String? {
         let candidates = [preferred, environment["ANDROID_HOME"] ?? "", environment["ANDROID_SDK_ROOT"] ?? "",
