@@ -53,7 +53,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var apkBusy = false
     @Published private(set) var apkStatus = ""
     @Published private(set) var sessionName = "Kein Gast gestartet"
-    @Published private(set) var log = "OpenGuest 0.3.2 · Entwicklungsprototyp\nSystem prüfen, dann einen Gast auswählen."
+    @Published private(set) var log = "OpenGuest 0.3.3 · Entwicklungsprototyp\nSystem prüfen, dann einen Gast auswählen."
     @Published private(set) var lastCommand = ""
     @Published var errorMessage: String?
     @Published private(set) var storage = GuestStorage.load()
@@ -505,6 +505,14 @@ final class AppModel: ObservableObject {
         } catch {
             apkStatus = "APK-Installation fehlgeschlagen"
             errorMessage = error.localizedDescription
+        }
+    }
+
+    func openGoogleInMacBrowser() {
+        // Use the normal browser and its existing profile; no embedded web view or private session.
+        let url = URL(string: "https://accounts.google.com/AccountChooser?continue=https%3A%2F%2Fmyaccount.google.com%2F")!
+        if !NSWorkspace.shared.open(url) {
+            errorMessage = "Der Mac-Standardbrowser konnte nicht geöffnet werden. Bitte einen Standardbrowser in macOS festlegen."
         }
     }
 

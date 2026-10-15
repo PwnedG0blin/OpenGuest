@@ -66,7 +66,7 @@ struct ContentView: View {
                 Image(systemName: "square.stack.3d.up.fill").font(.title).foregroundStyle(.teal)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("OpenGuest").font(.headline)
-                    Text("DEVELOPMENT 0.3.2").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
+                    Text("DEVELOPMENT 0.3.3").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
                 }
             }
             ForEach(WorkspaceTab.allCases) { tab in
@@ -160,8 +160,6 @@ struct ContentView: View {
                     HStack {
                         Button(action: model.chooseAndInstallAPK) { Label("APK installieren …", systemImage: "square.and.arrow.down") }
                             .disabled(!model.canInstallAPK)
-                        Button("Google-Konto hinzufügen", action: model.openGoogleAccountSettings)
-                            .disabled(!model.canInstallAPK || model.selectedDevice?.googlePlay != true)
                         if model.apkBusy { ProgressView().controlSize(.small) }
                     }
                     if !ScrcpySession.installed {
@@ -171,6 +169,15 @@ struct ContentView: View {
                     if !model.apkStatus.isEmpty { Text(model.apkStatus).font(.caption).foregroundStyle(.secondary) }
                     Divider()
                     Text("Google-Konto & Cloud-Spielstände").font(.headline)
+                    Button(action: model.openGoogleInMacBrowser) {
+                        Label("Google im Mac-Browser öffnen", systemImage: "arrow.up.forward.app")
+                    }
+                    Text("Öffnet die Google-Kontoauswahl außerhalb von OpenGuest in deinem normalen Standardbrowser. Dort können vorhandene Google-Anmeldungen und gespeicherte Zugangsdaten deines Browserprofils genutzt werden.")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                    Text("Die Browser-Anmeldung gilt für den Mac. Sie fügt kein Konto zu Android hinzu. Für Play Store und Cloud-Spielstände das Konto zusätzlich im Android-System anmelden.")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                    Button("Google-Konto in Android hinzufügen", action: model.openGoogleAccountSettings)
+                        .disabled(!model.canInstallAPK || model.selectedDevice?.googlePlay != true)
                     HStack {
                         Button("Play Spiele", action: model.openPlayGames)
                         Button("Kontosynchronisierung", action: model.openSyncSettings)
@@ -182,7 +189,7 @@ struct ContentView: View {
                 }
             }
             notice("Öffnen → Android startet → Apps nutzen",
-                   "Einmalig ein offizielles Google-Play-Gerät einrichten. Danach startet OpenGuest dein ausgewähltes Android direkt im Android Player. Apps, Google-Anmeldung und Einstellungen bleiben gespeichert. Google-Zugangsdaten gibst du ausschließlich im Android-System ein.", color: .teal)
+                   "Einmalig ein offizielles Google-Play-Gerät einrichten. Danach startet OpenGuest dein ausgewähltes Android direkt im Android Player. Apps, Google-Anmeldung und Einstellungen bleiben gespeichert. Die Google-Webseite lässt sich zusätzlich im normalen Mac-Browser öffnen; die Android-Anmeldung erfolgt separat im Gastsystem.", color: .teal)
         }
     }
 

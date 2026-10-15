@@ -1,3 +1,9 @@
+# Neu in 0.3.3: Google im normalen Mac-Browser
+
+Im Android-Bereich öffnet „Google im Mac-Browser öffnen“ die offizielle Google-Kontoauswahl über den macOS-Standardbrowser. Der Browser verwendet seine normale Sitzung und sein vorhandenes Profil; OpenGuest öffnet keine eingebettete Webseite oder private Anmeldesitzung. Gespeicherte Konten und Zugangsdaten stehen nur zur Verfügung, soweit sie im geöffneten Browserprofil vorhanden sind. OpenGuest liest keine Browserpasswörter, Cookies oder Google-Tokens aus und erkennt den Browser-Anmeldestatus nicht.
+
+Diese Funktion ist eine externe Google-Webanmeldung, keine Übergabe eines Kontos an den Android-Emulator. Für Google Play, Kontosynchronisierung und Cloud-Spielstände weiterhin „Google-Konto in Android hinzufügen“ verwenden und die Anmeldung im Gastsystem abschließen. Eine automatische Übernahme einer Mac-Browser-Anmeldung in Android ist nicht implementiert. Google beschreibt Desktop-OAuth und Android-Systemkonten als eigene Abläufe: https://developers.google.com/identity/protocols/oauth2/native-app ; https://developer.android.com/reference/android/accounts/AccountManager .
+
 # Neu in 0.3.2: Windows-Kontodaten
 
 Windows-Benutzername, Passwortlänge und Passwortwiederholung werden unmittelbar im Formular getrennt geprüft. Die Zeichenanzahl beider Passwortfelder ist sichtbar; das Passwort bleibt verdeckt. „Windows einrichten“ wird erst mit gültigen Kontodaten freigegeben. Bei Start- und Vorbereitungsfehlern bleiben beide Eingaben erhalten. Nach erfolgreichem Prozessstart werden sie aus dem Formular entfernt.
