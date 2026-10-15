@@ -135,7 +135,7 @@ public enum StorageMigration {
                 }
                 if exists(item.backup), !journal.contains(where: { $0.key == item.key }) {
                     let hash = try fingerprint(item.backup)
-                    guard hash == (try fingerprint(item.destination)) else { throw failure("Vorhandene Sicherung stimmt nicht mit dem Ziel überein: \(item.key)") }
+                    try verifyCopy(item.backup, destination: item.destination)
                     journal.append(Receipt(key: item.key, fingerprint: hash))
                     try writeReceipts(journal, storage)
                 }
@@ -144,10 +144,10 @@ public enum StorageMigration {
             if exists(item.backup) {
                 // Recovery after termination between rename and link creation.
                 guard !exists(item.source), let record = journal.first(where: { $0.key == item.key }),
-                      try fingerprint(item.backup) == record.fingerprint,
-                      try fingerprint(item.destination) == record.fingerprint else {
+                      try fingerprint(item.backup) == record.fingerprint else {
                     throw failure("Sicherung existiert bereits; bitte zuerst prüfen: \(item.backup.path). Nichts wird überschrieben.")
                 }
+                try verifyCopy(item.backup, destination: item.destination)
                 try fm.createSymbolicLink(atPath: item.source.path, withDestinationPath: item.destination.path)
                 continue
             }
@@ -156,9 +156,11 @@ public enum StorageMigration {
                 guard sourceType == .typeDirectory || (item.key.hasPrefix("iso:") && sourceType == .typeRegular) else {
                     throw failure("Datenquelle hat einen unerwarteten Typ: \(item.source.path)")
                 }
+                let before = try fingerprint(item.source)
                 try mergeCopy(item.source, to: item.destination, validate: storage.validate)
+                try verifyCopy(item.source, destination: item.destination)
                 let hash = try fingerprint(item.source)
-                guard hash == (try fingerprint(item.destination)) else { throw failure("Kopierprüfung fehlgeschlagen: \(item.key). Original bleibt erhalten.") }
+                guard before == hash else { throw failure("Quelldaten wurden während des Kopierens verändert: \(item.source.path). Bitte Android Studio und Einrichtungsskripte beenden und erneut versuchen. Original bleibt erhalten.") }
                 journal.removeAll { $0.key == item.key }
                 journal.append(Receipt(key: item.key, fingerprint: hash))
                 try writeReceipts(journal, storage) // durable before rename
@@ -268,6 +270,27 @@ public enum StorageMigration {
             guard type == .typeRegular || type == .typeSymbolicLink else { throw failure("Nicht unterstützte Datei: \(source.path)") }
             try fm.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
             try fm.copyItem(at: source, to: destination)
+        }
+    }
+
+    /// Verify every source entry, not equality of directory listings. macOS can add
+    /// AppleDouble / Finder metadata on another filesystem; extra target entries are
+    /// preserved. Missing, changed or incorrectly typed source payload still aborts.
+    static func verifyCopy(_ source: URL, destination: URL) throws {
+        let fm = FileManager.default
+        let sourceType = try fm.attributesOfItem(atPath: source.path)[.type] as? FileAttributeType
+        guard exists(destination),
+              try fm.attributesOfItem(atPath: destination.path)[.type] as? FileAttributeType == sourceType else {
+            throw failure("Kopierprüfung: Datei fehlt oder hat einen anderen Typ. Quelle: \(source.path) · Ziel: \(destination.path). Original bleibt erhalten.")
+        }
+        if sourceType == .typeDirectory {
+            for child in try fm.contentsOfDirectory(at: source, includingPropertiesForKeys: nil) {
+                try verifyCopy(child, destination: destination.appendingPathComponent(child.lastPathComponent))
+            }
+        } else {
+            guard try fingerprint(source) == fingerprint(destination) else {
+                throw failure("Kopierprüfung: Dateiinhalt unterscheidet sich. Quelle: \(source.path) · Ziel: \(destination.path). Original bleibt erhalten.")
+            }
         }
     }
 

@@ -1,3 +1,7 @@
+# Korrektur in 0.2.1
+
+Bei „Kopierprüfung fehlgeschlagen: sdk“ in 0.2.0: alte App beenden, 0.2.1 installieren und denselben Datenordner (Extern/OpenGuest) erneut wählen. Bereits passende Dateien werden geprüft und wiederverwendet. Zusätzliche Zieldateien, etwa AppleDouble-/Finder-Metadaten, bleiben erhalten und blockieren die Prüfung nicht mehr. Jede Datei aus der Quelle wird weiterhin auf Typ und SHA-256-Inhalt geprüft; echte Unterschiede werden mit Dateipfad gemeldet. Originale werden beim Kopieren nicht gelöscht.
+
 # OpenGuest 0.2.0 – Speicherort und Umzug
 
 Beim ersten Start dieser Version (auch nach 0.1) wählst du den Datenordner. Wähle auf dem Mac im Dialog die externe SSD **Extern**. OpenGuest legt dort **OpenGuest** an.

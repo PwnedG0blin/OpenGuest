@@ -116,4 +116,44 @@ final class StorageTests: XCTestCase {
         XCTAssertThrowsError(try f.prepare(media: [f.home.appendingPathComponent("private.iso").path]))
         XCTAssertEqual(try Data(contentsOf: f.avd.appendingPathComponent("userdata.img")), Data("precious saved game".utf8))
     }
+    func testExtraDestinationMetadataDoesNotFailCopyVerification() throws {
+        let f = try Fixture(); defer { f.remove() }; try f.seed()
+        let destination = f.root.appendingPathComponent("Android/sdk")
+        try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
+        try Data([0, 5, 22, 7, 0, 2, 0, 0]).write(to: destination.appendingPathComponent("._emulator-file"))
+        try Data("Finder metadata".utf8).write(to: destination.appendingPathComponent(".DS_Store"))
+        try Data("preserve additional file".utf8).write(to: destination.appendingPathComponent("existing-extra"))
+        let storage = try f.prepare()
+        XCTAssertEqual(try Data(contentsOf: storage.sdk.appendingPathComponent("emulator-file")), Data("engine".utf8))
+        XCTAssertEqual(try Data(contentsOf: storage.sdk.appendingPathComponent("existing-extra")), Data("preserve additional file".utf8))
+        try f.cleanup(storage)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: storage.sdk.appendingPathComponent("existing-extra").path))
+    }
+
+    func testPayloadVerificationStillRejectsChangedMissingAndWrongTypeFiles() throws {
+        let f = try Fixture(); defer { f.remove() }; try f.seed()
+        let destination = f.root.appendingPathComponent("verification")
+        try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
+        let file = destination.appendingPathComponent("emulator-file")
+        XCTAssertThrowsError(try StorageMigration.verifyCopy(f.sdk, destination: destination))
+        try Data("wrong bytes".utf8).write(to: file)
+        XCTAssertThrowsError(try StorageMigration.verifyCopy(f.sdk, destination: destination))
+        try FileManager.default.removeItem(at: file)
+        try FileManager.default.createDirectory(at: file, withIntermediateDirectories: true)
+        XCTAssertThrowsError(try StorageMigration.verifyCopy(f.sdk, destination: destination))
+        try FileManager.default.removeItem(at: file)
+        try Data("engine".utf8).write(to: file)
+        XCTAssertNoThrow(try StorageMigration.verifyCopy(f.sdk, destination: destination))
+    }
+
+    func testInterruptedMigrationResumesWithExtraTargetMetadata() throws {
+        let f = try Fixture(); defer { f.remove() }; try f.seed()
+        let storage = try f.prepare()
+        try FileManager.default.removeItem(at: f.avd)
+        try Data("external metadata".utf8).write(to: storage.avd.appendingPathComponent("._userdata.img"))
+        let resumed = try f.prepare()
+        XCTAssertEqual(storage.id, resumed.id)
+        XCTAssertEqual(try Data(contentsOf: f.avd.appendingPathComponent("userdata.img")), Data("precious saved game".utf8))
+    }
+
 }
