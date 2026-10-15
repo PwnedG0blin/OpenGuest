@@ -1,0 +1,405 @@
+import SwiftUI
+import OpenGuestCore
+
+enum WorkspaceTab: String, CaseIterable, Identifiable {
+    case android = "Android"
+    case windows = "Windows Arm"
+    case setup = "Einrichtung"
+    var id: String { rawValue }
+    var icon: String {
+        switch self {
+        case .android: return "apps.iphone"
+        case .windows: return "desktopcomputer"
+        case .setup: return "slider.horizontal.3"
+        }
+    }
+}
+
+@MainActor
+struct ContentView: View {
+    @ObservedObject var model: AppModel
+    @State private var selection: WorkspaceTab = .android
+    @State private var showStopConfirmation = false
+
+    var body: some View {
+        HStack(spacing: 0) {
+            sidebar.frame(width: 214)
+            Divider()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 22) {
+                    header
+                    if !model.supportedHost || !model.hypervisorAvailable {
+                        notice("Apple Silicon und Hardwarevirtualisierung benötigt",
+                               "Starte die native ARM64-Version auf einem Mac mit M-Chip. Intel-Macs und Rosetta sind in Version 0.1 nicht unterstützt.", color: .orange)
+                    }
+                    switch selection {
+                    case .android: android
+                    case .windows: windows
+                    case .setup: setup
+                    }
+                    logPanel
+                }
+                .padding(30)
+            }
+            .background(Color(nsColor: .windowBackgroundColor))
+        }
+        .frame(minWidth: 900, minHeight: 680)
+        .tint(.teal)
+        .alert("OpenGuest", isPresented: Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })) {
+            Button("OK") { model.errorMessage = nil }
+        } message: { Text(model.errorMessage ?? "") }
+        .confirmationDialog("Gastprozess beenden?", isPresented: $showStopConfirmation) {
+            Button("Prozess beenden", role: .destructive) { model.terminateGuest() }
+            Button("Abbrechen", role: .cancel) { }
+        } message: {
+            Text("Fahre Android oder Windows möglichst zuerst im Gastfenster herunter. Das Beenden des Prozesses kann nicht gespeicherte Änderungen verlieren oder das Gastdateisystem beschädigen.")
+        }
+    }
+
+    private var sidebar: some View {
+        VStack(alignment: .leading, spacing: 26) {
+            HStack(spacing: 10) {
+                Image(systemName: "square.stack.3d.up.fill").font(.title).foregroundStyle(.teal)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("OpenGuest").font(.headline)
+                    Text("DEVELOPMENT 0.1").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
+                }
+            }
+            ForEach(WorkspaceTab.allCases) { tab in
+                Button { selection = tab } label: {
+                    Label(tab.rawValue, systemImage: tab.icon)
+                        .font(.system(size: 14, weight: .medium))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(11)
+                        .background(selection == tab ? Color.teal.opacity(0.14) : Color.clear, in: RoundedRectangle(cornerRadius: 10))
+                }
+                .buttonStyle(.plain)
+            }
+            Spacer()
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Open Source · MIT", systemImage: "curlybraces")
+                Text("Eine Oberfläche. Zwei Engines.\nEntwickelt für Apple Silicon.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }.font(.caption)
+        }
+        .padding(20)
+        .background(Color(nsColor: .controlBackgroundColor))
+    }
+
+    private var header: some View {
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 5) {
+                Text(selection.rawValue).font(.system(size: 30, weight: .bold))
+                Text(selection == .android ? "Dein virtuelles Android auf dem Mac." : selection == .windows ? "Der erste Schritt zu Windows auf deinem Mac." : "Verbinde die lokalen Virtualisierungs-Engines.")
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            if model.busy { ProgressView().controlSize(.small) }
+            Button { Task { await model.refresh() } } label: { Label("System prüfen", systemImage: "arrow.clockwise") }
+                .disabled(model.busy || model.running)
+        }
+    }
+
+    private var android: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            playerPane(kind: "android", title: "Android Player")
+            card {
+                VStack(alignment: .leading, spacing: 18) {
+                    HStack {
+                        Image(systemName: "apps.iphone").font(.system(size: 32)).foregroundStyle(.teal)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("Android ARM64").font(.title2.bold())
+                            Text("Android Emulator · Hypervisor.framework").foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        status(model.androidReady ? "Engine bereit" : "Einrichtung nötig", ready: model.androidReady)
+                    }
+                    Divider()
+                    if model.devices.isEmpty {
+                        Text("Noch kein virtuelles Gerät gefunden. Lege in Android Studio ein Gerät mit arm64-v8a-Systemabbild an und klicke auf „System prüfen“.")
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Picker("Virtuelles Gerät", selection: $model.settings.selectedAVD) {
+                            ForEach(model.devices) { device in
+                            Text("\(device.name) · \(device.abi)\(device.googlePlay ? " · Google Play" : "")").tag(device.name)
+                            }
+                        }
+                        .disabled(model.running || model.busy)
+                        if let device = model.selectedDevice, !device.supported {
+                            Text("Dieses Gerät ist kein erkanntes ARM64-Gerät und wird in diesem Prototyp nicht gestartet.")
+                                .font(.caption).foregroundStyle(.orange)
+                        }
+                    }
+                    resourceControls
+                    Picker("Grafik", selection: $model.settings.gpu) {
+                        Text("Automatisch").tag("auto")
+                        Text("Mac-GPU bevorzugen").tag("host")
+                        Text("Software (Fehlersuche)").tag("software")
+                    }.disabled(model.running || model.busy)
+                    Toggle("Kaltstart beim nächsten Start", isOn: $model.settings.coldBoot)
+                        .disabled(model.running || model.busy)
+                    Toggle("Android beim Öffnen von OpenGuest automatisch starten", isOn: $model.settings.autoStartAndroid)
+                    if let device = model.selectedDevice {
+                        Label(device.googlePlay ? "Google-Play-Systemabbild im Profil erkannt" : "Dieses Profil enthält keinen erkannten Google Play Store",
+                              systemImage: device.googlePlay ? "checkmark.seal" : "info.circle")
+                            .font(.caption).foregroundStyle(device.googlePlay ? Color.teal : Color.orange)
+                    }
+                    Text(model.androidAcceleration).font(.caption).foregroundStyle(.secondary)
+                    HStack {
+                        Button(action: model.startAndroid) { Label("Android starten", systemImage: "play.fill") }
+                            .buttonStyle(.borderedProminent).controlSize(.large)
+                            .disabled(!model.canStartAndroid)
+                        Spacer()
+                        Link("Gerät anlegen ↗", destination: URL(string: "https://developer.android.com/studio/run/managing-avds")!)
+                    }
+                    Divider()
+                    HStack {
+                        Button(action: model.chooseAndInstallAPK) { Label("APK installieren …", systemImage: "square.and.arrow.down") }
+                            .disabled(!model.canInstallAPK)
+                        Button("Google-Konto hinzufügen", action: model.openGoogleAccountSettings)
+                            .disabled(!model.canInstallAPK || model.selectedDevice?.googlePlay != true)
+                        if model.apkBusy { ProgressView().controlSize(.small) }
+                    }
+                    if !ScrcpySession.installed {
+                        Text("Streaming-Modul fehlt: einmalig Android_Streaming_einrichten.command aus dem Projektordner ausführen.")
+                            .font(.caption).foregroundStyle(.orange)
+                    }
+                    if !model.apkStatus.isEmpty { Text(model.apkStatus).font(.caption).foregroundStyle(.secondary) }
+                    Divider()
+                    Text("Google-Konto & Cloud-Spielstände").font(.headline)
+                    HStack {
+                        Button("Play Spiele", action: model.openPlayGames)
+                        Button("Kontosynchronisierung", action: model.openSyncSettings)
+                        Button("Android-Sicherung", action: model.openBackupSettings)
+                    }.disabled(!model.canInstallAPK || model.selectedDevice?.googlePlay != true)
+                    Text(model.googleServicesStatus).font(.caption).foregroundStyle(.secondary)
+                    Text("Melde dich in Play Spiele und im jeweiligen Spiel mit demselben Konto an. Cloud-Spielstände und Backups funktionieren nur, soweit App, Spiel und Systemabbild sie unterstützen. Lokale Apps, Daten und Anmeldungen bleiben unabhängig davon gespeichert.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            notice("Öffnen → Android startet → Apps nutzen",
+                   "Einmalig ein offizielles Google-Play-Gerät einrichten. Danach startet OpenGuest dein ausgewähltes Android direkt im Android Player. Apps, Google-Anmeldung und Einstellungen bleiben gespeichert. Google-Zugangsdaten gibst du ausschließlich im Android-System ein.", color: .teal)
+        }
+    }
+
+    private var windows: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            playerPane(kind: "windows", title: "Windows Player")
+            notice("Windows 11 Pro Arm64 · erster Installationsprototyp",
+                   "Eigene 80-GB-Festplatte, dauerhaftes TPM 2.0 und UEFI. Beim ersten Start installierst und konfigurierst du Windows selbst. ARM64-Treiber und passende Secure-Boot-fähige Firmware sind Voraussetzung. Installation und OOBE sind auf echter Mac-Hardware noch nicht verifiziert. 3D-Beschleunigung fehlt in dieser Version.", color: .orange)
+            card {
+                VStack(alignment: .leading, spacing: 18) {
+                    HStack {
+                        Image(systemName: "desktopcomputer").font(.system(size: 32)).foregroundStyle(.blue)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("Windows 11 Pro Arm64").font(.title2.bold())
+                            Text("QEMU · HVF · einfacher Framebuffer").foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        status(model.windowsReady && model.firmware != nil ? "Engine bereit" : "Einrichtung nötig", ready: model.windowsReady && model.firmware != nil)
+                    }
+                    Divider()
+                    resourceControls
+                    Toggle("Windows installieren · ISO einlegen", isOn: $model.settings.installWindows)
+                        .disabled(model.running || model.busy)
+                    Text("Nach der Installation ausschalten: Dann bootet die VM von ihrer gespeicherten Windows-Festplatte.")
+                        .font(.caption).foregroundStyle(.secondary)
+                    fileRow(title: "Windows-Arm64-ISO", value: model.settings.iso.isEmpty ? "Für die erste Installation auswählen" : model.settings.iso) {
+                        if let file = model.chooseFile(title: "Windows-Arm64-ISO auswählen") { model.settings.iso = file }
+                    }
+                    .disabled(model.running || model.busy)
+                    if !model.settings.iso.isEmpty {
+                        Button("ISO aus Auswahl entfernen") { model.settings.iso = "" }
+                            .font(.caption).disabled(model.running || model.busy)
+                    }
+                    fileRow(title: "ARM64-Treiber-ISO (empfohlen)", value: model.settings.driversISO.isEmpty ? "Windows-Gastwerkzeuge / VirtIO-Netzwerktreiber" : model.settings.driversISO) {
+                        if let file = model.chooseFile(title: "ARM64-Windows-Gasttreiber-ISO auswählen") { model.settings.driversISO = file }
+                    }.disabled(model.running || model.busy)
+                    Toggle("Windows 11 Pro vorauswählen", isOn: $model.settings.selectPro)
+                        .disabled(model.running || model.busy || !model.settings.installWindows)
+                    Toggle("Lokales Windows-Konto · ohne Microsoft-Anmeldung", isOn: $model.settings.localWindowsAccount)
+                        .disabled(model.running || model.busy || !model.settings.installWindows)
+                    if model.settings.installWindows && model.settings.localWindowsAccount {
+                        VStack(alignment: .leading, spacing: 10) {
+                            TextField("Lokaler Benutzername", text: $model.settings.localWindowsUser)
+                            SecureField("Passwort (mindestens 8 Zeichen)", text: $model.localPassword)
+                            SecureField("Passwort wiederholen", text: $model.localPasswordConfirmation)
+                            Text("Dieses Konto wird während der Einrichtung angelegt. Region, Tastatur und weitere Windows-Einstellungen richtest du selbst ein. Das Passwort wird nicht in OpenGuest-Einstellungen gespeichert; das temporäre Einrichtungsmedium wird nach Ende der Sitzung entfernt.")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }.disabled(model.running || model.busy)
+                    }
+                    Toggle("Windows-Netzwerk / Internet aktivieren", isOn: $model.settings.windowsNetwork)
+                        .disabled(model.running || model.busy)
+                    Text("Wähle ausdrücklich Arm64, keine x64-ISO. Die ISO-Architektur wird hier noch nicht automatisch erkannt. Zum Start des Installationsmediums gegebenenfalls im Gastfenster eine Taste drücken.")
+                        .font(.caption).foregroundStyle(.secondary)
+                    Text("Deine Windows-Lizenz bleibt erforderlich. Für Internet im Gast den ARM64-VirtIO-Netzwerktreiber von der Treiber-ISO laden. Beim lokalen Konto ist keine Microsoft-Anmeldung nötig.")
+                        .font(.caption).foregroundStyle(.secondary)
+                    Text(model.windowsAcceleration).font(.caption).foregroundStyle(.secondary)
+                    if model.settings.memoryGB < 4 { Text("Für den Windows-Boot-Test mindestens 4 GB RAM wählen.").foregroundStyle(.orange).font(.caption) }
+                    HStack {
+                        Button(action: model.startWindows) { Label(model.settings.installWindows ? "Windows einrichten" : "Windows starten", systemImage: "play.fill") }
+                            .buttonStyle(.borderedProminent).controlSize(.large)
+                            .disabled(!model.canStartWindows)
+                        Spacer()
+                        Link("Windows Arm64 ↗", destination: URL(string: "https://www.microsoft.com/de-de/software-download/windows11arm64")!)
+                    }
+                    Link("ARM64-Windows-Gasttreiber ↗", destination: URL(string: "https://docs.getutm.app/guest-support/windows/")!)
+                    Button("Windows-Dateien im Finder zeigen") {
+                        NSWorkspace.shared.open(WindowsSession.root)
+                    }.disabled(model.busy)
+                }
+            }
+        }
+    }
+
+    private var setup: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            card {
+                VStack(alignment: .leading, spacing: 18) {
+                    Text("Lokale Engines").font(.title2.bold())
+                    Text("OpenGuest lädt keine Engines oder Betriebssysteme selbst herunter. Installiere Android Studio beziehungsweise QEMU separat.")
+                        .foregroundStyle(.secondary)
+                    fileRow(title: "Android SDK", value: model.sdk ?? "Nicht gefunden") {
+                        if let path = model.chooseFolder() { model.settings.sdk = path; Task { await model.refresh() } }
+                    }
+                    fileRow(title: "qemu-system-aarch64", value: model.qemu ?? "Nicht gefunden") {
+                        if let path = model.chooseFile(title: "qemu-system-aarch64 auswählen") { model.settings.qemu = path; Task { await model.refresh() } }
+                    }
+                    fileRow(title: "ARM64-UEFI-Firmware", value: model.firmware ?? "Nicht gefunden") {
+                        if let path = model.chooseFile(title: "edk2-aarch64-code.fd auswählen") { model.settings.firmware = path; Task { await model.refresh() } }
+                    }
+                    fileRow(title: "swtpm · virtuelles TPM 2.0", value: model.swtpm ?? "Nicht gefunden") {
+                        if let path = model.chooseFile(title: "swtpm auswählen") { model.settings.swtpm = path; Task { await model.refresh() } }
+                    }
+                    Button("Standardpfade verwenden") {
+                        model.settings.sdk = ""; model.settings.qemu = ""; model.settings.firmware = ""; model.settings.swtpm = ""
+                        Task { await model.refresh() }
+                    }
+                }
+            }.disabled(model.running || model.busy)
+            card {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Dein Mac").font(.headline)
+                    LabeledContent("Arbeitsspeicher", value: "\(model.totalMemoryGB) GB")
+                    LabeledContent("CPU-Kerne", value: "\(model.hostCores)")
+                    LabeledContent("Hypervisor", value: model.hypervisorAvailable ? "Verfügbar" : "Nicht verfügbar")
+                    Text("Für einen Mac mit 16 GB empfehlen wir zunächst 4 GB und 4 Kerne. In dieser Version läuft jeweils ein Gastprozess.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            Text("OpenGuest enthält keine Telemetrie. Android, QEMU und das Gastbetriebssystem haben eigene Netzwerk- und Datenschutzeinstellungen. Protokolle und Einstellungen liegen lokal auf diesem Mac.")
+                .font(.caption).foregroundStyle(.secondary)
+        }
+    }
+
+    private var resourceControls: some View {
+        HStack(spacing: 24) {
+            Picker("RAM", selection: $model.settings.memoryGB) {
+                ForEach(2...model.maxMemoryGB, id: \.self) { Text("\($0) GB").tag($0) }
+            }
+            Picker("CPU", selection: $model.settings.cores) {
+                ForEach(2...model.maxCores, id: \.self) { Text("\($0) Kerne").tag($0) }
+            }
+        }.disabled(model.running || model.busy)
+    }
+
+    private var logPanel: some View {
+        card {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Circle().fill(model.running ? Color.green : Color.secondary).frame(width: 7, height: 7)
+                    Text(model.sessionName).font(.headline)
+                    Spacer()
+                    if model.running {
+                        Button("Herunterfahren", action: model.shutdownGuest)
+                        Button("Prozess beenden", role: .destructive) { showStopConfirmation = true }
+                    }
+                    Button("Protokolldatei", action: model.revealLogs).disabled(model.lastCommand.isEmpty)
+                }
+                ScrollView([.horizontal, .vertical]) {
+                    Text(model.log).font(.system(size: 11, design: .monospaced))
+                        .textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .frame(height: 150)
+            }
+        }
+    }
+
+    private func playerPane(kind: String, title: String) -> some View {
+        let active = model.activeGuest == kind
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Label(title, systemImage: kind == "android" ? "apps.iphone" : "desktopcomputer").font(.headline)
+                Spacer()
+                if active && kind == "android" {
+                    Text("\(Int(model.streamFPS.rounded())) Video-Frames/s · Ziel 60")
+                        .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                }
+                Button { NSApp.keyWindow?.toggleFullScreen(nil) } label: { Image(systemName: "arrow.up.left.and.arrow.down.right") }
+                    .help("Programmfenster als Vollbild anzeigen")
+            }
+            ZStack {
+                Color.black
+                PlayerSurface(image: active && kind == "windows" ? model.playerImage : nil,
+                              videoLayer: active && kind == "android" ? model.h264Player.layer : nil,
+                              sourceSize: active ? model.playerSize : .zero,
+                              pointer: { x, y, mask in if active { model.pointer(x: x, y: y, mask: mask) } },
+                              key: { code, text, down in if active { model.keyboard(code: code, text: text, down: down) } })
+                if !active || model.playerSize == .zero {
+                    VStack(spacing: 12) {
+                        Image(systemName: kind == "android" ? "apps.iphone" : "desktopcomputer").font(.system(size: 42))
+                        Text(active ? "System startet …" : "\(title) ist ausgeschaltet")
+                        Text("Apps, Dateien und Einstellungen bleiben im Gast gespeichert.").font(.caption)
+                    }.foregroundStyle(.white.opacity(0.8)).allowsHitTesting(false)
+                }
+            }
+            .frame(height: 390).clipShape(RoundedRectangle(cornerRadius: 12))
+            HStack {
+                if kind == "android" {
+                    Button { model.androidNavigation(4) } label: { Image(systemName: "chevron.left") }
+                    Button { model.androidNavigation(3) } label: { Image(systemName: "house") }
+                    Button { model.androidNavigation(187) } label: { Image(systemName: "square.on.square") }
+                }
+                Text(active ? model.playerStatus : "Eigenständiger Playerbereich · gespeichertes Gastsystem")
+                    .font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                Spacer()
+                if active { Button("Herunterfahren", action: model.shutdownGuest) }
+            }.disabled(!active)
+        }
+    }
+
+    private func fileRow(title: String, value: String, action: @escaping () -> Void) -> some View {
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title).font(.subheadline.bold())
+                Text(value).font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
+                    .textSelection(.enabled).lineLimit(2).truncationMode(.middle)
+            }
+            Spacer(minLength: 10)
+            Button("Auswählen …", action: action)
+        }
+    }
+
+    private func status(_ text: String, ready: Bool) -> some View {
+        Text(text).font(.caption.bold()).foregroundStyle(ready ? .teal : .orange)
+            .padding(.horizontal, 10).padding(.vertical, 6)
+            .background((ready ? Color.teal : Color.orange).opacity(0.12), in: Capsule())
+    }
+
+    private func notice(_ title: String, _ message: String, color: Color) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "info.circle.fill").foregroundStyle(color).padding(.top, 1)
+            VStack(alignment: .leading, spacing: 5) {
+                Text(title).font(.subheadline.bold())
+                Text(message).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            }
+        }.padding(16).frame(maxWidth: .infinity, alignment: .leading)
+            .background(color.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    private func card<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        content().padding(20).frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.primary.opacity(0.07)))
+    }
+}

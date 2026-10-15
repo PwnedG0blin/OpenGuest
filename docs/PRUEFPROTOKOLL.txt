@@ -1,0 +1,25 @@
+OpenGuest 0.1.0 – Quellcode-Prüfung vom 15.10.2026
+
+Durchgeführt:
+- 17 Swift-Dateien mit tree-sitter-swift syntaktisch geparst: keine Syntaxfehler.
+- 4 Bash-Start-/Einrichtungsskripte mit bash -n geprüft.
+- Eingebettete Python-Downloadprüfer syntaktisch geprüft.
+- Info.plist, CI-YAML und XML der Pro-Vorauswahl strukturell geprüft.
+- Persistenzflags und explizites ADB-Geräteziel statisch geprüft.
+- Private Unix-Sockets für Windows-Anzeige und Steuerung statisch geprüft.
+- Streaming-Setup mit Testantworten geprüft: passender SHA-256-Wert akzeptiert;
+  falscher Wert und fehlender Wert abgelehnt; vorhandene Datei blieb bei Fehler erhalten.
+- ZIP-Inhalt und ZIP-Prüfsummen geprüft.
+
+Nicht durchgeführt:
+- Swift-Compiler / Apple-SDK-Typprüfung / swift test.
+- Native Mac-Oberfläche und Hypervisor-Ausführung.
+- Android- und Windows-Installation oder echter Systemstart.
+- Google-Anmeldung, Cloud-Synchronisierung und Play Integrity.
+- Windows-Pro-/lokales-Konto-OOBE und Secure-Boot-Firmwareprüfung.
+- Reale FPS-, Latenz-, Audio-, Stress- oder Absturztests.
+- Developer-ID-Signatur, Apple-Notarisierung oder Veröffentlichung.
+
+Begründung: Die Authoring-Umgebung ist Linux und enthält kein macOS/Xcode.
+Die beiliegenden 13 Swift-Tests und der macOS-CI-Workflow wurden vorbereitet,
+aber hier nicht ausgeführt. Dieses Paket ist ein unbestätigter Entwicklungsprototyp.

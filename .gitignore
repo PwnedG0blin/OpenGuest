@@ -1,0 +1,11 @@
+.build/
+.swiftpm/
+dist/
+.DS_Store
+*.xcuserstate
+*.qcow2
+*.iso
+*.fd
+*.log
+*.jar
+scrcpy-server-v*
