@@ -1,3 +1,7 @@
+# Lesbarkeit in 0.2.2
+
+Der Speicherort-Dialog zeigt Texte, Pfad und Status mit größerer Schrift und hohem Kontrast. Fehler werden in einem farblich abgesetzten Bereich mit eigener Überschrift angezeigt. Lange Meldungen lassen sich scrollen und kopieren. Die Korrektur der Kopierprüfung aus 0.2.1 ist enthalten.
+
 # Korrektur in 0.2.1
 
 Bei „Kopierprüfung fehlgeschlagen: sdk“ in 0.2.0: alte App beenden, 0.2.1 installieren und denselben Datenordner (Extern/OpenGuest) erneut wählen. Bereits passende Dateien werden geprüft und wiederverwendet. Zusätzliche Zieldateien, etwa AppleDouble-/Finder-Metadaten, bleiben erhalten und blockieren die Prüfung nicht mehr. Jede Datei aus der Quelle wird weiterhin auf Typ und SHA-256-Inhalt geprüft; echte Unterschiede werden mit Dateipfad gemeldet. Originale werden beim Kopieren nicht gelöscht.

@@ -66,7 +66,7 @@ struct ContentView: View {
                 Image(systemName: "square.stack.3d.up.fill").font(.title).foregroundStyle(.teal)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("OpenGuest").font(.headline)
-                    Text("DEVELOPMENT 0.2.1").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
+                    Text("DEVELOPMENT 0.2.2").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
                 }
             }
             ForEach(WorkspaceTab.allCases) { tab in
@@ -314,27 +314,53 @@ struct ContentView: View {
     }
 
     private var storageSetup: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            Label("Wo sollen deine Systeme gespeichert werden?", systemImage: "externaldrive.fill").font(.title2.bold())
-            Text("Wähle ein Laufwerk oder einen Ordner. OpenGuest legt dort einen eigenen Ordner „OpenGuest“ für SDK, Android-Geräte, Windows, Streaming und Protokolle an.")
-            Text("Vorhandene Daten aus den bisherigen Standardordnern sowie ausgewählte ISO-Dateien aus Downloads werden übernommen und per SHA-256 geprüft. Die Originale bleiben zunächst als interne Sicherungen erhalten.")
-                .font(.callout).foregroundStyle(.secondary)
-            Text("Vor dem Umzug Android und Windows herunterfahren und Android Studio beenden.").font(.callout.bold())
-            HStack {
-                Text(model.proposedStoragePath.isEmpty ? "Noch kein Ziel ausgewählt" : model.proposedStoragePath)
-                    .font(.system(size: 12, design: .monospaced)).textSelection(.enabled)
-                Spacer()
-                Button("Ordner wählen …", action: model.chooseStorageFolder)
+        VStack(alignment: .leading, spacing: 18) {
+            Label("Wo sollen deine Systeme gespeichert werden?", systemImage: "externaldrive.fill")
+                .font(.system(size: 24, weight: .bold))
+                .foregroundStyle(.primary)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    Text("Wähle ein Laufwerk oder einen Ordner. OpenGuest erstellt dort einen eigenen Ordner „OpenGuest“ für Android, Windows und die benötigten Dateien.")
+                        .font(.system(size: 16)).foregroundStyle(.primary)
+                    Text("Vorhandene Daten werden kopiert und vollständig geprüft. Die Originale bleiben zunächst als Sicherung auf der internen Festplatte. Nach dem erfolgreichen Test kannst du diese Sicherungen in der App entfernen.")
+                        .font(.system(size: 16)).foregroundStyle(.primary)
+                    Label("Vorher Android und Windows herunterfahren und Android Studio beenden.", systemImage: "info.circle.fill")
+                        .font(.system(size: 16, weight: .semibold)).foregroundStyle(.primary)
+                        .padding(14).frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.teal.opacity(0.14), in: RoundedRectangle(cornerRadius: 10))
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Dein Datenordner").font(.system(size: 16, weight: .bold))
+                        Text(model.proposedStoragePath.isEmpty ? "Noch kein Ziel ausgewählt" : model.proposedStoragePath)
+                            .font(.system(size: 16, weight: .medium, design: .monospaced))
+                            .foregroundStyle(.primary).textSelection(.enabled)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Button("Ordner wählen …", action: model.chooseStorageFolder)
+                            .font(.system(size: 15, weight: .semibold)).controlSize(.large).disabled(model.busy)
+                    }.frame(maxWidth: .infinity, alignment: .leading)
+                    VStack(alignment: .leading, spacing: 10) {
+                        Label(model.errorMessage == nil ? "Status" : "Umzug angehalten",
+                              systemImage: model.errorMessage == nil ? "info.circle.fill" : "exclamationmark.triangle.fill")
+                            .font(.system(size: 17, weight: .bold))
+                        Text(model.storageStatus).font(.system(size: 16, weight: .medium))
+                            .foregroundStyle(.primary).textSelection(.enabled)
+                            .fixedSize(horizontal: false, vertical: true)
+                        if model.busy { ProgressView().controlSize(.regular) }
+                    }.padding(16).frame(maxWidth: .infinity, alignment: .leading)
+                        .background((model.errorMessage == nil ? Color.teal : Color.orange).opacity(0.16), in: RoundedRectangle(cornerRadius: 12))
+                        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder((model.errorMessage == nil ? Color.teal : Color.orange).opacity(0.65)))
+                }.padding(.trailing, 8)
             }
-            Text(model.storageStatus).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
-            if model.busy { ProgressView().controlSize(.small) }
+            Divider()
+            Text("Kleine Einstellungen und macOS-Auslagerungsdateien können intern bleiben.")
+                .font(.system(size: 14)).foregroundStyle(.primary)
             HStack {
-                Text("Kleine Einstellungen und macOS-Auslagerungsdateien können intern bleiben.").font(.caption).foregroundStyle(.secondary)
                 Spacer()
                 Button("Speicherort einrichten und Daten übernehmen", action: model.configureStorage)
-                    .buttonStyle(.borderedProminent).disabled(model.proposedStoragePath.isEmpty)
+                    .font(.system(size: 16, weight: .semibold))
+                    .buttonStyle(.borderedProminent).controlSize(.large)
+                    .disabled(model.proposedStoragePath.isEmpty || model.busy)
             }
-        }.padding(28).frame(width: 730).disabled(model.busy)
+        }.padding(28).frame(width: 820, height: 690)
     }
 
     private var storageCard: some View {

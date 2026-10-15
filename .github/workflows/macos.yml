@@ -29,13 +29,13 @@ jobs:
           mkdir -p dist/installer
           /usr/bin/ditto dist/OpenGuest.app dist/installer/OpenGuest.app
           ln -s /Applications dist/installer/Applications
-          /usr/bin/hdiutil create -volname OpenGuest -srcfolder dist/installer -ov -format UDZO dist/OpenGuest_0.2.1_AppleSilicon.dmg
+          /usr/bin/hdiutil create -volname OpenGuest -srcfolder dist/installer -ov -format UDZO dist/OpenGuest_0.2.2_AppleSilicon.dmg
       - name: Upload compiled app
         uses: actions/upload-artifact@v7
         with:
           name: OpenGuest-macOS-AppleSilicon-test-app
           path: |
             dist/OpenGuest-macOS-AppleSilicon.app.zip
-            dist/OpenGuest_0.2.1_AppleSilicon.dmg
+            dist/OpenGuest_0.2.2_AppleSilicon.dmg
           if-no-files-found: error
           retention-days: 14
