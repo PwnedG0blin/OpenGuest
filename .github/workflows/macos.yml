@@ -10,14 +10,18 @@ jobs:
       - uses: actions/checkout@v4
       - name: Shell syntax
         run: bash -n Android_Werkzeuge_einrichten.command Start.command Android_einrichten.command Android_Streaming_einrichten.command Windows_Treiber_einrichten.command scripts/build-app.sh scripts/notarize-app.sh
-      - name: Install QEMU disk utilities for resize regression tests
+      - name: Install QEMU and TPM utilities for regression tests
         env:
           HOMEBREW_NO_AUTO_UPDATE: "1"
-        run: command -v qemu-img >/dev/null || brew install qemu
+        run: |
+          command -v qemu-img >/dev/null || brew install qemu
+          command -v swtpm >/dev/null || brew install swtpm
       - name: Test, compile and package Apple Silicon app
         env:
           OPENGUEST_REQUIRE_QEMU_TEST: "1"
         run: bash scripts/build-app.sh
+      - name: Real QEMU TPM initialization regression test
+        run: python3 scripts/tpm-smoke.py
       - name: Application launch smoke test
         run: |
           dist/OpenGuest.app/Contents/MacOS/OpenGuest > dist/launch-smoke.log 2>&1 &
@@ -35,13 +39,13 @@ jobs:
           mkdir -p dist/installer
           /usr/bin/ditto dist/OpenGuest.app dist/installer/OpenGuest.app
           ln -s /Applications dist/installer/Applications
-          /usr/bin/hdiutil create -volname OpenGuest -srcfolder dist/installer -ov -format UDZO dist/OpenGuest_0.3.5_AppleSilicon.dmg
+          /usr/bin/hdiutil create -volname OpenGuest -srcfolder dist/installer -ov -format UDZO dist/OpenGuest_0.3.6_AppleSilicon.dmg
       - name: Upload compiled app
         uses: actions/upload-artifact@v7
         with:
           name: OpenGuest-macOS-AppleSilicon-test-app
           path: |
             dist/OpenGuest-macOS-AppleSilicon.app.zip
-            dist/OpenGuest_0.3.5_AppleSilicon.dmg
+            dist/OpenGuest_0.3.6_AppleSilicon.dmg
           if-no-files-found: error
           retention-days: 14

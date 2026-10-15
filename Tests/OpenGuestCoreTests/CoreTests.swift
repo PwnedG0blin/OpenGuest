@@ -53,7 +53,9 @@ final class CoreTests: XCTestCase {
         let system = try XCTUnwrap(blocks.first { $0["node-name"] as? String == "systemdisk" })
         XCTAssertEqual((system["file"] as? [String: Any])?["filename"] as? String, disk)
         XCTAssertEqual(system["read-only"] as? Bool, false)
-        XCTAssertTrue(spec.arguments.contains("tpm-tis-device,tpmdev=tpm0"))
+        XCTAssertTrue(spec.arguments.contains("tpm-tis-device,tpmdev=tpm0,ppi=off"))
+        XCTAssertEqual(value("-accel", in: spec), "hvf")
+        XCTAssertTrue(spec.arguments.contains("emulator,id=tpm0,chardev=chrtpm"))
     }
 
     func testNormalWindowsStartDoesNotReattachInstaller() throws {
