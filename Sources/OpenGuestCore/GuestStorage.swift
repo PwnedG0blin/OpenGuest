@@ -40,6 +40,27 @@ public struct GuestStorage: Codable, Equatable {
               let size = values[.systemFreeSize] as? NSNumber else { return nil }
         return size.int64Value
     }
+    public var windowsFolderReady: Bool {
+        guard (try? validate()) != nil,
+              windows.resolvingSymlinksInPath().path.hasPrefix(url.resolvingSymlinksInPath().path + "/") else { return false }
+        var directory: ObjCBool = false
+        return FileManager.default.fileExists(atPath: windows.path, isDirectory: &directory) && directory.boolValue &&
+            FileManager.default.isWritableFile(atPath: windows.path)
+    }
+    @discardableResult
+    public func prepareWindowsFolder() throws -> URL {
+        try validate()
+        guard windows.resolvingSymlinksInPath().path.hasPrefix(url.resolvingSymlinksInPath().path + "/") else {
+            throw StorageMigration.failure("Windows-Ordner verweist außerhalb des gewählten Datenordners.")
+        }
+        let fm = FileManager.default
+        try fm.createDirectory(at: windows, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+        let probe = windows.appendingPathComponent(".write-test-\(UUID().uuidString)")
+        try Data([0]).write(to: probe, options: .withoutOverwriting)
+        defer { try? fm.removeItem(at: probe) }
+        try validate()
+        return windows
+    }
 }
 
 public enum StorageMigration {

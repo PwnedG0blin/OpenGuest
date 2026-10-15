@@ -22,13 +22,12 @@ final class WindowsSession {
         GuestStorage.load()?.windows ?? GuestStorage.pointer.deletingLastPathComponent().appendingPathComponent("Windows11ProArm")
     }
 
-    func prepare(qemuImg: String, swtpm: String, variablesTemplate: String, selectPro: Bool,
+    func prepare(qemuImg: String, swtpm: String, variablesTemplate: String, capacityGiB: Int, selectPro: Bool,
                  localAccount: WindowsEdition.LocalAccount?) async throws -> Files {
         guard let storage = GuestStorage.load() else { throw failure("Speicherort fehlt.") }
         try storage.validate()
         let fm = FileManager.default
-        let root = storage.windows
-        try fm.createDirectory(at: root, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+        let root = try storage.prepareWindowsFolder()
         let fd = Darwin.open(root.appendingPathComponent("session.lock").path, O_CREAT | O_RDWR, 0o600)
         guard fd >= 0 else { throw failure("Die Windows-VM konnte nicht gesperrt werden.") }
         guard flock(fd, LOCK_EX | LOCK_NB) == 0 else {
@@ -40,15 +39,9 @@ final class WindowsSession {
         let variables = root.appendingPathComponent("uefi-vars.fd")
         if !fm.fileExists(atPath: variables.path) { try fm.copyItem(atPath: variablesTemplate, toPath: variables.path) }
         let disk = root.appendingPathComponent("windows.qcow2")
-        if !fm.fileExists(atPath: disk.path) {
-            let temporary = root.appendingPathComponent("disk-\(UUID().uuidString).qcow2")
-            defer { try? fm.removeItem(at: temporary) }
-            let result = try await Task.detached {
-                try CommandCapture.run(CommandSpec(executable: qemuImg, arguments: ["create", "-f", "qcow2", temporary.path, "80G"]), timeout: 30)
-            }.value
-            guard result.status == 0 else { throw GuestError.commandFailed(result.status, result.output) }
-            try fm.moveItem(at: temporary, to: disk)
-        }
+        _ = try await Task.detached {
+            try WindowsDiskImage.prepare(qemuImg: qemuImg, storage: storage, capacityGiB: capacityGiB, acquireLock: false)
+        }.value
 
         var editionISO: String?
         if selectPro || localAccount != nil {

@@ -66,7 +66,7 @@ struct ContentView: View {
                 Image(systemName: "square.stack.3d.up.fill").font(.title).foregroundStyle(.teal)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("OpenGuest").font(.headline)
-                    Text("DEVELOPMENT 0.3.4").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
+                    Text("DEVELOPMENT 0.3.5").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
                 }
             }
             ForEach(WorkspaceTab.allCases) { tab in
@@ -195,8 +195,41 @@ struct ContentView: View {
     private var windows: some View {
         VStack(alignment: .leading, spacing: 18) {
             playerPane(kind: "windows", title: "Windows Player")
-            notice("Windows 11 Pro Arm64 · erster Installationsprototyp",
-                   "Eigene 80-GB-Festplatte, dauerhaftes TPM 2.0 und UEFI. Beim ersten Start installierst und konfigurierst du Windows selbst. ARM64-Treiber und passende Secure-Boot-fähige Firmware sind Voraussetzung. Installation und OOBE sind auf echter Mac-Hardware noch nicht verifiziert. 3D-Beschleunigung fehlt in dieser Version.", color: .orange)
+            card {
+                VStack(alignment: .leading, spacing: 12) {
+                    Label("Windows-Speicherort", systemImage: "externaldrive.fill").font(.headline)
+                    Text(model.storage?.windows.path ?? "Zuerst unter Einrichtung einen Datenordner wählen")
+                        .font(.body.monospaced()).textSelection(.enabled)
+                    Text(model.windowsFolderStatus).font(.subheadline)
+                    HStack {
+                        Button("Windows-Ordner anlegen / prüfen", action: model.prepareWindowsFolder)
+                            .disabled(model.busy || model.running || !model.storageReady)
+                        Button("Ordner öffnen", action: model.revealWindowsFolder)
+                            .disabled(model.storage?.windowsFolderReady != true)
+                    }
+                    Text("Windows-Festplatte, Einstellungen und TPM bleiben in diesem Ordner gespeichert. Beim ersten Start installierst du Windows aus deiner ARM64-ISO.")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                    Divider()
+                    HStack {
+                        Text("Maximale Windows-Festplatte")
+                        TextField("GB", text: $model.windowsDiskSize)
+                            .textFieldStyle(.roundedBorder).frame(width: 100)
+                            .disabled(model.busy || model.running)
+                        Text("GB")
+                        Spacer(minLength: 0)
+                        Button("Größe anwenden") { Task { await model.applyWindowsDiskSize() } }
+                            .disabled(model.busy || model.running || !model.storageReady || model.qemuImg == nil || model.windowsCapacityIssue != nil)
+                    }
+                    Text(model.windowsDiskStatus).font(.subheadline).textSelection(.enabled)
+                    if let issue = model.windowsCapacityIssue { Text(issue).font(.subheadline).foregroundStyle(.orange) }
+                    Text("64–4096 GB frei eingeben. Die Datei wächst mit deinen Daten; die maximale Größe wird nicht sofort auf der SSD belegt. Änderungen werden über „Größe anwenden“ oder beim nächsten Windows-Start übernommen. Vergrößern ist bei ausgeschaltetem Windows möglich; vorhandene Festplatten werden nicht verkleinert. Zusätzlichen Speicher anschließend in Windows zuordnen.")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                    DisclosureGroup("Voraussetzungen und Entwicklungsstand") {
+                        Text("Benötigt werden QEMU, swtpm und geeignete Secure-Boot-fähige ARM64-Firmware. Ein vollständiger Installationsdurchlauf ist auf dem Ziel-Mac noch zu prüfen; Windows-3D-Beschleunigung ist nicht implementiert.")
+                            .font(.subheadline).foregroundStyle(.secondary).padding(.top, 6)
+                    }
+                }
+            }
             card {
                 VStack(alignment: .leading, spacing: 18) {
                     HStack {
@@ -273,7 +306,7 @@ struct ContentView: View {
                     }
                     Link("ARM64-Windows-Gasttreiber ↗", destination: URL(string: "https://docs.getutm.app/guest-support/windows/")!)
                     Button("Windows-Dateien im Finder zeigen") {
-                        NSWorkspace.shared.open(WindowsSession.root)
+                        model.revealWindowsFolder()
                     }.disabled(model.busy)
                 }
             }
@@ -424,8 +457,17 @@ struct ContentView: View {
                         Button("Herunterfahren", action: model.shutdownGuest)
                         Button("Prozess beenden", role: .destructive) { showStopConfirmation = true }
                     }
-                    Button("Protokolldatei", action: model.revealLogs).disabled(model.lastCommand.isEmpty)
+                    Button("Sitzungslog zeigen", action: model.revealLogs).disabled(model.lastCommand.isEmpty)
                 }
+                HStack {
+                    Button {
+                        Task { await model.exportDiagnostics() }
+                    } label: { Label("Gesamtprotokoll exportieren", systemImage: "doc.badge.arrow.up") }
+                        .disabled(model.diagnosticBusy || !model.storageReady)
+                    if model.diagnosticBusy { ProgressView().controlSize(.small) }
+                    Text("Android + Windows + Einrichtung in einer Datei").font(.caption).foregroundStyle(.secondary)
+                }
+                if !model.diagnosticStatus.isEmpty { Text(model.diagnosticStatus).font(.caption).textSelection(.enabled) }
                 ScrollView([.horizontal, .vertical]) {
                     Text(model.log).font(.system(size: 11, design: .monospaced))
                         .textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)

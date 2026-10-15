@@ -44,6 +44,50 @@ final class AppModel: ObservableObject {
     @Published private(set) var variablesTemplate: String?
     @Published private(set) var androidAcceleration = "Noch nicht geprüft"
     @Published private(set) var windowsAcceleration = "Noch nicht geprüft"
+    @Published private(set) var windowsFolderStatus = "Windows-Ordner noch nicht geprüft."
+    @Published var windowsDiskSize = "80" {
+        didSet {
+            if let storage, let value = try? WindowsDisk.capacityGiB(windowsDiskSize) {
+                UserDefaults.standard.set(value, forKey: "OpenGuest.windowsDiskGiB.\(storage.id)")
+            }
+        }
+    }
+    @Published private(set) var windowsDiskBytes: Int64?
+    @Published private(set) var windowsDiskStatus = "Größe für die virtuelle Windows-Festplatte wählen."
+    var windowsCapacityGiB: Int? { try? WindowsDisk.capacityGiB(windowsDiskSize) }
+    var windowsCapacityIssue: String? {
+        do {
+            let value = try WindowsDisk.capacityGiB(windowsDiskSize)
+            if let current = windowsDiskBytes { _ = try WindowsDisk.requiresGrowth(currentBytes: current, requestedGiB: value) }
+            return nil
+        } catch { return error.localizedDescription }
+    }
+    func applyWindowsDiskSize() async {
+        guard !busy, !running, let storage, storageReady, let qemuImg else { return }
+        do {
+            let value = try WindowsDisk.capacityGiB(windowsDiskSize)
+            busy = true
+            defer { busy = false }
+            let bytes = try await Task.detached {
+                try WindowsDiskImage.prepare(qemuImg: qemuImg, storage: storage, capacityGiB: value)
+            }.value
+            windowsDiskBytes = bytes
+            windowsDiskStatus = "Virtuelle Festplatte: \(value) GB. Zusätzlichen Speicher nach einer Vergrößerung in Windows zuordnen."
+            recordDiagnostic("Windows · Festplatte", "Größe angewendet: \(value) GB")
+        } catch { windowsDiskStatus = error.localizedDescription; errorMessage = error.localizedDescription }
+    }
+    func prepareWindowsFolder() {
+        guard !busy, !running, let storage else { return }
+        do {
+            try storage.prepareWindowsFolder()
+            windowsFolderStatus = "Windows-Ordner vorhanden und beschreibbar."
+            recordDiagnostic("Windows · Datenordner", "Angelegt / geprüft: \(storage.windows.path)")
+        } catch { windowsFolderStatus = error.localizedDescription; errorMessage = error.localizedDescription }
+    }
+    func revealWindowsFolder() {
+        guard let storage, storage.windowsFolderReady else { return }
+        NSWorkspace.shared.open(storage.windows)
+    }
     @Published private(set) var androidReady = false
     @Published private(set) var windowsReady = false
     @Published private(set) var busy = false
@@ -52,9 +96,69 @@ final class AppModel: ObservableObject {
     @Published private(set) var apkBusy = false
     @Published private(set) var apkStatus = ""
     @Published private(set) var sessionName = "Kein Gast gestartet"
-    @Published private(set) var log = "OpenGuest 0.3.4 · Entwicklungsprototyp\nSystem prüfen, dann einen Gast auswählen."
+    @Published private(set) var log = "OpenGuest 0.3.5 · Entwicklungsprototyp\nSystem prüfen, dann einen Gast auswählen."
     @Published private(set) var lastCommand = ""
-    @Published var errorMessage: String?
+    @Published var errorMessage: String? {
+        didSet {
+            if let message = errorMessage, message != oldValue { recordDiagnostic("Fehler", message) }
+        }
+    }
+    @Published private(set) var diagnosticBusy = false
+    @Published private(set) var diagnosticStatus = ""
+    private var diagnosticEvents: [String] = []
+    private var systemCheckLog = ""
+    private func recordDiagnostic(_ category: String, _ message: String) {
+        let event = DiagnosticReport.redact("\(category): \(message)")
+        diagnosticEvents.append(event)
+        if diagnosticEvents.count > 100 { diagnosticEvents.removeFirst(diagnosticEvents.count - 100) }
+        if let storage { try? DiagnosticReport.record(event, storage: storage) }
+    }
+    func exportDiagnostics() async {
+        guard !diagnosticBusy, let storage, storageReady else {
+            if !storageReady { errorMessage = "Für den Diagnoseexport bitte den gewählten Datenträger anschließen." }
+            return
+        }
+        diagnosticBusy = true
+        diagnosticStatus = "Android- und Windows-Protokolle werden zusammengeführt …"
+        defer { diagnosticBusy = false }
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Entwicklung"
+        let snapshot = """
+        Version: \(version)
+        macOS: \(ProcessInfo.processInfo.operatingSystemVersionString)
+        Mac: \(supportedHost ? "Apple Silicon nativ" : "Nicht unterstützt / Rosetta") · \(totalMemoryGB) GB · \(hostCores) CPU-Kerne
+        Datenordner: \(storage.root) · \(storageFree)
+        Gast: \(activeGuest.isEmpty ? "Keiner" : activeGuest) · \(sessionName)
+        Android: \(androidAcceleration)
+        Android-Profil: \(settings.selectedAVD)
+        Grafik gewählt: \(settings.gpu) · RAM: \(settings.memoryGB) GB · CPU: \(settings.cores)
+        Player: \(playerStatus) · Video-Frames/s: \(Int(streamFPS.rounded()))
+        Windows: \(windowsAcceleration)
+        Windows-Ordner: \(windowsFolderStatus)
+        Gewünschte Windows-Festplatte: \(windowsDiskSize) GB · Geprüfte Größe in Bytes: \(windowsDiskBytes.map { String($0) } ?? "Noch nicht ermittelt")
+        Festplattenstatus: \(windowsDiskStatus)
+        Windows-Einrichtung: \(settings.installWindows) · lokales Konto: \(settings.localWindowsAccount)
+        Benutzername-Länge: \(settings.localWindowsUser.count)
+        Kennwortlänge: \(localPassword.count) · Wiederholungslänge: \(localPasswordConfirmation.count) · Übereinstimmung: \(localPassword == localPasswordConfirmation)
+        Kontoprüfung (nur Eingabefelder): \(localAccountIssue ?? "Gültig")
+        Schlüsselbund-Status: \(credentialStatus)
+        SDK: \(sdk ?? "Fehlt")
+        QEMU: \(qemu ?? "Fehlt")
+        swtpm: \(swtpm ?? "Fehlt")
+        Firmware: \(firmware ?? "Fehlt")
+        Windows-ISO: \(settings.iso)
+        Treiber-ISO: \(settings.driversISO)
+        Letzte Meldung: \(errorMessage ?? "Keine")
+        """
+        let check = systemCheckLog
+        let events = diagnosticEvents.joined(separator: "\n")
+        do {
+            let file = try await Task.detached(priority: .utility) {
+                try DiagnosticReport.export(storage: storage, snapshot: snapshot, systemCheck: check, recentEvents: events)
+            }.value
+            diagnosticStatus = "Gemeinsames Protokoll erstellt: \(file.lastPathComponent)"
+            NSWorkspace.shared.activateFileViewerSelecting([file])
+        } catch { diagnosticStatus = "Diagnoseexport fehlgeschlagen."; errorMessage = error.localizedDescription }
+    }
     @Published private(set) var storage = GuestStorage.load()
     @Published var showStorageSetup = GuestStorage.load() == nil
     @Published var proposedStoragePath = ""
@@ -79,6 +183,7 @@ final class AppModel: ObservableObject {
     func saveWindowsCredential() async {
         guard !busy, !running, let storage, storageReady else { return }
         do {
+            recordDiagnostic("Windows · Schlüsselbund speichern", "Benutzername-Länge \(settings.localWindowsUser.count), Kennwortlänge \(localPassword.count), Wiederholungslänge \(localPasswordConfirmation.count), Übereinstimmung \(localPassword == localPasswordConfirmation)")
             let account = try WindowsEdition.validateSetupAccount(name: settings.localWindowsUser,
                 password: localPassword, confirmation: localPasswordConfirmation)
             busy = true
@@ -86,6 +191,7 @@ final class AppModel: ObservableObject {
             let credential = WindowsSetupKeychain.Credential(name: account.name, password: account.password)
             try await Task.detached { try WindowsSetupKeychain.save(credential, storageID: storage.id) }.value
             credentialStatus = "Kontodaten im macOS-Schlüsselbund gespeichert. Das Windows-Konto wird erst während der Installation angelegt."
+            recordDiagnostic("Windows · Schlüsselbund", "Speichern erfolgreich")
         } catch { errorMessage = error.localizedDescription }
     }
     func loadWindowsCredential() async {
@@ -93,12 +199,14 @@ final class AppModel: ObservableObject {
         busy = true
         defer { busy = false }
         do {
+            recordDiagnostic("Windows · Schlüsselbund", "Laden angefordert")
             if let credential = try await Task.detached(operation: { try WindowsSetupKeychain.load(storageID: storage.id) }).value {
                 settings.localWindowsUser = credential.name
                 localPassword = credential.password
                 localPasswordConfirmation = credential.password
                 credentialStatus = "Kontodaten aus dem macOS-Schlüsselbund geladen."
             } else { credentialStatus = "Für diesen Datenordner sind noch keine Kontodaten gespeichert." }
+            recordDiagnostic("Windows · Schlüsselbund", credentialStatus)
         } catch { errorMessage = error.localizedDescription }
     }
     @Published private(set) var playerImage: NSImage?
@@ -190,7 +298,7 @@ final class AppModel: ObservableObject {
         storageReady && supportedHost && hypervisorAvailable && androidReady && selectedDevice?.supported == true && adb != nil && ScrcpySession.installed && !busy && !running
     }
     var canStartWindows: Bool {
-        storageReady && supportedHost && hypervisorAvailable && windowsReady && firmware != nil && settings.memoryGB >= 4 &&
+        storageReady && storage?.windowsFolderReady == true && windowsCapacityIssue == nil && supportedHost && hypervisorAvailable && windowsReady && firmware != nil && settings.memoryGB >= 4 &&
         (!settings.installWindows || (!settings.iso.isEmpty && (!settings.localWindowsAccount || localAccountIssue == nil))) && !busy && !running
     }
     var canInstallAPK: Bool { running && androidBooted && androidPort != nil && !apkBusy && !busy && adb != nil }
@@ -220,7 +328,8 @@ final class AppModel: ObservableObject {
         guard let storage else { showStorageSetup = true; return }
         do { try storage.validate() } catch { errorMessage = error.localizedDescription; return }
         busy = true
-        defer { busy = false }
+        defer { busy = false; systemCheckLog = log; recordDiagnostic("Systemprüfung", log) }
+        windowsFolderStatus = storage.windowsFolderReady ? "Windows-Ordner vorhanden und beschreibbar." : "Bitte den Windows-Ordner vor dem ersten Start anlegen."
         androidReady = false
         windowsReady = false
         devices = []
@@ -228,6 +337,17 @@ final class AppModel: ObservableObject {
         qemu = RuntimeDiscovery.qemu(preferred: settings.qemu)
         swtpm = RuntimeDiscovery.swtpm(preferred: settings.swtpm)
         qemuImg = qemu.flatMap { RuntimeDiscovery.sibling(executable: $0, name: "qemu-img") }
+        windowsDiskBytes = nil
+        let image = storage.windows.appendingPathComponent("windows.qcow2")
+        if let qemuImg, FileManager.default.fileExists(atPath: image.path) {
+            do {
+                windowsDiskBytes = try await Task.detached { try WindowsDiskImage.info(qemuImg: qemuImg, disk: image) }.value
+                windowsDiskStatus = "Vorhandene Festplatte: \((windowsDiskBytes ?? 0) / 1_073_741_824) GB."
+            } catch { windowsDiskStatus = "Festplattengröße nicht prüfbar: \(error.localizedDescription)" }
+        } else { windowsDiskStatus = "Noch keine Windows-Festplatte angelegt. Sie wird mit der gewählten Größe erstellt." }
+        let saved = UserDefaults.standard.integer(forKey: "OpenGuest.windowsDiskGiB.\(storage.id)")
+        let currentGiB = windowsDiskBytes.map { Int(($0 + 1_073_741_823) / 1_073_741_824) }
+        windowsDiskSize = String(max(saved == 0 ? (currentGiB ?? 80) : saved, currentGiB ?? 0))
         firmware = qemu.flatMap { RuntimeDiscovery.firmware(qemu: $0, preferred: settings.firmware) }
         variablesTemplate = firmware.flatMap { RuntimeDiscovery.variablesTemplate(firmware: $0) }
         androidAcceleration = sdk == nil ? "Android Emulator fehlt" : "Prüfung läuft …"
@@ -317,7 +437,7 @@ final class AppModel: ObservableObject {
     }
 
     private func startWindowsVM() async {
-        guard canStartWindows, let qemu, let firmware, let qemuImg, let swtpm, let variablesTemplate else { return }
+        guard canStartWindows, let capacity = windowsCapacityGiB, let qemu, let firmware, let qemuImg, let swtpm, let variablesTemplate else { return }
         busy = true
         defer { busy = false }
         let session = WindowsSession()
@@ -339,7 +459,8 @@ final class AppModel: ObservableObject {
                 throw GuestError.missingFile(settings.driversISO)
             }
             let files = try await session.prepare(qemuImg: qemuImg, swtpm: swtpm, variablesTemplate: variablesTemplate,
-                                                  selectPro: settings.installWindows && settings.selectPro, localAccount: account)
+                                                  capacityGiB: capacity, selectPro: settings.installWindows && settings.selectPro, localAccount: account)
+            windowsDiskBytes = Int64(capacity) * 1_073_741_824
             let spec = try LaunchPlan.windowsVM(qemu: qemu, firmware: firmware, variables: files.variables, disk: files.disk,
                                                tpmSocket: files.socket, iso: settings.iso, driversISO: settings.driversISO,
                                                proISO: files.proISO, installing: settings.installWindows, resources: resources,
@@ -532,9 +653,12 @@ final class AppModel: ObservableObject {
         try storage.validate()
         let directory = storage.logs
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        let url = directory.appendingPathComponent("session-\(UUID().uuidString).log")
-        guard FileManager.default.createFile(atPath: url.path, contents: nil) else { throw GuestError.missingFile(url.path) }
+        let kind = title.hasPrefix("Android") ? "android" : "windows"
+        let url = directory.appendingPathComponent("\(kind)-session-\(UUID().uuidString).log")
+        let header = DiagnosticReport.redact("OpenGuest · \(title)\nStart: \(ISO8601DateFormatter().string(from: Date()))\n\(spec.display)\n\n")
+        guard FileManager.default.createFile(atPath: url.path, contents: Data(header.utf8), attributes: [.posixPermissions: 0o600]) else { throw GuestError.missingFile(url.path) }
         let handle = try FileHandle(forWritingTo: url)
+        _ = try handle.seekToEnd()
         let child = Process()
         child.executableURL = URL(fileURLWithPath: spec.executable)
         child.arguments = spec.arguments
@@ -555,6 +679,7 @@ final class AppModel: ObservableObject {
         lastCommand = spec.display
         sessionCommand = spec.display
         running = true
+        recordDiagnostic("Gaststart", "\(title) · \(url.lastPathComponent)")
         stopRequested = false
         playerImage = nil
         playerSize = .zero
@@ -575,6 +700,7 @@ final class AppModel: ObservableObject {
     }
 
     private func didExit(code: Int32) async {
+        recordDiagnostic("Gast beendet", "\(sessionName) · Exit-Code \(code) · Beenden angefordert: \(stopRequested)")
         busy = true
         defer { busy = false }
         bootTask?.cancel()

@@ -17,7 +17,7 @@ app_path="$project_dir/dist/OpenGuest.app"
 mkdir -p "$app_path/Contents/MacOS" "$app_path/Contents/Resources"
 cp "$binary_dir/OpenGuest" "$app_path/Contents/MacOS/OpenGuest"
 cp "$project_dir/Packaging/Info.plist" "$app_path/Contents/Info.plist"
-cp "$project_dir/LICENSE" "$project_dir/THIRD_PARTY_NOTICES.md" "$app_path/Contents/Resources/"
+cp "$project_dir/LICENSE" "$project_dir/THIRD_PARTY_NOTICES.md" "$project_dir/SIGNIERUNG.md" "$app_path/Contents/Resources/"
 cp "$project_dir/Android_Werkzeuge_einrichten.command" "$project_dir/Android_einrichten.command" "$project_dir/Android_Streaming_einrichten.command" "$project_dir/Windows_Treiber_einrichten.command" "$app_path/Contents/Resources/"
 cp "$project_dir/LIES_MICH_ZUERST.md" "$app_path/Contents/Resources/"
 # Local development signature only. It is not Developer ID signing or notarization.
