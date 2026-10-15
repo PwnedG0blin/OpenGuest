@@ -72,6 +72,24 @@ final class CoreTests: XCTestCase {
         XCTAssertFalse(RuntimeDiscovery.hasDevice("tpm-tis-device", in: ""))
     }
 
+    func testWindowsDownloadOnlyAcceptsDirectMicrosoftHTTPSLinks() throws {
+        let link = "https://software.download.prss.microsoft.com/dbazure/Windows11_arm64.iso?t=temporary"
+        XCTAssertEqual(try SetupDownloads.windowsISOURL(link).absoluteString, link)
+        for bad in ["file:///tmp/Windows.iso", "http://download.microsoft.com/a.iso",
+                    "https://microsoft.com.evil.example/a.iso", "https://evil.example/a.iso",
+                    "https://download.microsoft.com/page.html", "https://user:pass@download.microsoft.com/a.iso",
+                    "https://download.microsoft.com:444/a.iso"] {
+            XCTAssertThrowsError(try SetupDownloads.windowsISOURL(bad), bad)
+        }
+    }
+
+    func testLicenseButtonsOnlyAppearForAnUnansweredPromptAtEndOfOutput() {
+        XCTAssertTrue(SetupDownloads.isLicensePrompt("License text\nAccept? (y/N): "))
+        XCTAssertTrue(SetupDownloads.isLicensePrompt("Review licenses that have not been accepted (y/N)? "))
+        XCTAssertFalse(SetupDownloads.isLicensePrompt("Accept? (y/N): y\nInstalling emulator 40%"))
+        XCTAssertFalse(SetupDownloads.isLicensePrompt("Download complete"))
+    }
+
     func testProAnswerFileKeepsNormalSetup() throws {
         let xml = try WindowsEdition.setupXML(selectPro: true, localAccount: nil)
         XCTAssertTrue(XMLParser(data: Data(xml.utf8)).parse())

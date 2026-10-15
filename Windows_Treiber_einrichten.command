@@ -8,6 +8,13 @@ if [[ ! -f "$root/.openguest-storage-id" ]] || [[ "$(cat "$root/.openguest-stora
     echo "SSD / gewählter Datenordner fehlt. Kein interner Ersatzdownload."; exit 1
 fi
 mkdir -p "$root/Installationsmedien"
+if [[ -f "$root/Installationsmedien/utm-guest-tools.iso" ]]; then
+    magic="$(dd if="$root/Installationsmedien/utm-guest-tools.iso" bs=1 skip=32769 count=5 2>/dev/null)"
+    if [[ "$magic" == CD001 || "$magic" == BEA01 || "$magic" == NSR02 || "$magic" == NSR03 ]]; then
+        echo "Vorhandene Treiber-ISO wird wiederverwendet. Kein erneuter Download."; exit 0
+    fi
+    echo "Vorhandene Treiber-ISO ist ungültig. Sie wird nicht überschrieben."; exit 1
+fi
 work="$(mktemp -d "$root/Installationsmedien/download.XXXXXXXX")"
 trap 'rm -rf -- "$work"' EXIT
 printf '%s\n' 'Lade offizielle UTM Windows Guest Tools (einschließlich ARM64-Treiber).'

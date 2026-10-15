@@ -22,6 +22,11 @@ if [[ ! -x "$sdk_manager" || ! -x "$avd_manager" ]]; then
 fi
 if [[ -d "/Applications/Android Studio.app/Contents/jbr/Contents/Home" ]]; then
     export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+else
+    shopt -s nullglob
+    for java in "$storage_root"/Runtime/Java/*/Contents/Home/bin/java; do
+        if [[ -x "$java" ]]; then export JAVA_HOME="${java%/bin/java}"; break; fi
+    done
 fi
 export ANDROID_HOME="$sdk_path"
 export ANDROID_SDK_ROOT="$sdk_path"

@@ -1,3 +1,15 @@
+# Neu in 0.3.1: Downloads direkt im Programm
+
+Unter Einrichtung die gewünschten Komponenten auswählen und „Auswahl laden und einrichten“ starten. Ziel ist ausschließlich der eingerichtete OpenGuest-Datenordner. Android SDK-Werkzeuge, Java falls nötig, Emulator, Android-15-Google-Play-ARM64-Systemabbild, Streaming-Modul und Windows-Treiber-ISO werden dort heruntergeladen und eingerichtet. Entpackdateien und Java-Temporärdateien liegen ebenfalls dort. Die App verweigert den Download bei fehlendem Datenträger oder zu wenig freiem Platz. Vorhandene Komponenten werden wiederverwendet; eigene ISO-Dateien werden bei Bedarf kopiert und byteweise geprüft, ihre Originale bleiben erhalten.
+
+Google-SDK-Bedingungen vor dem Download der Werkzeuge lesen und bestätigen. Weitere Android-SDK-Lizenzen erscheinen im integrierten Protokoll und werden mit den dort eingeblendeten Schaltflächen beantwortet. Kein Terminal nötig. SDK-Tools und Java werden gegen offizielle SHA-256-Prüfwerte geprüft; scrcpy gegen den Digest des offiziellen Releases. Downloads laufen über HTTPS. Windows- und Treiber-ISOs werden zusätzlich auf ein ISO-Format geprüft; eine solche Formatprüfung ist kein Echtheits- oder Architekturbeweis.
+
+Windows-ISO: Vorhandene ARM64-ISO im Windows-Bereich auswählen oder auf der verlinkten Microsoft-Seite Sprache und ARM64-Download wählen, den direkten Downloadlink kopieren und in die App einfügen. OpenGuest lädt direkt auf den gewählten Datenträger und übernimmt den Pfad. Der Microsoft-Link ist zeitlich befristet. Windows-Lizenz und Ersteinrichtung bleiben erforderlich.
+
+QEMU und swtpm werden weiterhin aus einer vorhandenen Mac-Installation verwendet; ihr automatischer Download/ihre Installation sind noch nicht implementiert. Die Einrichtungsseite zeigt Status, Quellenlinks und Auswahlschaltflächen. Eine geeignete Secure-Boot-fähige ARM64-Firmware muss weiterhin vorhanden sein. Android Studio ist für den neuen SDK-Download nicht mehr nötig; sein vorhandenes Java wird wiederverwendet. Python 3 aus den Xcode Command Line Tools wird für die Prüfung der scrcpy-/Java-Release-Metadaten benötigt. Kleine App-Einstellungen und Betriebssystemdateien können weiterhin intern liegen.
+
+Offizielle Quellen: https://developer.android.com/studio ; https://developer.android.com/tools/sdkmanager ; https://adoptium.net/temurin/releases/ ; https://github.com/Genymobile/scrcpy ; https://docs.getutm.app/guest-support/windows/ ; https://www.microsoft.com/de-de/software-download/windows11arm64
+
 # Neu in 0.3.0
 
 Android und Windows öffnen beim Start jeweils ein eigenes Playerfenster. Du kannst es frei vergrößern, verkleinern und als Vollbild anzeigen; das Bild und die Eingabekoordinaten passen sich mit erhaltenem Seitenverhältnis an. „Player öffnen“ zeigt ein geschlossenes Fenster erneut. Das Schließen eines Playerfensters lässt den Gast weiterlaufen; zum Ausschalten „Herunterfahren“ verwenden. Beide Player bleiben getrennte Bereiche; weiterhin kann ein Gastsystem gleichzeitig laufen. Die Fenstergröße ändert die Darstellung, nicht automatisch die Auflösung im Gastsystem.

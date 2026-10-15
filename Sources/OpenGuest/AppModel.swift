@@ -53,7 +53,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var apkBusy = false
     @Published private(set) var apkStatus = ""
     @Published private(set) var sessionName = "Kein Gast gestartet"
-    @Published private(set) var log = "OpenGuest 0.3.0 · Entwicklungsprototyp\nSystem prüfen, dann einen Gast auswählen."
+    @Published private(set) var log = "OpenGuest 0.3.1 · Entwicklungsprototyp\nSystem prüfen, dann einen Gast auswählen."
     @Published private(set) var lastCommand = ""
     @Published var errorMessage: String?
     @Published private(set) var storage = GuestStorage.load()
@@ -76,10 +76,51 @@ final class AppModel: ObservableObject {
     @Published private(set) var streamFPS = 0.0
     @Published private(set) var googleServicesStatus = "Google-Dienste werden nach dem Android-Start geprüft."
     let h264Player = H264Player()
+    let installer = SetupInstaller()
     private let playerWindows = GuestPlayerWindows()
 
     func showPlayer(kind: String) { playerWindows.show(kind: kind, model: self) }
     func togglePlayerFullScreen(kind: String) { playerWindows.toggleFullScreen(kind: kind) }
+
+    var setupReady: Set<SetupComponent> {
+        guard let storage, storageReady else { return [] }
+        let fm = FileManager.default
+        func externalFile(_ path: String) -> Bool {
+            let resolved = URL(fileURLWithPath: path).resolvingSymlinksInPath().path
+            let root = storage.url.resolvingSymlinksInPath().path
+            return !path.isEmpty && resolved.hasPrefix(root + "/") && fm.isReadableFile(atPath: path)
+        }
+        var ready: Set<SetupComponent> = []
+        if fm.isExecutableFile(atPath: storage.sdk.appendingPathComponent("emulator/emulator").path),
+           fm.isExecutableFile(atPath: storage.sdk.appendingPathComponent("platform-tools/adb").path),
+           fm.isReadableFile(atPath: storage.sdk.appendingPathComponent("system-images/android-35/google_apis_playstore/arm64-v8a/system.img").path),
+           fm.isReadableFile(atPath: storage.avd.appendingPathComponent("OpenGuest_GooglePlay.avd/config.ini").path) {
+            ready.insert(.android)
+        }
+        if ScrcpySession.installed { ready.insert(.streaming) }
+        if externalFile(settings.iso) { ready.insert(.windowsISO) }
+        if externalFile(settings.driversISO) { ready.insert(.windowsDrivers) }
+        return ready
+    }
+
+    func installComponents(_ selection: Set<SetupComponent>, microsoftLink: String) async {
+        guard !busy, !running, let storage, !selection.isEmpty else { return }
+        busy = true
+        do {
+            let result = try await installer.install(selection, storage: storage, existingISO: settings.iso,
+                existingDrivers: settings.driversISO, microsoftLink: microsoftLink, ready: setupReady)
+            if let iso = result.iso { settings.iso = iso }
+            if let drivers = result.drivers { settings.driversISO = drivers }
+            if selection.contains(.android) { settings.selectedAVD = "OpenGuest_GooglePlay" }
+            // Pick up a driver ISO left by a previous interrupted setup as well.
+            let drivers = storage.url.appendingPathComponent("Installationsmedien/utm-guest-tools.iso")
+            if settings.driversISO.isEmpty, (try? SetupInstaller.validateISO(drivers)) != nil {
+                settings.driversISO = drivers.path
+            }
+        } catch { errorMessage = error.localizedDescription }
+        busy = false
+        await refresh()
+    }
 
     private var process: Process?
     private var output: FileHandle?

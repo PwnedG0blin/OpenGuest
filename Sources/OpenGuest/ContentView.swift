@@ -66,7 +66,7 @@ struct ContentView: View {
                 Image(systemName: "square.stack.3d.up.fill").font(.title).foregroundStyle(.teal)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("OpenGuest").font(.headline)
-                    Text("DEVELOPMENT 0.3.0").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
+                    Text("DEVELOPMENT 0.3.1").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
                 }
             }
             ForEach(WorkspaceTab.allCases) { tab in
@@ -266,22 +266,16 @@ struct ContentView: View {
     private var setup: some View {
         VStack(alignment: .leading, spacing: 18) {
             storageCard
+            SetupDownloadsView(model: model, installer: model.installer)
             card {
                 VStack(alignment: .leading, spacing: 18) {
                     Text("Lokale Engines").font(.title2.bold())
-                    Text("OpenGuest lädt keine Engines oder Betriebssysteme selbst herunter. Installiere Android Studio beziehungsweise QEMU separat.")
+                    Text("Vorhandene Engines und eigene Firmware auswählen. Downloads und Lizenzen werden oben direkt in OpenGuest verwaltet.")
                         .foregroundStyle(.secondary)
-                    HStack {
-                        Button("Android vorbereiten …") { model.openSetupScript("Android_einrichten.command") }
-                        Button("Videostream einrichten …") { model.openSetupScript("Android_Streaming_einrichten.command") }
-                        Button("Windows-Treiber laden …") { model.openSetupScript("Windows_Treiber_einrichten.command") }
-                    }
-                    Text("Die Einrichtung öffnet Terminal für Downloads und Lizenzbestätigungen. Android Studio mit SDK Command-line Tools muss bereits installiert sein. Danach „System prüfen“ wählen.")
-                        .font(.caption).foregroundStyle(.secondary)
                     VStack(alignment: .leading, spacing: 5) {
                         Text("Android SDK").font(.subheadline.bold())
                         Text(model.sdk ?? model.storage?.sdk.path ?? "Zuerst Speicherort wählen").font(.system(size: 11, design: .monospaced)).textSelection(.enabled)
-                        Text(model.sdk == nil ? "Android Studio installiert die SDK über den umgeleiteten Standardpfad auf dem gewählten Laufwerk. SDK Tools: Command-line Tools, Platform-Tools und Emulator installieren." : "SDK gefunden").font(.caption).foregroundStyle(.secondary)
+                        Text(model.sdk == nil ? "Die Download-Auswahl richtet Android-Werkzeuge und Emulator im gewählten Datenordner ein." : "SDK gefunden").font(.caption).foregroundStyle(.secondary)
                     }
                     fileRow(title: "qemu-system-aarch64", value: model.qemu ?? "Nicht gefunden") {
                         if let path = model.chooseFile(title: "qemu-system-aarch64 auswählen") { model.settings.qemu = path; Task { await model.refresh() } }
