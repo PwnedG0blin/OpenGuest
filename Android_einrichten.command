@@ -4,7 +4,7 @@ if [[ "$(uname -s)" != "Darwin" || "$(uname -m)" != "arm64" ]]; then
     echo "Dieses Skript benötigt einen Apple-Silicon-Mac." >&2; exit 1
 fi
 storage_config="$HOME/Library/Application Support/OpenGuest/storage.json"
-if [[ ! -f "$storage_config" ]]; then echo "Bitte zuerst in OpenGuest einen Datenordner wählen."; exit 1; fi
+if [[ ! -f "$storage_config" ]]; then echo "Bitte zuerst in Pixelkoje einen Datenordner wählen."; exit 1; fi
 storage_root="$(/usr/bin/plutil -extract root raw -o - "$storage_config")"
 storage_id="$(/usr/bin/plutil -extract id raw -o - "$storage_config")"
 if [[ ! -f "$storage_root/.openguest-storage-id" ]] || [[ "$(cat "$storage_root/.openguest-storage-id")" != "$storage_id" ]]; then

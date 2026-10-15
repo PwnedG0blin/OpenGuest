@@ -14,7 +14,7 @@ if [[ "$identity" != 'Developer ID Application: '* || -z "$profile" ]]; then
 fi
 cd "$project_dir"
 bash scripts/build-app.sh
-app="$project_dir/dist/OpenGuest.app"
+app="$project_dir/dist/Pixelkoje.app"
 /usr/bin/codesign --force --sign "$identity" --options runtime --timestamp "$app"
 /usr/bin/codesign --verify --strict --verbose=2 "$app"
 version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Contents/Info.plist")"
@@ -27,10 +27,10 @@ trap 'rm -rf -- "$work"' EXIT
 /usr/bin/xcrun stapler validate "$app"
 /usr/sbin/spctl --assess --type execute --verbose=2 "$app"
 mkdir "$work/installer"
-/usr/bin/ditto "$app" "$work/installer/OpenGuest.app"
+/usr/bin/ditto "$app" "$work/installer/Pixelkoje.app"
 ln -s /Applications "$work/installer/Applications"
-image="$project_dir/dist/OpenGuest_${version}_AppleSilicon_notarisiert.dmg"
-/usr/bin/hdiutil create -volname OpenGuest -srcfolder "$work/installer" -ov -format UDZO "$image"
+image="$project_dir/dist/Pixelkoje_${version}_AppleSilicon_notarisiert.dmg"
+/usr/bin/hdiutil create -volname Pixelkoje -srcfolder "$work/installer" -ov -format UDZO "$image"
 /usr/bin/codesign --sign "$identity" --timestamp "$image"
 /usr/bin/xcrun notarytool submit "$image" --keychain-profile "$profile" --wait
 /usr/bin/xcrun stapler staple "$image"

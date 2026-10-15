@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Initialize a real TPM without touching user VM disks or booting a guest OS."""
 import json
-import os
 from pathlib import Path
 import platform
 import shutil
@@ -17,6 +16,7 @@ def engine_run(qemu, accelerator, extra=()):
     ]
     if extra:
         commands.append({"execute": "query-tpm", "id": "tpm"})
+        commands.append({"execute": "query-block", "id": "blocks"})
     commands.append({"execute": "quit", "id": "quit"})
     cpu = "host" if accelerator == "hvf" else "cortex-a72"
     result = subprocess.run(
@@ -42,6 +42,9 @@ def engine_run(qemu, accelerator, extra=()):
         tpms = responses["tpm"]["return"]
         if not any(tpm.get("id") == "tpm0" for tpm in tpms):
             raise RuntimeError(f"TPM was not realized: {tpms}")
+        optical = [item for item in responses["blocks"]["return"] if "installer-cd" in item.get("qdev", "")]
+        if len(optical) != 1 or not optical[0].get("removable") or not optical[0].get("inserted", {}).get("ro"):
+            raise RuntimeError(f"Installer must be an inserted read-only CD/DVD: {optical}")
 
 
 def check_tpm(qemu, swtpm, accelerator):
@@ -51,6 +54,8 @@ def check_tpm(qemu, swtpm, accelerator):
         state = root / "state"
         state.mkdir(mode=0o700)
         socket = root / "tpm.sock"
+        iso = root / "test.iso"
+        iso.write_bytes(bytes(1024 * 1024))  # Fixture medium only, not a bootable OS.
         with (root / "swtpm.log").open("w+") as log:
             process = subprocess.Popen(
                 [swtpm, "socket", "--tpm2", "--tpmstate", f"dir={state}",
@@ -69,6 +74,11 @@ def check_tpm(qemu, swtpm, accelerator):
                     "-chardev", f"socket,id=chrtpm,path={socket}",
                     "-tpmdev", "emulator,id=tpm0,chardev=chrtpm",
                     "-device", "tpm-tis-device,tpmdev=tpm0,ppi=off",
+                    "-device", "qemu-xhci,id=usb",
+                    "-blockdev", json.dumps({"driver": "raw", "node-name": "installer", "read-only": True,
+                        "file": {"driver": "file", "filename": str(iso)}}),
+                    "-device", "usb-bot,id=installer-usb,bus=usb.0",
+                    "-device", "scsi-cd,id=installer-cd,drive=installer,bus=installer-usb.0,scsi-id=0,lun=0,bootindex=1",
                 ])
             finally:
                 if process.poll() is None:
@@ -78,7 +88,7 @@ def check_tpm(qemu, swtpm, accelerator):
                 except subprocess.TimeoutExpired:
                     process.kill()
                     process.wait()
-    print(f"PASS: {accelerator} initialized a real TPM with ppi=off; QMP confirmed tpm0.")
+    print(f"PASS: {accelerator} initialized a real TPM with ppi=off; QMP confirmed tpm0 and an inserted read-only CD/DVD.")
 
 
 def main():

@@ -1,6 +1,6 @@
 # External components
 
-OpenGuest's own source is MIT licensed. Engines and operating systems are installed separately and are not relicensed by OpenGuest.
+Pixelkoje's own source is MIT licensed. Engines and operating systems are installed separately and are not relicensed by Pixelkoje.
 
 | Component | Role | Upstream / terms |
 | --- | --- | --- |
@@ -18,7 +18,7 @@ If redistributing dependency binaries later, include their full applicable licen
 
 Product names are references to compatibility and architecture, not endorsements or affiliations.
 
-Using a Google Play SDK image does not certify OpenGuest as a Google-approved consumer emulator or grant a general GMS redistribution license. Review SDK/GMS terms before a public consumer release. The current route is a user-installed development AVD.
+Using a Google Play SDK image does not certify Pixelkoje as a Google-approved consumer emulator or grant a general GMS redistribution license. Review SDK/GMS terms before a public consumer release. The current route is a user-installed development AVD.
 
 
 ## UTM Windows Guest Tools (optional download)

@@ -32,7 +32,7 @@ final class WindowsSession {
         guard fd >= 0 else { throw failure("Die Windows-VM konnte nicht gesperrt werden.") }
         guard flock(fd, LOCK_EX | LOCK_NB) == 0 else {
             close(fd)
-            throw failure("Diese Windows-VM wird bereits von einer anderen OpenGuest-Instanz verwendet.")
+            throw failure("Diese Windows-VM wird bereits von einer anderen Pixelkoje-Instanz verwendet.")
         }
         lockFD = fd
 

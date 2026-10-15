@@ -105,7 +105,7 @@ public enum LaunchPlan {
         try resources.validate(windows: true)
         guard displaySocket.hasPrefix("/tmp/og-"), !displaySocket.contains(","), !displaySocket.contains("\n") else { throw GuestError.invalidResources }
         guard qmpSocket.hasPrefix("/tmp/og-"), !qmpSocket.contains(","), !qmpSocket.contains("\n") else { throw GuestError.invalidResources }
-        var args = ["-name", "OpenGuest — Windows 11 Pro Arm64", "-nodefaults",
+        var args = ["-name", "Pixelkoje — Windows 11 Pro Arm64", "-nodefaults",
                     "-machine", "virt,pflash0=uefi-code,pflash1=uefi-vars", "-accel", "hvf", "-cpu", "host",
                     "-smp", String(resources.cores), "-m", String(resources.memoryMiB),
                     "-blockdev", try block("uefi-code", driver: "raw", path: firmware, readOnly: true),
@@ -126,15 +126,18 @@ public enum LaunchPlan {
         else { args += ["-nic", "none"] }
         if installing, let iso, !iso.isEmpty {
             args += ["-blockdev", try block("installer", driver: "raw", path: iso, readOnly: true),
-                     "-device", "usb-storage,drive=installer,bus=usb.0,bootindex=1"]
+                     "-device", "usb-bot,id=installer-usb,bus=usb.0",
+                     "-device", "scsi-cd,id=installer-cd,drive=installer,bus=installer-usb.0,scsi-id=0,lun=0,bootindex=1"]
         }
         if let driversISO, !driversISO.isEmpty {
             args += ["-blockdev", try block("drivers", driver: "raw", path: driversISO, readOnly: true),
-                     "-device", "usb-storage,drive=drivers,bus=usb.0"]
+                     "-device", "usb-bot,id=drivers-usb,bus=usb.0",
+                     "-device", "scsi-cd,id=drivers-cd,drive=drivers,bus=drivers-usb.0,scsi-id=0,lun=0"]
         }
         if installing, let proISO {
             args += ["-blockdev", try block("edition", driver: "raw", path: proISO, readOnly: true),
-                     "-device", "usb-storage,drive=edition,bus=usb.0"]
+                     "-device", "usb-bot,id=edition-usb,bus=usb.0",
+                     "-device", "scsi-cd,id=edition-cd,drive=edition,bus=edition-usb.0,scsi-id=0,lun=0"]
         }
         return CommandSpec(executable: qemu, arguments: args)
     }

@@ -112,7 +112,7 @@ public enum StorageMigration {
         let fm = FileManager.default
         let root = root.standardizedFileURL
         guard root.path != "/", root.path != home.path, !root.path.hasPrefix(support.path + "/"), root.path != support.path else {
-            throw failure("Bitte einen eigenen OpenGuest-Datenordner außerhalb der bisherigen Daten auswählen.")
+            throw failure("Bitte einen eigenen Pixelkoje-Datenordner außerhalb der bisherigen Daten auswählen.")
         }
         // Reject overlapping locations and symlink parents before creating anything.
         let media = Array(Set(mediaSources)).sorted()

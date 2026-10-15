@@ -38,7 +38,7 @@ struct SetupDownloadsView: View {
                 Link("Offizielle Microsoft-Seite · ARM64 wählen ↗", destination: URL(string: "https://www.microsoft.com/de-de/software-download/windows11arm64")!)
                 TextField("Direkten Microsoft-Downloadlink der ARM64-ISO einfügen", text: $microsoftLink)
                     .textFieldStyle(.roundedBorder).disabled(model.busy)
-                Text("Auf der Microsoft-Seite die Sprache wählen und den erzeugten Downloadlink kopieren. OpenGuest lädt ihn direkt auf den eingestellten Datenträger. Alternativ eine vorhandene ISO im Windows-Bereich auswählen.")
+                Text("Auf der Microsoft-Seite die Sprache wählen und den erzeugten Downloadlink kopieren. Pixelkoje lädt ihn direkt auf den eingestellten Datenträger. Alternativ eine vorhandene ISO im Windows-Bereich auswählen.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Button {

@@ -52,7 +52,7 @@ public enum DiagnosticReport {
         guard destination.resolvingSymlinksInPath().path.hasPrefix(root) else {
             throw StorageMigration.failure("Diagnoseziel liegt außerhalb des gewählten Datenordners.")
         }
-        var report = "OpenGuest · Gemeinsames Diagnoseprotokoll Android + Windows\n"
+        var report = "Pixelkoje · Gemeinsames Diagnoseprotokoll Android + Windows\n"
         report += "Erstellt: \(ISO8601DateFormatter().string(from: Date()))\n"
         report += "Keine Einstellungen, Antwortdateien, Schlüsselbunddaten oder Gastdateisysteme enthalten. Protokolle sind gekürzt und bekannte sensible Angaben ausgeblendet.\n"
         func section(_ title: String, _ content: String) {
@@ -99,7 +99,7 @@ public enum DiagnosticReport {
         try storage.validate()
         try fm.createDirectory(at: destination, withIntermediateDirectories: true)
         let stamp = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
-        let file = destination.appendingPathComponent("OpenGuest-Diagnose-\(stamp)-\(UUID().uuidString.prefix(8)).log")
+        let file = destination.appendingPathComponent("Pixelkoje-Diagnose-\(stamp)-\(UUID().uuidString.prefix(8)).log")
         try Data(redact(report).utf8).write(to: file, options: .atomic)
         try fm.setAttributes([.posixPermissions: 0o600], ofItemAtPath: file.path)
         return file

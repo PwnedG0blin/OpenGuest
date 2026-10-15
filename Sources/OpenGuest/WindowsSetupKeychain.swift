@@ -16,16 +16,20 @@ enum WindowsSetupKeychain {
         let base = query(storageID: storageID)
         let data = try JSONEncoder().encode(credential)
         let values: [String: Any] = [kSecValueData as String: data,
-            kSecAttrLabel as String: "OpenGuest · Windows-Einrichtung"]
+            kSecAttrLabel as String: "Pixelkoje · Windows-Einrichtung"]
         var result = SecItemUpdate(base as CFDictionary, values as CFDictionary)
         if result == errSecItemNotFound {
             result = SecItemAdd(base.merging(values) { _, new in new } as CFDictionary, nil)
         }
         guard result == errSecSuccess else { throw failure(result) }
+        // Report success only after the exact stored value can be read back.
+        guard let stored = try load(storageID: storageID), stored.name == credential.name,
+              stored.password == credential.password else { throw failure(errSecDecode) }
     }
-    static func load(storageID: String) throws -> Credential? {
+    static func load(storageID: String, allowInteraction: Bool = true) throws -> Credential? {
         var request = query(storageID: storageID)
         request[kSecReturnData as String] = true
+        if !allowInteraction { request[kSecUseAuthenticationUI as String] = kSecUseAuthenticationUIFail }
         request[kSecMatchLimit as String] = kSecMatchLimitOne
         var result: CFTypeRef?
         let status = SecItemCopyMatching(request as CFDictionary, &result)
@@ -35,7 +39,14 @@ enum WindowsSetupKeychain {
         return try JSONDecoder().decode(Credential.self, from: data)
     }
     private static func failure(_ status: OSStatus) -> NSError {
-        NSError(domain: NSOSStatusErrorDomain, code: Int(status), userInfo: [NSLocalizedDescriptionKey:
-            "Schlüsselbund: \(SecCopyErrorMessageString(status, nil) as String? ?? "Zugriff fehlgeschlagen")"])
+        let message: String
+        if status == errSecUserCanceled || status == errSecAuthFailed {
+            message = "Der macOS-Schlüsselbundzugriff wurde nicht freigegeben. Beim Laden das Kennwort deines Mac-Anmeldeschlüsselbunds verwenden (normalerweise dein Mac-Anmeldekennwort) und den Zugriff erlauben. Deine bisherigen Eingaben bleiben erhalten."
+        } else if status == errSecInteractionNotAllowed {
+            message = "Gespeicherte Kontodaten benötigen eine macOS-Freigabe. Bitte „Aus Schlüsselbund laden“ wählen."
+        } else {
+            message = "Schlüsselbund: \(SecCopyErrorMessageString(status, nil) as String? ?? "Zugriff fehlgeschlagen")"
+        }
+        return NSError(domain: NSOSStatusErrorDomain, code: Int(status), userInfo: [NSLocalizedDescriptionKey: message])
     }
 }

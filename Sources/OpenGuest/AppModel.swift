@@ -96,7 +96,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var apkBusy = false
     @Published private(set) var apkStatus = ""
     @Published private(set) var sessionName = "Kein Gast gestartet"
-    @Published private(set) var log = "OpenGuest 0.3.6 · Entwicklungsprototyp\nSystem prüfen, dann einen Gast auswählen."
+    @Published private(set) var log = "Pixelkoje 0.3.7 · Entwicklungsprototyp\nSystem prüfen, dann einen Gast auswählen."
     @Published private(set) var lastCommand = ""
     @Published var errorMessage: String? {
         didSet {
@@ -133,6 +133,7 @@ final class AppModel: ObservableObject {
         Grafik gewählt: \(settings.gpu) · RAM: \(settings.memoryGB) GB · CPU: \(settings.cores)
         Player: \(playerStatus) · Video-Frames/s: \(Int(streamFPS.rounded()))
         Windows: \(windowsAcceleration)
+        Windows-Player-Bilder: \(windowsFrameCount)
         Windows-Ordner: \(windowsFolderStatus)
         Gewünschte Windows-Festplatte: \(windowsDiskSize) GB · Geprüfte Größe in Bytes: \(windowsDiskBytes.map { String($0) } ?? "Noch nicht ermittelt")
         Festplattenstatus: \(windowsDiskStatus)
@@ -140,6 +141,7 @@ final class AppModel: ObservableObject {
         Benutzername-Länge: \(settings.localWindowsUser.count)
         Kennwortlänge: \(localPassword.count) · Wiederholungslänge: \(localPasswordConfirmation.count) · Übereinstimmung: \(localPassword == localPasswordConfirmation)
         Kontoprüfung (nur Eingabefelder): \(localAccountIssue ?? "Gültig")
+        Kennwort merken: \(rememberWindowsCredential)
         Schlüsselbund-Status: \(credentialStatus)
         SDK: \(sdk ?? "Fehlt")
         QEMU: \(qemu ?? "Fehlt")
@@ -172,7 +174,36 @@ final class AppModel: ObservableObject {
     }
     @Published var localPassword = ""
     @Published var localPasswordConfirmation = ""
-    @Published private(set) var credentialStatus = "Noch keine Kontodaten im Schlüsselbund gespeichert."
+    @Published var rememberWindowsCredential = UserDefaults.standard.object(forKey: "Pixelkoje.rememberWindowsCredential") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(rememberWindowsCredential, forKey: "Pixelkoje.rememberWindowsCredential") }
+    }
+    @Published private(set) var credentialStatus = "Schlüsselbund noch nicht geprüft. Vorhandene Kontodaten können geladen werden."
+    private func persistWindowsCredential(_ account: WindowsEdition.LocalAccount, storage: GuestStorage) async throws {
+        let credential = WindowsSetupKeychain.Credential(name: account.name, password: account.password)
+        do {
+            try await Task.detached { try WindowsSetupKeychain.save(credential, storageID: storage.id) }.value
+            credentialStatus = "Benutzername und Kennwort im macOS-Schlüsselbund gespeichert und durch erneutes Lesen geprüft."
+            recordDiagnostic("Windows · Schlüsselbund", "Speichern und Leseprüfung erfolgreich")
+        } catch {
+            credentialStatus = error.localizedDescription
+            throw error
+        }
+    }
+    private func restoreWindowsCredentialSilently() async {
+        guard rememberWindowsCredential, localPassword.isEmpty, localPasswordConfirmation.isEmpty,
+              let storage, storageReady else { return }
+        do {
+            if let credential = try await Task.detached(operation: {
+                try WindowsSetupKeychain.load(storageID: storage.id, allowInteraction: false)
+            }).value {
+                settings.localWindowsUser = credential.name
+                localPassword = credential.password
+                localPasswordConfirmation = credential.password
+                credentialStatus = "Benutzername und Kennwort aus dem macOS-Schlüsselbund wiederhergestellt."
+            } else { credentialStatus = "Für diesen Datenordner sind noch keine Kontodaten im Schlüsselbund gespeichert." }
+        } catch { credentialStatus = error.localizedDescription }
+        recordDiagnostic("Windows · Schlüsselbund", credentialStatus)
+    }
     var localAccountIssue: String? {
         do {
             _ = try WindowsEdition.validateSetupAccount(name: settings.localWindowsUser, password: localPassword,
@@ -188,10 +219,7 @@ final class AppModel: ObservableObject {
                 password: localPassword, confirmation: localPasswordConfirmation)
             busy = true
             defer { busy = false }
-            let credential = WindowsSetupKeychain.Credential(name: account.name, password: account.password)
-            try await Task.detached { try WindowsSetupKeychain.save(credential, storageID: storage.id) }.value
-            credentialStatus = "Kontodaten im macOS-Schlüsselbund gespeichert. Das Windows-Konto wird erst während der Installation angelegt."
-            recordDiagnostic("Windows · Schlüsselbund", "Speichern erfolgreich")
+            try await persistWindowsCredential(account, storage: storage)
         } catch { errorMessage = error.localizedDescription }
     }
     func loadWindowsCredential() async {
@@ -207,13 +235,14 @@ final class AppModel: ObservableObject {
                 credentialStatus = "Kontodaten aus dem macOS-Schlüsselbund geladen."
             } else { credentialStatus = "Für diesen Datenordner sind noch keine Kontodaten gespeichert." }
             recordDiagnostic("Windows · Schlüsselbund", credentialStatus)
-        } catch { errorMessage = error.localizedDescription }
+        } catch { credentialStatus = error.localizedDescription; errorMessage = error.localizedDescription }
     }
     @Published private(set) var playerImage: NSImage?
     @Published private(set) var playerSize = CGSize.zero
     @Published private(set) var playerStatus = "Player noch nicht gestartet"
     @Published private(set) var activeGuest = ""
     @Published private(set) var streamFPS = 0.0
+    @Published private(set) var windowsFrameCount = 0
     @Published private(set) var googleServicesStatus = "Google-Dienste werden nach dem Android-Start geprüft."
     let h264Player = H264Player()
     let installer = SetupInstaller()
@@ -320,7 +349,7 @@ final class AppModel: ObservableObject {
         guard storage != nil else { showStorageSetup = true; return }
         updateBackupPaths()
         await refresh()
-        // Launching OpenGuest only prepares the main window. Guests always start on an explicit click.
+        // Launching Pixelkoje only prepares the main window. Guests always start on an explicit click.
     }
 
     func refresh() async {
@@ -407,6 +436,7 @@ final class AppModel: ObservableObject {
                 log += "\n\(error.localizedDescription)\n"
             }
         }
+        await restoreWindowsCredentialSilently()
     }
 
     private static func capture(_ spec: CommandSpec, timeout: TimeInterval = 12) async throws -> CommandResult {
@@ -458,6 +488,9 @@ final class AppModel: ObservableObject {
             if !settings.driversISO.isEmpty, !FileManager.default.isReadableFile(atPath: settings.driversISO) {
                 throw GuestError.missingFile(settings.driversISO)
             }
+            if rememberWindowsCredential, let account, let storage {
+                try await persistWindowsCredential(account, storage: storage)
+            }
             let files = try await session.prepare(qemuImg: qemuImg, swtpm: swtpm, variablesTemplate: variablesTemplate,
                                                   capacityGiB: capacity, selectPro: settings.installWindows && settings.selectPro, localAccount: account)
             windowsDiskBytes = Int64(capacity) * 1_073_741_824
@@ -467,7 +500,6 @@ final class AppModel: ObservableObject {
                                                displaySocket: files.displaySocket, network: settings.windowsNetwork, qmpSocket: files.qmpSocket)
             windowsSession = session
             try start(spec, title: "Windows 11 Pro Arm64")
-            localPassword = ""; localPasswordConfirmation = ""
             activeGuest = "windows"
             showPlayer(kind: "windows")
             qmpSocket = files.qmpSocket
@@ -524,17 +556,31 @@ final class AppModel: ObservableObject {
 
     private func connectWindowsPlayer(socket: String) {
         playerStatus = "Windows-Player verbindet …"
+        windowsFrameCount = 0
         displayTask = Task { [weak self] in
             for _ in 0..<50 {
                 guard let self, self.running, !Task.isCancelled else { return }
                 let client = RFBClient()
                 self.windowsPlayer = client
-                client.onFrame = { [weak self] image in self?.playerImage = image; self?.playerSize = image.size }
-                client.onStatus = { [weak self] text in self?.playerStatus = text }
+                client.onFrame = { [weak self] image in
+                    guard let self else { return }
+                    self.playerImage = image; self.playerSize = image.size
+                    self.windowsFrameCount += 1
+                    if self.windowsFrameCount == 1 {
+                        self.recordDiagnostic("Windows · Anzeige", "Erstes Bild empfangen: \(Int(image.size.width)) × \(Int(image.size.height))")
+                    }
+                }
+                client.onStatus = { [weak self] text in
+                    self?.playerStatus = text
+                    self?.recordDiagnostic("Windows · Anzeige", text)
+                }
                 do { try await client.run(socket: socket); return }
                 catch {
                     if client.initialized {
-                        if !Task.isCancelled { self.playerStatus = "Windows-Anzeige: \(error.localizedDescription)" }
+                        if !Task.isCancelled {
+                            self.playerStatus = "Windows-Anzeige: \(error.localizedDescription)"
+                            self.recordDiagnostic("Windows · Anzeige", self.playerStatus)
+                        }
                         return
                     }
                 }
@@ -655,7 +701,7 @@ final class AppModel: ObservableObject {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let kind = title.hasPrefix("Android") ? "android" : "windows"
         let url = directory.appendingPathComponent("\(kind)-session-\(UUID().uuidString).log")
-        let header = DiagnosticReport.redact("OpenGuest · \(title)\nStart: \(ISO8601DateFormatter().string(from: Date()))\n\(spec.display)\n\n")
+        let header = DiagnosticReport.redact("Pixelkoje · \(title)\nStart: \(ISO8601DateFormatter().string(from: Date()))\n\(spec.display)\n\n")
         guard FileManager.default.createFile(atPath: url.path, contents: Data(header.utf8), attributes: [.posixPermissions: 0o600]) else { throw GuestError.missingFile(url.path) }
         let handle = try FileHandle(forWritingTo: url)
         _ = try handle.seekToEnd()
@@ -766,7 +812,7 @@ final class AppModel: ObservableObject {
         panel.allowsMultipleSelection = false
         panel.directoryURL = URL(fileURLWithPath: FileManager.default.fileExists(atPath: "/Volumes/Extern") ? "/Volumes/Extern" : NSHomeDirectory())
         if panel.runModal() == .OK, let parent = panel.url {
-            proposedStoragePath = (parent.lastPathComponent == "OpenGuest" ? parent : parent.appendingPathComponent("OpenGuest")).path
+            proposedStoragePath = (["Pixelkoje", "OpenGuest"].contains(parent.lastPathComponent) ? parent : parent.appendingPathComponent("Pixelkoje")).path
         }
     }
 
@@ -842,8 +888,8 @@ final class AppModel: ObservableObject {
             guard parts.count == 2, let pid = Int32(parts[0]), pid != getpid() else { continue }
             let name = String(parts[1])
             if name.contains("/emulator/") || name.hasSuffix("/qemu-system-aarch64") ||
-                name.contains("Android Studio.app/") || name.hasSuffix("/OpenGuest") {
-                throw StorageMigration.failure("Bitte Android/Windows herunterfahren, Android Studio und weitere OpenGuest-Fenster beenden. Noch aktiv: \(name)")
+                name.contains("Android Studio.app/") || (name.hasSuffix("/OpenGuest") || name.hasSuffix("/Pixelkoje")) {
+                throw StorageMigration.failure("Bitte Android/Windows herunterfahren, Android Studio und weitere Pixelkoje-Fenster beenden. Noch aktiv: \(name)")
             }
         }
     }

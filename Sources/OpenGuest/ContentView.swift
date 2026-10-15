@@ -49,7 +49,7 @@ struct ContentView: View {
         .frame(minWidth: 900, minHeight: 680)
         .tint(.teal)
         .sheet(isPresented: $model.showStorageSetup) { storageSetup.interactiveDismissDisabled() }
-        .alert("OpenGuest", isPresented: Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })) {
+        .alert("Pixelkoje", isPresented: Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })) {
             Button("OK") { model.errorMessage = nil }
         } message: { Text(model.errorMessage ?? "") }
         .confirmationDialog("Gastprozess beenden?", isPresented: $showStopConfirmation) {
@@ -65,8 +65,8 @@ struct ContentView: View {
             HStack(spacing: 10) {
                 Image(systemName: "square.stack.3d.up.fill").font(.title).foregroundStyle(.teal)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("OpenGuest").font(.headline)
-                    Text("DEVELOPMENT 0.3.6").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
+                    Text("Pixelkoje").font(.headline)
+                    Text("DEVELOPMENT 0.3.7").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
                 }
             }
             ForEach(WorkspaceTab.allCases) { tab in
@@ -171,7 +171,7 @@ struct ContentView: View {
                     Button(action: model.openGoogleInMacBrowser) {
                         Label("Google im Mac-Browser öffnen", systemImage: "arrow.up.forward.app")
                     }
-                    Text("Öffnet die Google-Kontoauswahl außerhalb von OpenGuest in deinem normalen Standardbrowser. Dort können vorhandene Google-Anmeldungen und gespeicherte Zugangsdaten deines Browserprofils genutzt werden.")
+                    Text("Öffnet die Google-Kontoauswahl außerhalb von Pixelkoje in deinem normalen Standardbrowser. Dort können vorhandene Google-Anmeldungen und gespeicherte Zugangsdaten deines Browserprofils genutzt werden.")
                         .font(.subheadline).foregroundStyle(.secondary)
                     Text("Die Browser-Anmeldung gilt für den Mac. Sie fügt kein Konto zu Android hinzu. Für Play Store und Cloud-Spielstände das Konto zusätzlich im Android-System anmelden.")
                         .font(.subheadline).foregroundStyle(.secondary)
@@ -279,13 +279,14 @@ struct ContentView: View {
                             Label(model.localAccountIssue ?? "Kontodaten gültig · Passwörter stimmen überein",
                                   systemImage: model.localAccountIssue == nil ? "checkmark.circle.fill" : "info.circle.fill")
                                 .foregroundStyle(model.localAccountIssue == nil ? Color.teal : Color.orange)
+                            Toggle("Benutzername und Kennwort sicher merken", isOn: $model.rememberWindowsCredential)
                             HStack {
                                 Button("Im Schlüsselbund speichern") { Task { await model.saveWindowsCredential() } }
                                     .disabled(model.localAccountIssue != nil)
                                 Button("Aus Schlüsselbund laden") { Task { await model.loadWindowsCredential() } }
                             }
                             Text(model.credentialStatus).font(.subheadline).textSelection(.enabled)
-                            Text("Dieses Konto wird während der Windows-Installation angelegt. Der Benutzername bleibt in OpenGuest gespeichert. Mit „Im Schlüsselbund speichern“ merkst du dir das Passwort auf diesem Mac; es wird nicht in die App-Einstellungen oder Protokolle geschrieben. Bei Startfehlern bleiben deine Eingaben erhalten. Das temporäre Einrichtungsmedium wird nach Ende der Sitzung entfernt.")
+                            Text("Dieses Windows-Konto entsteht während der Installation. Bei „sicher merken“ speichert Pixelkoje Benutzername und Kennwort vor dem Start im macOS-Schlüsselbund und stellt sie beim nächsten Öffnen wieder her, soweit macOS den Zugriff bereits erlaubt. Zum Freigeben „Aus Schlüsselbund laden“ wählen und das Kennwort des Mac-Anmeldeschlüsselbunds verwenden. Das Kennwort bleibt auch nach dem Start in diesen Feldern; es steht nicht in Einstellungen oder Protokollen. Dieser App-Eintrag wird in der Schlüsselbundverwaltung verwaltet. Das temporäre Einrichtungsmedium wird nach Ende der Sitzung entfernt.")
                                 .font(.caption).foregroundStyle(.secondary)
                         }.disabled(model.running || model.busy)
                     }
@@ -320,7 +321,7 @@ struct ContentView: View {
             card {
                 VStack(alignment: .leading, spacing: 18) {
                     Text("Lokale Engines").font(.title2.bold())
-                    Text("Vorhandene Engines und eigene Firmware auswählen. Downloads und Lizenzen werden oben direkt in OpenGuest verwaltet.")
+                    Text("Vorhandene Engines und eigene Firmware auswählen. Downloads und Lizenzen werden oben direkt in Pixelkoje verwaltet.")
                         .foregroundStyle(.secondary)
                     VStack(alignment: .leading, spacing: 5) {
                         Text("Android SDK").font(.subheadline.bold())
@@ -352,7 +353,7 @@ struct ContentView: View {
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
-            Text("OpenGuest enthält keine Telemetrie. Android, QEMU und das Gastbetriebssystem haben eigene Netzwerk- und Datenschutzeinstellungen. Protokolle und Einstellungen liegen lokal auf diesem Mac.")
+            Text("Pixelkoje enthält keine Telemetrie. Android, QEMU und das Gastbetriebssystem haben eigene Netzwerk- und Datenschutzeinstellungen. Protokolle und Einstellungen liegen lokal auf diesem Mac.")
                 .font(.caption).foregroundStyle(.secondary)
         }
     }
@@ -364,7 +365,7 @@ struct ContentView: View {
                 .foregroundStyle(.primary)
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    Text("Wähle ein Laufwerk oder einen Ordner. OpenGuest erstellt dort einen eigenen Ordner „OpenGuest“ für Android, Windows und die benötigten Dateien.")
+                    Text("Wähle ein Laufwerk oder einen Ordner. Pixelkoje erstellt dort einen eigenen Ordner „Pixelkoje“ für Android, Windows und die benötigten Dateien.")
                         .font(.system(size: 16)).foregroundStyle(.primary)
                     Text("Vorhandene Daten werden kopiert und vollständig geprüft. Die Originale bleiben zunächst als Sicherung auf der internen Festplatte. Nach dem erfolgreichen Test kannst du diese Sicherungen in der App entfernen.")
                         .font(.system(size: 16)).foregroundStyle(.primary)

@@ -58,6 +58,24 @@ final class CoreTests: XCTestCase {
         XCTAssertTrue(spec.arguments.contains("emulator,id=tpm0,chardev=chrtpm"))
     }
 
+    func testWindowsISODevicesAreReadOnlyOpticalMedia() throws {
+        let spec = try LaunchPlan.windowsVM(qemu: "/qemu", firmware: "/firmware.fd", variables: "/vars.fd", disk: "/saved.qcow2",
+            tpmSocket: "/tmp/og-test/tpm.sock", iso: "/Win, ARM.iso", driversISO: "/Drivers.iso", proISO: "/Setup.iso",
+            installing: true, resources: resources, displaySocket: "/tmp/og-test/display.sock", network: false,
+            qmpSocket: "/tmp/og-test/qmp.sock")
+        let blocks = try blockDevices(spec)
+        for name in ["installer", "drivers", "edition"] {
+            let block = try XCTUnwrap(blocks.first { $0["node-name"] as? String == name })
+            XCTAssertEqual(block["read-only"] as? Bool, true)
+            XCTAssertTrue(spec.arguments.contains("usb-bot,id=\(name)-usb,bus=usb.0"))
+            let cd = try XCTUnwrap(spec.arguments.first { $0.hasPrefix("scsi-cd,id=\(name)-cd,") })
+            XCTAssertTrue(cd.contains("drive=\(name),bus=\(name)-usb.0,scsi-id=0,lun=0"))
+            XCTAssertEqual(cd.contains("bootindex=1"), name == "installer")
+        }
+        XCTAssertFalse(spec.arguments.contains { $0.hasPrefix("usb-storage,") })
+        XCTAssertTrue(spec.arguments.contains("nvme,drive=systemdisk,serial=OpenGuestWindows,bootindex=2"))
+    }
+
     func testNormalWindowsStartDoesNotReattachInstaller() throws {
         let spec = try windows(disk: "/disk.qcow2", installing: false, network: true)
         let blocks = try blockDevices(spec)

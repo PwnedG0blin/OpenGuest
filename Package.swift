@@ -2,9 +2,9 @@
 import PackageDescription
 
 let package = Package(
-    name: "OpenGuest",
+    name: "Pixelkoje",
     platforms: [.macOS(.v14)],
-    products: [.executable(name: "OpenGuest", targets: ["OpenGuest"])],
+    products: [.executable(name: "Pixelkoje", targets: ["OpenGuest"])],
     targets: [
         .target(name: "OpenGuestCore"),
         .executableTarget(name: "OpenGuest", dependencies: ["OpenGuestCore"]),

@@ -16,7 +16,7 @@ final class GuestPlayerWindows: NSObject, NSWindowDelegate {
             window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: android ? 520 : 1100, height: 780),
                               styleMask: [.titled, .closable, .miniaturizable, .resizable],
                               backing: .buffered, defer: false)
-            window.title = android ? "Android Player · OpenGuest" : "Windows Player · OpenGuest"
+            window.title = android ? "Android Player · Pixelkoje" : "Windows Player · Pixelkoje"
             window.isReleasedWhenClosed = false
             window.isRestorable = false
             window.contentMinSize = NSSize(width: 360, height: 320)

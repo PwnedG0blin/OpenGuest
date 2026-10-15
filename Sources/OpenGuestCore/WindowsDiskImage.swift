@@ -22,7 +22,7 @@ public enum WindowsDiskImage {
             guard fd >= 0 else { throw StorageMigration.failure("Windows-Festplatte konnte nicht gesperrt werden.") }
             guard flock(fd, LOCK_EX | LOCK_NB) == 0 else {
                 close(fd)
-                throw StorageMigration.failure("Windows läuft bereits in einer anderen OpenGuest-Instanz. Zum Ändern vollständig herunterfahren.")
+                throw StorageMigration.failure("Windows läuft bereits in einer anderen Pixelkoje-Instanz. Zum Ändern vollständig herunterfahren.")
             }
         }
         defer { if fd >= 0 { flock(fd, LOCK_UN); close(fd) } }

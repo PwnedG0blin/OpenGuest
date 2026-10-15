@@ -12,7 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if model?.running == true {
             let alert = NSAlert()
             alert.messageText = "Ein Gastprozess läuft noch"
-            alert.informativeText = "Fahre das Gastsystem zuerst herunter, damit seine Daten sauber gespeichert werden. Danach kannst du OpenGuest schließen."
+            alert.informativeText = "Fahre das Gastsystem zuerst herunter, damit seine Daten sauber gespeichert werden. Danach kannst du Pixelkoje schließen."
             alert.addButton(withTitle: "Gast herunterfahren")
             alert.addButton(withTitle: "Zurück")
             if alert.runModal() == .alertFirstButtonReturn { model?.shutdownGuest() }
@@ -25,7 +25,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 @main
 @MainActor
-struct OpenGuestApp: App {
+struct PixelkojeApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @StateObject private var model = AppModel()
 

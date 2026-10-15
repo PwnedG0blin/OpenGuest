@@ -24,7 +24,7 @@ jobs:
         run: python3 scripts/tpm-smoke.py
       - name: Application launch smoke test
         run: |
-          dist/OpenGuest.app/Contents/MacOS/OpenGuest > dist/launch-smoke.log 2>&1 &
+          dist/Pixelkoje.app/Contents/MacOS/Pixelkoje > dist/launch-smoke.log 2>&1 &
           app_pid=$!
           trap 'kill -TERM "$app_pid" 2>/dev/null || true' EXIT
           sleep 5
@@ -35,17 +35,17 @@ jobs:
           echo "App stayed running for 5 seconds on a clean macOS runner. Guest integration is not tested."
       - name: Archive test app
         run: |
-          /usr/bin/ditto -c -k --sequesterRsrc --keepParent dist/OpenGuest.app dist/OpenGuest-macOS-AppleSilicon.app.zip
+          /usr/bin/ditto -c -k --sequesterRsrc --keepParent dist/Pixelkoje.app dist/Pixelkoje-macOS-AppleSilicon.app.zip
           mkdir -p dist/installer
-          /usr/bin/ditto dist/OpenGuest.app dist/installer/OpenGuest.app
+          /usr/bin/ditto dist/Pixelkoje.app dist/installer/Pixelkoje.app
           ln -s /Applications dist/installer/Applications
-          /usr/bin/hdiutil create -volname OpenGuest -srcfolder dist/installer -ov -format UDZO dist/OpenGuest_0.3.6_AppleSilicon.dmg
+          /usr/bin/hdiutil create -volname Pixelkoje -srcfolder dist/installer -ov -format UDZO dist/Pixelkoje_0.3.7_AppleSilicon.dmg
       - name: Upload compiled app
         uses: actions/upload-artifact@v7
         with:
-          name: OpenGuest-macOS-AppleSilicon-test-app
+          name: Pixelkoje-macOS-AppleSilicon-test-app
           path: |
-            dist/OpenGuest-macOS-AppleSilicon.app.zip
-            dist/OpenGuest_0.3.6_AppleSilicon.dmg
+            dist/Pixelkoje-macOS-AppleSilicon.app.zip
+            dist/Pixelkoje_0.3.7_AppleSilicon.dmg
           if-no-files-found: error
           retention-days: 14

@@ -5,7 +5,7 @@ if ! command -v python3 >/dev/null; then
     echo "Python 3 wird für die Download-Prüfung benötigt (z. B. aus Xcode Command Line Tools)." >&2; exit 1
 fi
 storage_config="$HOME/Library/Application Support/OpenGuest/storage.json"
-if [[ ! -f "$storage_config" ]]; then echo "Bitte zuerst in OpenGuest einen Datenordner wählen."; exit 1; fi
+if [[ ! -f "$storage_config" ]]; then echo "Bitte zuerst in Pixelkoje einen Datenordner wählen."; exit 1; fi
 storage_root="$(/usr/bin/plutil -extract root raw -o - "$storage_config")"
 storage_id="$(/usr/bin/plutil -extract id raw -o - "$storage_config")"
 if [[ ! -f "$storage_root/.openguest-storage-id" ]] || [[ "$(cat "$storage_root/.openguest-storage-id")" != "$storage_id" ]]; then
@@ -52,5 +52,5 @@ os.chmod(jar, 0o600)
 os.chmod(temporary / 'manifest.json', 0o600)
 os.replace(jar, destination / jar.name)
 os.replace(temporary / 'manifest.json', destination / 'manifest.json')
-print('Streaming-Modul geprüft und eingerichtet. OpenGuest kann jetzt Android direkt im Player anzeigen.')
+print('Streaming-Modul geprüft und eingerichtet. Pixelkoje kann jetzt Android direkt im Player anzeigen.')
 PY
