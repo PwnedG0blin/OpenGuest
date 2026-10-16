@@ -44,8 +44,8 @@ final class AndroidSystemsTests: XCTestCase {
         let other = f.storage.url.appendingPathComponent("Backups/MyWindowsBackup/disk.qcow2")
         try f.write(other, "other backup")
         let plan = try AndroidMaintenance.plan(storage: f.storage, keeping: f.keep)
-        XCTAssertTrue(plan.paths.contains(f.storage.avd.appendingPathComponent("OldAndroid15.avd").path))
-        XCTAssertTrue(plan.paths.contains(backup.deletingLastPathComponent().path))
+        XCTAssertTrue(plan.paths.contains { URL(fileURLWithPath: $0).resolvingSymlinksInPath().path == f.storage.avd.appendingPathComponent("OldAndroid15.avd").resolvingSymlinksInPath().path }, "Planned paths: \(plan.paths)")
+        XCTAssertTrue(plan.paths.contains { URL(fileURLWithPath: $0).resolvingSymlinksInPath().path == backup.deletingLastPathComponent().resolvingSymlinksInPath().path }, "Planned paths: \(plan.paths)")
         try AndroidMaintenance.cleanup(storage: f.storage, expected: plan)
         XCTAssertEqual(try String(contentsOf: f.storage.avd.appendingPathComponent(f.keep + ".avd/userdata-qemu.img"), encoding: .utf8), "precious user data \(f.keep)")
         XCTAssertEqual(try String(contentsOf: f.storage.windows.appendingPathComponent("windows.qcow2"), encoding: .utf8), "windows unchanged")
@@ -83,3 +83,4 @@ final class AndroidSystemsTests: XCTestCase {
         XCTAssertFalse(plan.paths.contains(dir.path))
     }
 }
+
