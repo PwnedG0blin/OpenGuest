@@ -83,6 +83,16 @@ private struct GuestPlayerView: View {
                 }
             }.frame(maxWidth: .infinity, maxHeight: .infinity)
             VStack(alignment: .leading, spacing: 8) {
+                if kind == "windows" {
+                    HStack {
+                        Button("Einrichtungskonsole öffnen", action: model.openWindowsSetupConsole)
+                            .disabled(!active || model.playerSize == .zero)
+                            .help("Sendet Shift + F10 direkt an Windows, ohne eine Funktionstaste auf dem Mac zu drücken.")
+                        Spacer(minLength: 0)
+                    }
+                    Text("Sendet Shift + F10. In Windows Setup öffnet das normalerweise eine Konsole.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
                 HStack(spacing: 12) {
                     if kind == "android" {
                         Button { model.androidNavigation(4) } label: { Image(systemName: "chevron.left") }

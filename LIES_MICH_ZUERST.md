@@ -1,3 +1,11 @@
+# Neu in Pixelkoje 0.3.10: Windows-Konsole ohne Funktionstaste
+
+Im Windows-Player öffnet „Einrichtungskonsole öffnen“ normalerweise die Windows-Setup-Konsole. Die Schaltfläche sendet Shift + F10 direkt an den verbundenen Gast, einschließlich Loslassen beider Tasten. Anschließend in das Windows-Bild klicken, um dort zu tippen. Der Hinweis bestätigt die Übertragung der Tastenkombination; ein durch Windows-Richtlinien gesperrter Konsolenzugriff wird dadurch nicht aufgehoben.
+
+F1 bis F12 werden nun als Funktionstasten an Windows übertragen. Auf einer Apple-Tastatur bei aktiven Medienfunktionen fn beziehungsweise die Globus-Taste zusammen mit der gewünschten Funktionstaste drücken. Für F10 ist das die Stumm-Taste. Die vorherige Übertragung von AppKits Sonderzeichen statt der eigentlichen Funktionstaste war ein Fehler im Player.
+
+Zum Aktualisieren den Gast herunterfahren, die App schließen, Pixelkoje ersetzen und das vorhandene Windows wieder starten. VM-Daten bleiben am bisherigen Speicherort. Diese Version behebt die Tastaturübertragung; die unerwartete BMW-Firmenanmeldung und die nicht angewandte lokale Kontoeinrichtung müssen anhand der Gastdiagnose gesondert untersucht werden.
+
 # Neu in Pixelkoje 0.3.9: Installations-DVD selbst auswählen
 
 Im Windows-Bereich unter „Installations-DVD · Windows ARM64“ auf „DVD-ISO manuell auswählen …“ klicken und die vorhandene ISO auf Extern auswählen. Der vollständige Pfad bleibt gespeichert und sichtbar. Die Auswahl aktiviert „Windows installieren · von DVD starten“. Vor dem Start werden ISO-Endung, Lesbarkeit, reguläre Zieldatei und Größe geprüft. Diese Dateiprüfung bestätigt nicht automatisch ARM64-Architektur oder Bootfähigkeit. Eine Verknüpfung auf eine lesbare ISO bleibt zulässig. Der ISO-Pfad kann bei ausgeschaltetem Gast jederzeit geändert werden. Es erfolgt kein erneuter Download und keine automatische Änderung vorhandener VM-Daten.

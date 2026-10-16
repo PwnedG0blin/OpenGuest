@@ -1,6 +1,7 @@
 import AppKit
 import Foundation
 import Network
+import OpenGuestCore
 
 // A minimal local RFB 3.8 client. Requests only Raw and DesktopSize encodings.
 // No dependency on a web viewer, clipboard synchronization or a public listener.
@@ -111,8 +112,22 @@ final class RFBClient {
 
     func key(_ symbol: UInt32, down: Bool) {
         guard initialized else { return }
-        send(Data([4, down ? 1 : 0, 0, 0, UInt8((symbol >> 24) & 255), UInt8((symbol >> 16) & 255),
-                   UInt8((symbol >> 8) & 255), UInt8(symbol & 255)]))
+        send(keyMessage(symbol, down: down))
+    }
+
+    @discardableResult
+    func sendKeySequence(_ events: [WindowsKeyboard.Event]) -> Bool {
+        guard initialized, connection != nil, !events.isEmpty else { return false }
+        // Keep the entire chord together, including modifier releases.
+        var message = Data()
+        for event in events { message.append(keyMessage(event.symbol, down: event.down)) }
+        send(message)
+        return true
+    }
+
+    private func keyMessage(_ symbol: UInt32, down: Bool) -> Data {
+        Data([4, down ? 1 : 0, 0, 0, UInt8((symbol >> 24) & 255), UInt8((symbol >> 16) & 255),
+              UInt8((symbol >> 8) & 255), UInt8(symbol & 255)])
     }
 
     private func resize(_ w: Int, _ h: Int) throws {

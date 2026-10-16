@@ -138,7 +138,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var apkBusy = false
     @Published private(set) var apkStatus = ""
     @Published private(set) var sessionName = "Kein Gast gestartet"
-    @Published private(set) var log = "Pixelkoje 0.3.9 · Entwicklungsprototyp\nSystem prüfen, dann einen Gast auswählen."
+    @Published private(set) var log = "Pixelkoje 0.3.10 · Entwicklungsprototyp\nSystem prüfen, dann einen Gast auswählen."
     @Published private(set) var lastCommand = ""
     @Published var errorMessage: String? {
         didSet {
@@ -738,14 +738,14 @@ final class AppModel: ObservableObject {
             if let key = special[code] { androidStream?.key(key, down: down) }
             else if down && !text.isEmpty { androidStream?.text(text) }
         } else if activeGuest == "windows" {
-            let special: [UInt16: UInt32] = [36: 0xff0d, 51: 0xff08, 48: 0xff09, 53: 0xff1b, 123: 0xff51, 124: 0xff53,
-                125: 0xff54, 126: 0xff52, 117: 0xffff, 115: 0xff50, 119: 0xff57, 116: 0xff55, 121: 0xff56,
-                56: 0xffe1, 60: 0xffe2, 59: 0xffe3, 62: 0xffe4, 58: 0xffe9, 61: 0xffea, 55: 0xffeb, 54: 0xffec]
-            if let symbol = special[code] { windowsPlayer?.key(symbol, down: down) }
-            else if let scalar = text.unicodeScalars.first {
-                windowsPlayer?.key(scalar.value <= 255 ? scalar.value : 0x0100_0000 | scalar.value, down: down)
-            }
+            if let symbol = WindowsKeyboard.symbol(code: code, text: text) { windowsPlayer?.key(symbol, down: down) }
         }
+    }
+
+    func openWindowsSetupConsole() {
+        guard running, activeGuest == "windows",
+              windowsPlayer?.sendKeySequence(WindowsKeyboard.setupConsole) == true else { return }
+        playerStatus = "Shift + F10 an Windows gesendet · Zum Tippen in das Windows-Bild klicken."
     }
 
     func androidNavigation(_ code: UInt32) { androidStream?.key(code, down: true); androidStream?.key(code, down: false) }

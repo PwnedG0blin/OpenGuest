@@ -1,3 +1,7 @@
+# Pixelkoje 0.3.10: Windows function keys and setup console shortcut
+
+Maps macOS F1–F12 hardware codes to RFB function-key symbols instead of sending AppKit's private-use text as Unicode. The Windows player adds an explicit setup-console button that sends a complete Shift+F10 press/release chord without depending on the Mac's media-key settings. The button reports that the shortcut was sent; whether Windows opens the console depends on the guest's current screen and policy. A local RFB peer regression test records the production client's actual shortcut bytes, including modifier releases. This release does not change Windows accounts, organizational enrollment, VM identity, firmware, disks, or setup media. An unexpected organization sign-in must be diagnosed separately.
+
 # Pixelkoje 0.3.9: explicit Windows DVD selection and display startup diagnostics
 
 Adds a prominent manual DVD-ISO picker with a persistent full path and readable-file/size validation before install startup. Choosing a DVD enables installation mode. File checks do not certify architecture or bootability. QMP query-status/query-block verify the actual running VM and attached read-only installer CD after launch. VNC now waits for the local socket and bounds handshake and first-frame waits, with specific visible progress/errors instead of an indefinite startup overlay. A native Swift player test connects the actual app RFB client to QEMU's framebuffer without an OS image. Full Windows installation on the target Mac remains unverified; no VM disks or UEFI variables are reset.
@@ -14,7 +18,7 @@ The app, executable, player windows and installer are now named Pixelkoje. Exist
 
 Windows startup fix in **0.3.6**: TPM stays enabled with persistent state, but its optional physical-presence interface (PPI) is disabled. This avoids QEMU #4587's `HV_BAD_ARGUMENT` during device initialization with HVF on Apple Silicon. This does not disable Secure Boot checks, bypass Windows requirements or erase VM data. The installed UEFI firmware must still support the intended Windows configuration. Source: https://gitlab.com/qemu-project/qemu/-/work_items/4587 . CI now initializes a real swtpm + QEMU TPM under TCG and, where the runner provides it, HVF. It does not test a complete Windows installation.
 
-Current test build: **0.3.9**. Opening the app shows the main window only; guests require an explicit Start action. Starting Android or Windows opens its own resizable player window. The Android page can also open Google's account chooser in the normal external Mac browser; this does not sign the Android guest in automatically.
+Current test build: **0.3.10**. Opening the app shows the main window only; guests require an explicit Start action. Starting Android or Windows opens its own resizable player window. The Android page can also open Google's account chooser in the normal external Mac browser; this does not sign the Android guest in automatically.
 
 # Pixelkoje
 
