@@ -8,6 +8,11 @@ struct WindowsPasteSheet: View {
     @State private var allowLineBreaks = false
     @FocusState private var editorFocused: Bool
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var accent: Color {
+        colorScheme == .dark ? Color(red: 0.35, green: 0.82, blue: 0.79) : Color(red: 0.03, green: 0.43, blue: 0.46)
+    }
 
     private var hasLineBreaks: Bool { WindowsTextInput.normalized(text).contains("\n") }
     private var input: Result<WindowsTextInput, Error> {
@@ -48,19 +53,19 @@ struct WindowsPasteSheet: View {
         }
         .frame(width: 600)
         .background(Color(nsColor: .windowBackgroundColor))
-        .tint(.teal)
+        .tint(accent)
     }
 
     private var header: some View {
         HStack(spacing: 14) {
             Image(systemName: "doc.on.clipboard.fill")
                 .font(.system(size: 25, weight: .semibold))
-                .foregroundStyle(.teal)
+                .foregroundStyle(accent)
                 .frame(width: 54, height: 54)
                 .background(Color.teal.opacity(0.16), in: RoundedRectangle(cornerRadius: 14))
             VStack(alignment: .leading, spacing: 5) {
                 Label("Pixelkoje · Windows Player", systemImage: "square.stack.3d.up.fill")
-                    .font(.caption.weight(.semibold)).foregroundStyle(.teal)
+                    .font(.caption.weight(.semibold)).foregroundStyle(accent)
                 Text("Text einfügen").font(.title2.bold())
                 Text("Vom Mac direkt in Windows").font(.subheadline).foregroundStyle(.secondary)
             }
@@ -77,7 +82,7 @@ struct WindowsPasteSheet: View {
             HStack {
                 Label("Dein Text", systemImage: "text.alignleft").font(.subheadline.bold())
                 Spacer()
-                Text("Bearbeitbare Vorschau").font(.caption.weight(.medium)).foregroundStyle(.teal)
+                Text("Bearbeitbare Vorschau").font(.caption.weight(.medium)).foregroundStyle(accent)
             }
             TextEditor(text: $text)
                 .font(.system(size: 14, design: .monospaced))
@@ -118,7 +123,7 @@ struct WindowsPasteSheet: View {
             switch input {
             case .success(let plan):
                 Label("\(plan.count) Zeichen bereit · \(plan.layout.title)", systemImage: "checkmark.circle.fill")
-                    .foregroundStyle(.teal)
+                    .foregroundStyle(accent)
             case .failure(let error):
                 Label(error.localizedDescription, systemImage: text.isEmpty ? "info.circle" : "exclamationmark.triangle.fill")
                     .foregroundStyle(text.isEmpty ? Color.secondary : Color.orange)
@@ -144,11 +149,24 @@ struct WindowsPasteSheet: View {
             } label: {
                 Label("In Windows einfügen", systemImage: "arrow.right.doc.on.clipboard")
             }
-            .buttonStyle(.borderedProminent).disabled(!canSend)
+            .buttonStyle(WindowsPasteActionStyle()).disabled(!canSend)
         }
         .controlSize(.large)
         .padding(.horizontal, 22).padding(.vertical, 16)
         .background(Color.teal.opacity(0.07))
         .overlay(alignment: .top) { Rectangle().fill(Color.teal.opacity(0.18)).frame(height: 1) }
+    }
+}
+
+private struct WindowsPasteActionStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.body.weight(.semibold))
+            .padding(.horizontal, 15).padding(.vertical, 9)
+            .foregroundStyle(isEnabled ? Color.white : Color.secondary)
+            .background(isEnabled ? Color(red: 0.03, green: 0.43, blue: 0.46) : Color.gray.opacity(0.15), in: RoundedRectangle(cornerRadius: 8))
+            .brightness(configuration.isPressed && isEnabled ? -0.08 : 0)
     }
 }
