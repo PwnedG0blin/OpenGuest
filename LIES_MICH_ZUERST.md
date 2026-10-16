@@ -1,3 +1,7 @@
+# Neu in Pixelkoje 0.3.13: Entwicklerhinweis und Profil-Links
+
+Unten in der Seitenleiste steht jetzt „Entwickelt von PwnedG0blin“. Die Links „X · @PwnedG0blin“ und „Patreon · Unterstützen“ öffnen das jeweilige Profil im normalen Mac-Browser. Beide Links werden nur auf deinen Klick geöffnet.
+
 # Neu in Pixelkoje 0.3.12: Einfügefenster im Stil der App
 
 „Text einfügen“ hat jetzt die türkisen Akzente von Pixelkoje: eine farbige Kopfzeile, ein klar umrandetes Textfeld, einen eigenen Bereich für die Windows-Tastatur und die hervorgehobene Schaltfläche „In Windows einfügen“. Der Dialog passt sich an den hellen und dunklen macOS-Modus an. Der Inhalt lässt sich scrollen; Abbrechen und Einfügen bleiben erreichbar. Eingabeprüfung und Übertragung funktionieren wie bisher.

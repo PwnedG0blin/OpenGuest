@@ -67,7 +67,7 @@ struct ContentView: View {
                 Image(systemName: "square.stack.3d.up.fill").font(.title).foregroundStyle(.teal)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Pixelkoje").font(.headline)
-                    Text("DEVELOPMENT 0.3.12").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
+                    Text("DEVELOPMENT 0.3.13").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
                 }
             }
             ForEach(WorkspaceTab.allCases) { tab in
@@ -81,11 +81,7 @@ struct ContentView: View {
                 .buttonStyle(.plain)
             }
             Spacer()
-            VStack(alignment: .leading, spacing: 8) {
-                Label("Open Source · MIT", systemImage: "curlybraces")
-                Text("Eine Oberfläche. Zwei Engines.\nEntwickelt für Apple Silicon.")
-                    .font(.caption).foregroundStyle(.secondary)
-            }.font(.caption)
+            DeveloperCredits()
         }
         .padding(20)
         .background(Color(nsColor: .controlBackgroundColor))

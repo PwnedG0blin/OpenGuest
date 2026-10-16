@@ -1,5 +1,5 @@
 #!/bin/bash
-# Render the production paste view for visual review, with an in-memory model.
+# Render production paste/credit views for visual review, with an in-memory model.
 # Does not open a VM, read the clipboard, or access saved settings/accounts.
 set -euo pipefail
 project_dir="$(cd -- "$(dirname -- "$0")/.." && pwd)"
@@ -26,6 +26,30 @@ final class AppModel: ObservableObject {
 @main
 @MainActor
 struct PastePreview {
+    static func render<V: View>(_ root: V, size: NSSize, appearance: NSAppearance, to file: URL) throws {
+        let view = NSHostingView(rootView: root)
+        view.appearance = appearance
+        let window = NSWindow(contentRect: NSRect(origin: .zero, size: size),
+                              styleMask: [.titled], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
+        window.appearance = appearance
+        window.contentView = view
+        window.orderFront(nil)
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.25))
+        view.layoutSubtreeIfNeeded()
+        guard let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds) else {
+            throw NSError(domain: "PastePreview", code: 1)
+        }
+        view.cacheDisplay(in: view.bounds, to: bitmap)
+        guard let png = bitmap.representation(using: .png, properties: [:]) else {
+            throw NSError(domain: "PastePreview", code: 2)
+        }
+        try png.write(to: file)
+        print("Rendered \(file.lastPathComponent): \(bitmap.pixelsWide)×\(bitmap.pixelsHigh)")
+        window.orderOut(nil)
+        window.close()
+    }
+
     static func main() throws {
         let app = NSApplication.shared
         app.setActivationPolicy(.accessory)
@@ -41,34 +65,20 @@ struct PastePreview {
             app.appearance = appearance
             for (name, text) in examples {
                 let model = AppModel()
-                let view = NSHostingView(rootView: WindowsPasteSheet(model: model, text: .constant(text)).environment(\.colorScheme, scheme))
-                view.appearance = appearance
-                let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 600, height: 680),
-                                      styleMask: [.titled], backing: .buffered, defer: false)
-                window.isReleasedWhenClosed = false
-                window.appearance = appearance
-                window.contentView = view
-                window.orderFront(nil)
-                RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.25))
-                view.layoutSubtreeIfNeeded()
-                guard let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds) else {
-                    throw NSError(domain: "PastePreview", code: 1)
-                }
-                view.cacheDisplay(in: view.bounds, to: bitmap)
-                guard let png = bitmap.representation(using: .png, properties: [:]) else {
-                    throw NSError(domain: "PastePreview", code: 2)
-                }
+                let view = WindowsPasteSheet(model: model, text: .constant(text)).environment(\.colorScheme, scheme)
                 let filename = "paste-\(name)-\(dark ? "dark" : "light").png"
-                try png.write(to: directory.appendingPathComponent(filename))
-                print("Rendered \(filename): \(bitmap.pixelsWide)×\(bitmap.pixelsHigh)")
-                window.orderOut(nil)
-                window.close()
+                try render(view, size: NSSize(width: 600, height: 680), appearance: appearance,
+                           to: directory.appendingPathComponent(filename))
             }
+            let credits = DeveloperCredits().padding(20).frame(width: 214)
+                .background(Color(nsColor: .controlBackgroundColor)).environment(\.colorScheme, scheme)
+            try render(credits, size: NSSize(width: 214, height: 250), appearance: appearance,
+                       to: directory.appendingPathComponent("credits-\(dark ? "dark" : "light").png"))
         }
     }
 }
 SWIFT
 xcrun swiftc -parse-as-library -target "$(uname -m)-apple-macosx14.0" -I "$binary_dir/Modules" \
-    Sources/OpenGuest/WindowsPasteSheet.swift "$preview_tmp/Preview.swift" \
+    Sources/OpenGuest/WindowsPasteSheet.swift Sources/OpenGuest/DeveloperCredits.swift "$preview_tmp/Preview.swift" \
     "$binary_dir"/OpenGuestCore.build/*.o -o "$preview_tmp/render-paste"
 "$preview_tmp/render-paste" "$preview_dir"

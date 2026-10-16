@@ -1,3 +1,7 @@
+# Pixelkoje 0.3.13: developer credit and profile links
+
+The sidebar credits PwnedG0blin and provides explicit links to the developer’s X profile and Patreon page. Clicking a link opens it in the Mac’s browser. Both appearances use readable teal links; no profile page is loaded automatically.
+
 # Pixelkoje 0.3.12: a clearer paste dialog in the app’s teal style
 
 The Windows paste preview now uses Pixelkoje’s teal accents, branded header, a tinted editable text card, a separate keyboard-layout card and a prominent “In Windows einfügen” action. System light/dark appearance is respected and the content scrolls while the action row stays visible. Validation, line-break opt-in and text-transfer behavior are unchanged. `scripts/preview-windows-paste.sh` renders the production view with an in-memory model in light/dark appearance for visual review; it does not start a guest or access user clipboard, settings or credentials.
@@ -28,7 +32,7 @@ The app, executable, player windows and installer are now named Pixelkoje. Exist
 
 Windows startup fix in **0.3.6**: TPM stays enabled with persistent state, but its optional physical-presence interface (PPI) is disabled. This avoids QEMU #4587's `HV_BAD_ARGUMENT` during device initialization with HVF on Apple Silicon. This does not disable Secure Boot checks, bypass Windows requirements or erase VM data. The installed UEFI firmware must still support the intended Windows configuration. Source: https://gitlab.com/qemu-project/qemu/-/work_items/4587 . CI now initializes a real swtpm + QEMU TPM under TCG and, where the runner provides it, HVF. It does not test a complete Windows installation.
 
-Current test build: **0.3.12**. Opening the app shows the main window only; guests require an explicit Start action. Starting Android or Windows opens its own resizable player window. The Android page can also open Google's account chooser in the normal external Mac browser; this does not sign the Android guest in automatically.
+Current test build: **0.3.13**. Opening the app shows the main window only; guests require an explicit Start action. Starting Android or Windows opens its own resizable player window. The Android page can also open Google's account chooser in the normal external Mac browser; this does not sign the Android guest in automatically.
 
 # Pixelkoje
 
