@@ -1,4 +1,5 @@
 import Foundation
+import CoreGraphics
 
 public struct GuestDisplayGeometry {
     public let documentSize: CGSize
