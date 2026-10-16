@@ -68,7 +68,7 @@ struct PastePreview {
     }
 }
 SWIFT
-xcrun swiftc -parse-as-library -I "$binary_dir/Modules" \
+xcrun swiftc -parse-as-library -target "$(uname -m)-apple-macosx14.0" -I "$binary_dir/Modules" \
     Sources/OpenGuest/WindowsPasteSheet.swift "$preview_tmp/Preview.swift" \
     "$binary_dir"/OpenGuestCore.build/*.o -o "$preview_tmp/render-paste"
 "$preview_tmp/render-paste" "$preview_dir"
