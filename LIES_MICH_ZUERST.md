@@ -1,3 +1,7 @@
+# Neu in Pixelkoje 0.3.17: Android-Verbindung reparieren
+
+Falls Android bei „device offline“ hängen bleibt: Gastsystem herunterfahren, im Android-Bereich „Android-Verbindung reparieren“ wählen und danach Android starten. Die Funktion startet ADB neu und aktiviert den Kaltstart. Apps, Konten und Spielstände bleiben erhalten. Dabei werden auch andere ADB-Debugverbindungen auf diesem Mac getrennt. Die Reparatur startet keinen Gast automatisch und ist nur bei ausgeschalteten Gästen verfügbar.
+
 # Neu in Pixelkoje 0.3.16: Mac-Text in Android einfügen
 
 Am Mac Text mit ⌘C kopieren. In Android das gewünschte Eingabefeld antippen. Im Android-Player „Text einfügen …“ anklicken oder im Gastbild ⌘V drücken. Die Vorschau prüfen und „In Android einfügen“ bestätigen. Umlaute und Unicode werden übertragen. Kein zusätzliches Enter; Zeilenumbrüche innerhalb des Texts müssen ausdrücklich erlaubt werden. Maximal 64 KiB Text. Kein automatischer Abgleich und keine Speicherung des Textes in Protokollen oder Einstellungen. Manche Apps erlauben kein Einfügen.

@@ -1,3 +1,7 @@
+# Pixelkoje 0.3.17: repair an offline Android connection
+
+The Android page adds an explicit repair action while both guests are off. It restarts the selected SDK's ADB server (kill-server, then start-server, with bounded timeouts), then enables cold boot. The button explains that other ADB debugging connections are also disconnected. It does not delete guest data, change the graphics profile or start a guest automatically. Failure leaves cold-boot settings unchanged and displays the command error. No automatic global ADB restart is performed.
+
 # Pixelkoje 0.3.16: paste Mac text into Android and optional Windows graphics
 
 The Android player now offers “Text einfügen …” and Command+V on the guest display. Explicitly opening the dialog reads plain text from the Mac clipboard. Review/edit it, then confirm to transfer UTF-8 text with scrcpy 4.0 SET_CLIPBOARD and its paste flag. The player adds no Enter, trims trailing line breaks and requires explicit approval of internal line breaks. Input is limited to 64 KiB; text is never written to logs or settings. This is a one-way user action, not automatic clipboard synchronization. The destination Android field must be focused; individual apps can block paste. Transport errors keep the dialog open; successful sending does not confirm acceptance by an Android app.
@@ -56,7 +60,7 @@ The app, executable, player windows and installer are now named Pixelkoje. Exist
 
 Windows startup fix in **0.3.6**: TPM stays enabled with persistent state, but its optional physical-presence interface (PPI) is disabled. This avoids QEMU #4587's `HV_BAD_ARGUMENT` during device initialization with HVF on Apple Silicon. This does not disable Secure Boot checks, bypass Windows requirements or erase VM data. The installed UEFI firmware must still support the intended Windows configuration. Source: https://gitlab.com/qemu-project/qemu/-/work_items/4587 . CI now initializes a real swtpm + QEMU TPM under TCG and, where the runner provides it, HVF. It does not test a complete Windows installation.
 
-Current test build: **0.3.16**. Opening the app shows the main window only; guests require an explicit Start action. Starting Android or Windows opens its own resizable player window. The Android page can also open Google's account chooser in the normal external Mac browser; this does not sign the Android guest in automatically.
+Current test build: **0.3.17**. Opening the app shows the main window only; guests require an explicit Start action. Starting Android or Windows opens its own resizable player window. The Android page can also open Google's account chooser in the normal external Mac browser; this does not sign the Android guest in automatically.
 
 # Pixelkoje
 

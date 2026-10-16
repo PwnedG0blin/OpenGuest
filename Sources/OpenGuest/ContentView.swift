@@ -69,7 +69,7 @@ struct ContentView: View {
                 Image(systemName: "square.stack.3d.up.fill").font(.title).foregroundStyle(.teal)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Pixelkoje").font(.headline)
-                    Text("DEVELOPMENT 0.3.16").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
+                    Text("DEVELOPMENT 0.3.17").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
                 }
             }
             ForEach(WorkspaceTab.allCases) { tab in
@@ -158,6 +158,11 @@ struct ContentView: View {
                         .font(.caption).foregroundStyle(model.androidSoftwareRendering ? Color.orange : Color.secondary)
                     Toggle("Kaltstart beim nächsten Start", isOn: $model.settings.coldBoot)
                         .disabled(model.running || model.busy)
+                    Button("Android-Verbindung reparieren") { Task { await model.repairAndroidConnection() } }
+                        .disabled(!model.canRepairAndroidConnection)
+                    Text("Bei „device offline“: Gastsystem herunterfahren, dann hier ADB neu starten und Kaltstart aktivieren. Apps, Konten und Spielstände bleiben erhalten. Der ADB-Neustart trennt auch andere ADB-Debugverbindungen auf diesem Mac.")
+                        .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    if !model.androidRepairStatus.isEmpty { Text(model.androidRepairStatus).font(.caption).textSelection(.enabled) }
                     if let device = model.selectedDevice {
                         Label(device.googlePlay ? "Google-Play-Systemabbild im Profil erkannt" : "Dieses Profil enthält keinen erkannten Google Play Store",
                               systemImage: device.googlePlay ? "checkmark.seal" : "info.circle")

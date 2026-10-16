@@ -121,6 +121,27 @@ final class AppModel: ObservableObject {
         windowsResolution = WindowsDisplayMode(rawValue: UserDefaults.standard.string(forKey: "Pixelkoje.windowsResolution.\(storage.id)") ?? "") ?? .fullHD
     }
     @Published private(set) var androidPasteStatus = ""
+    @Published private(set) var androidRepairStatus = ""
+    var canRepairAndroidConnection: Bool { storageReady && adb != nil && !running && !busy }
+    func repairAndroidConnection() async {
+        guard canRepairAndroidConnection, let adb, let storage else { return }
+        busy = true
+        androidRepairStatus = "Android-Verbindung wird repariert …"
+        defer { busy = false }
+        do {
+            try storage.validate()
+            for action in ["kill-server", "start-server"] {
+                let result = try await Self.capture(CommandSpec(executable: adb, arguments: [action], environment: storage.environment), timeout: 15)
+                guard result.status == 0 else { throw GuestError.commandFailed(result.status, result.output) }
+            }
+            settings.coldBoot = true
+            androidRepairStatus = "ADB neu gestartet · Kaltstart aktiviert. Jetzt Android starten."
+            recordDiagnostic("Android · Verbindung repariert", "ADB-Dienst auf ausdrücklichen Wunsch neu gestartet; Kaltstart aktiviert. Keine Gastdaten gelöscht.")
+        } catch {
+            androidRepairStatus = "Reparatur fehlgeschlagen: " + error.localizedDescription
+            recordDiagnostic("Android · Verbindungsreparatur", androidRepairStatus)
+        }
+    }
     @discardableResult
     func pasteAndroidText(_ input: AndroidClipboardText) async -> Bool {
         guard running, activeGuest == "android", androidBooted, !busy, let stream = androidStream else {
@@ -280,7 +301,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var apkBusy = false
     @Published private(set) var apkStatus = ""
     @Published private(set) var sessionName = "Kein Gast gestartet"
-    @Published private(set) var log = "Pixelkoje 0.3.16 · Entwicklungsprototyp\nSystem prüfen, dann einen Gast auswählen."
+    @Published private(set) var log = "Pixelkoje 0.3.17 · Entwicklungsprototyp\nSystem prüfen, dann einen Gast auswählen."
     @Published private(set) var lastCommand = ""
     @Published var errorMessage: String? {
         didSet {
