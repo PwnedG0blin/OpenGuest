@@ -13,7 +13,7 @@ PROJECT = Path(__file__).resolve().parents[1]
 class AndroidSetupTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix='pixelkoje-setup-')
-        self.root = Path(self.temp.name) / 'External disk' / 'OpenGuest'
+        self.root = Path(self.temp.name).resolve() / 'External disk' / 'OpenGuest'
         self.tools = self.root / 'Android/sdk/cmdline-tools/latest/bin'
         self.tools.mkdir(parents=True)
         (self.root / '.openguest-storage-id').write_text('fixture-id')
