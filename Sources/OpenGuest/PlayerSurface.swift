@@ -55,6 +55,8 @@ final class GuestViewport: NSScrollView {
         let changed = surface.frame.size != geometry.documentSize || surface.imageRect != geometry.imageRect
         surface.setFrameSize(geometry.documentSize)
         surface.setGeometry(geometry)
+        // Keep the AV video layer in sync immediately after live resolution or window changes.
+        surface.layoutSubtreeIfNeeded()
         if changed {
             let center = oldSource.map { CGPoint(x: geometry.imageRect.minX + CGFloat($0.0) * geometry.scale,
                                                  y: geometry.imageRect.minY + CGFloat($0.1) * geometry.scale) }

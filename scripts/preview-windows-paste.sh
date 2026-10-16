@@ -31,6 +31,8 @@ final class AppModel: ObservableObject {
     let androidDisplayStatus = "Android: 1200 × 1920 · 320 dpi · eigene Anzeige"
     func applyAndroidDisplayNow() async { }
     func restoreAndroidDisplay() async { }
+    func selectGalaxyS26UltraDisplay() { }
+    func fitAndroidPlayerWindow() { }
     func pasteWindowsText(_ input: WindowsTextInput) { }
     let androidPasteStatus = ""
     func pasteAndroidText(_ input: AndroidClipboardText) async -> Bool { true }

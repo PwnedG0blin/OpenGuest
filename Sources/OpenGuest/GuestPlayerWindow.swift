@@ -34,6 +34,28 @@ final class GuestPlayerWindows: NSObject, NSWindowDelegate {
 
     func toggleFullScreen(kind: String) { windows[kind]?.toggleFullScreen(nil) }
 
+    func fitAndroid(model: AppModel) {
+        show(kind: "android", model: model)
+        guard let window = windows["android"], !window.styleMask.contains(.fullScreen), let screen = window.screen ?? NSScreen.main else { return }
+        let visible = screen.visibleFrame.insetBy(dx: 12, dy: 12)
+        let source = model.playerSize == .zero ? CGSize(width: 1440, height: 3120) : model.playerSize
+        func viewport(in view: NSView?) -> GuestViewport? {
+            guard let view else { return nil }
+            if let result = view as? GuestViewport { return result }
+            for child in view.subviews { if let found = viewport(in: child) { return found } }
+            return nil
+        }
+        // Re-measure wrapped controls after each width adjustment.
+        for _ in 0..<3 {
+            window.contentView?.layoutSubtreeIfNeeded()
+            let area = viewport(in: window.contentView)?.contentSize ?? NSSize(width: window.frame.width, height: max(1, window.frame.height - 300))
+            let chrome = NSSize(width: max(0, window.frame.width - area.width), height: max(0, window.frame.height - area.height))
+            let size = AndroidPhoneWindow.size(source: source, available: visible.size, chrome: chrome)
+            window.setFrame(NSRect(x: max(visible.minX, min(window.frame.midX - size.width / 2, visible.maxX - size.width)),
+                y: visible.maxY - size.height, width: size.width, height: size.height), display: true)
+        }
+    }
+
     func windowWillClose(_ notification: Notification) {
         // Release held guest keys when the display is hidden.
         (notification.object as? NSWindow)?.makeFirstResponder(nil)
@@ -106,6 +128,10 @@ private struct GuestPlayerView: View {
             }.frame(maxWidth: .infinity, maxHeight: .infinity)
             VStack(alignment: .leading, spacing: 8) {
                 if kind == "android" {
+                    HStack {
+                        Button("Bild einpassen") { fitsWindow = true }
+                        Button("Telefonfenster") { fitsWindow = true; model.fitAndroidPlayerWindow() }
+                    }
                     Button("Text einfügen …", action: beginPaste).disabled(!active || model.playerSize == .zero)
                         .help("Text vom Mac nach Android übertragen. Auch mit ⌘V im Gastbild.")
                     if !model.androidPasteStatus.isEmpty { Text(model.androidPasteStatus).font(.caption) }

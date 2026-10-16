@@ -58,6 +58,13 @@ final class AppModel: ObservableObject {
         didSet { UserDefaults.standard.set(androidDisplayDensity, forKey: "Pixelkoje.androidDensity") }
     }
     @Published private(set) var androidDisplayBusy = false
+    func selectGalaxyS26UltraDisplay() {
+        guard canEditAndroidDisplay else { return }
+        androidDisplayWidth = "1440"; androidDisplayHeight = "3120"; androidDisplayDensity = "500"
+        androidCustomDisplay = true
+        androidDisplayStatus = "S26-Ultra-Displayprofil gewählt · 1440 × 3120 · 500 dpi. Jetzt anwenden oder Android neu starten."
+        UserDefaults.standard.set(true, forKey: "Pixelkoje.playerFit.android")
+    }
     private func requestedAndroidDisplay() throws -> AndroidCustomDisplay? {
         guard androidCustomDisplay else { return nil }
         guard let w = Int(androidDisplayWidth.trimmingCharacters(in: .whitespacesAndNewlines)),
@@ -301,7 +308,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var apkBusy = false
     @Published private(set) var apkStatus = ""
     @Published private(set) var sessionName = "Kein Gast gestartet"
-    @Published private(set) var log = "Pixelkoje 0.3.17 · Entwicklungsprototyp\nSystem prüfen, dann einen Gast auswählen."
+    @Published private(set) var log = "Pixelkoje 0.3.18 · Entwicklungsprototyp\nSystem prüfen, dann einen Gast auswählen."
     @Published private(set) var lastCommand = ""
     @Published var errorMessage: String? {
         didSet {
@@ -463,6 +470,10 @@ final class AppModel: ObservableObject {
 
     func showPlayer(kind: String) { playerWindows.show(kind: kind, model: self) }
     func togglePlayerFullScreen(kind: String) { playerWindows.toggleFullScreen(kind: kind) }
+    func fitAndroidPlayerWindow() {
+        UserDefaults.standard.set(true, forKey: "Pixelkoje.playerFit.android")
+        playerWindows.fitAndroid(model: self)
+    }
 
     var setupReady: Set<SetupComponent> {
         guard let storage, storageReady else { return [] }
