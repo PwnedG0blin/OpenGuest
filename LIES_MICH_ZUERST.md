@@ -1,6 +1,12 @@
+# Neu in Pixelkoje 0.3.12: Einfügefenster im Stil der App
+
+„Text einfügen“ hat jetzt die türkisen Akzente von Pixelkoje: eine farbige Kopfzeile, ein klar umrandetes Textfeld, einen eigenen Bereich für die Windows-Tastatur und die hervorgehobene Schaltfläche „In Windows einfügen“. Der Dialog passt sich an den hellen und dunklen macOS-Modus an. Der Inhalt lässt sich scrollen; Abbrechen und Einfügen bleiben erreichbar. Eingabeprüfung und Übertragung funktionieren wie bisher.
+
+Zum Aktualisieren Windows herunterfahren und Pixelkoje schließen, dann die App ersetzen. Den bereits eingerichteten Datenordner auf Extern weiterverwenden.
+
 # Neu in Pixelkoje 0.3.11: Text vom Mac in Windows einfügen
 
-Im Windows-Fenster zuerst das gewünschte Eingabefeld anklicken. Text auf dem Mac kopieren und im Player „Text einfügen …“ anklicken oder bei fokussiertem Windows-Bild ⌘V drücken. Die Vorschau lässt sich bearbeiten. Unter „Tastaturbelegung in Windows“ Deutsch oder Englisch (US) entsprechend der tatsächlich in Windows aktiven Belegung wählen. Die Beschriftung der Apple-Tastatur ist dafür nicht entscheidend. Caps Lock muss in Windows ausgeschaltet sein. Anschließend „Einfügen“ anklicken; Fortschritt und Abbrechen erscheinen im Player. Bei einem Diagnosebefehl zum Ausführen danach selbst Enter im Windows-Bild drücken.
+Im Windows-Fenster zuerst das gewünschte Eingabefeld anklicken. Text auf dem Mac kopieren und im Player „Text einfügen …“ anklicken oder bei fokussiertem Windows-Bild ⌘V drücken. Die Vorschau lässt sich bearbeiten. Unter „Tastaturbelegung in Windows“ Deutsch oder Englisch (US) entsprechend der tatsächlich in Windows aktiven Belegung wählen. Die Beschriftung der Apple-Tastatur ist dafür nicht entscheidend. Caps Lock muss in Windows ausgeschaltet sein. Anschließend „In Windows einfügen“ anklicken; Fortschritt und Abbrechen erscheinen im Player. Bei einem Diagnosebefehl zum Ausführen danach selbst Enter im Windows-Bild drücken.
 
 Der Text wird ohne zusätzliche Windows-Treiber als Tastatureingabe übertragen. Druckbare ASCII-Zeichen werden in beiden Belegungen unterstützt, bei Deutsch zusätzlich Umlaute, ß, €, § und ausgewählte Akzentzeichen. Nicht unterstützte Zeichen, Steuerzeichen wie Tabulator oder Texte mit mehr als 4096 Zeichen werden vor der ersten Eingabe abgelehnt. Es erfolgt keine stille Kürzung. Abschließende Zeilenumbrüche werden entfernt, damit ein kopierter Befehl nicht automatisch startet. Innere Zeilenumbrüche benötigen die Option „Zeilenumbrüche als Enter übertragen“; in einer Konsole können sie Befehle ausführen. Laufende Texteingabe ist abbrechbar, bereits eingegebener Text bleibt im Windows-Feld erhalten.
 

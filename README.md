@@ -1,3 +1,7 @@
+# Pixelkoje 0.3.12: a clearer paste dialog in the app’s teal style
+
+The Windows paste preview now uses Pixelkoje’s teal accents, branded header, a tinted editable text card, a separate keyboard-layout card and a prominent “In Windows einfügen” action. System light/dark appearance is respected and the content scrolls while the action row stays visible. Validation, line-break opt-in and text-transfer behavior are unchanged. `scripts/preview-windows-paste.sh` renders the production view with an in-memory model in light/dark appearance for visual review; it does not start a guest or access user clipboard, settings or credentials.
+
 # Pixelkoje 0.3.11: paste Mac text into Windows Setup and applications
 
 The Windows player offers “Text einfügen …” and Command+V in the focused display. Only that explicit action reads plain text from the Mac pasteboard into an editable preview. Choose the keyboard layout used inside Windows (German or US); the physical Mac keyboard does not determine it. A fully validated plan types the text using paced QMP physical-key chords, without a guest clipboard agent or shared network service. QEMU releases each chord after a bounded hold time, including when the sender is canceled or disconnected. Command+V is consumed locally without sending a Windows key that could open Start. Other Command chords retain their prior guest behavior.
@@ -24,7 +28,7 @@ The app, executable, player windows and installer are now named Pixelkoje. Exist
 
 Windows startup fix in **0.3.6**: TPM stays enabled with persistent state, but its optional physical-presence interface (PPI) is disabled. This avoids QEMU #4587's `HV_BAD_ARGUMENT` during device initialization with HVF on Apple Silicon. This does not disable Secure Boot checks, bypass Windows requirements or erase VM data. The installed UEFI firmware must still support the intended Windows configuration. Source: https://gitlab.com/qemu-project/qemu/-/work_items/4587 . CI now initializes a real swtpm + QEMU TPM under TCG and, where the runner provides it, HVF. It does not test a complete Windows installation.
 
-Current test build: **0.3.11**. Opening the app shows the main window only; guests require an explicit Start action. Starting Android or Windows opens its own resizable player window. The Android page can also open Google's account chooser in the normal external Mac browser; this does not sign the Android guest in automatically.
+Current test build: **0.3.12**. Opening the app shows the main window only; guests require an explicit Start action. Starting Android or Windows opens its own resizable player window. The Android page can also open Google's account chooser in the normal external Mac browser; this does not sign the Android guest in automatically.
 
 # Pixelkoje
 
