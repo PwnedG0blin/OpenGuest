@@ -2,6 +2,7 @@ import AppKit
 import Combine
 import Darwin
 import Foundation
+import UniformTypeIdentifiers
 import OpenGuestCore
 
 struct AppSettings: Codable {
@@ -56,6 +57,35 @@ final class AppModel: ObservableObject {
     @Published private(set) var variablesTemplate: String?
     @Published private(set) var androidAcceleration = "Noch nicht geprüft"
     @Published private(set) var windowsAcceleration = "Noch nicht geprüft"
+    @Published private(set) var windowsISOReady = false
+    @Published private(set) var windowsISODetail = "Noch keine Installations-DVD ausgewählt"
+    @Published private(set) var windowsBootMediaStatus = "DVD-Verbindung wird nach dem Start direkt bei QEMU geprüft"
+    func refreshWindowsISO() {
+        do {
+            let info = try WindowsISOInfo.check(path: settings.iso)
+            windowsISOReady = true
+            windowsISODetail = "ISO-Datei lesbar · " + ByteCountFormatter.string(fromByteCount: info.bytes, countStyle: .file)
+        } catch {
+            windowsISOReady = false
+            windowsISODetail = settings.iso.isEmpty ? "Keine DVD-ISO ausgewählt" : error.localizedDescription
+        }
+    }
+    func chooseWindowsISO() {
+        guard !running, !busy else { return }
+        let panel = NSOpenPanel()
+        panel.title = "Windows-ARM64-ISO als Installations-DVD auswählen"
+        panel.prompt = "Als DVD verwenden"
+        panel.canChooseFiles = true; panel.canChooseDirectories = false; panel.allowsMultipleSelection = false
+        panel.allowedContentTypes = [UTType(filenameExtension: "iso") ?? .data]
+        if !settings.iso.isEmpty { panel.directoryURL = URL(fileURLWithPath: settings.iso).resolvingSymlinksInPath().deletingLastPathComponent() }
+        else if let storage { panel.directoryURL = storage.url.appendingPathComponent("Installationsmedien") }
+        if panel.runModal() == .OK, let url = panel.url {
+            settings.iso = url.path
+            settings.installWindows = true
+            refreshWindowsISO()
+        }
+    }
+
     @Published private(set) var windowsFolderStatus = "Windows-Ordner noch nicht geprüft."
     @Published var windowsDiskSize = "80" {
         didSet {
@@ -108,7 +138,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var apkBusy = false
     @Published private(set) var apkStatus = ""
     @Published private(set) var sessionName = "Kein Gast gestartet"
-    @Published private(set) var log = "Pixelkoje 0.3.8 · Entwicklungsprototyp\nSystem prüfen, dann einen Gast auswählen."
+    @Published private(set) var log = "Pixelkoje 0.3.9 · Entwicklungsprototyp\nSystem prüfen, dann einen Gast auswählen."
     @Published private(set) var lastCommand = ""
     @Published var errorMessage: String? {
         didSet {
@@ -164,6 +194,8 @@ final class AppModel: ObservableObject {
         swtpm: \(swtpm ?? "Fehlt")
         Firmware: \(firmware ?? "Fehlt")
         Windows-ISO: \(settings.iso)
+        DVD-Dateiprüfung: \(windowsISODetail)
+        DVD bei QEMU: \(windowsBootMediaStatus)
         Treiber-ISO: \(settings.driversISO)
         Letzte Meldung: \(errorMessage ?? "Keine")
         """
@@ -320,6 +352,7 @@ final class AppModel: ObservableObject {
     private var windowsPlayer: RFBClient?
     private var displayTask: Task<Void, Never>?
     private var qmpSocket: String?
+    private var windowsBootProbe: Task<Void, Never>?
     private var stopRequested = false
 
     let totalMemoryGB = Int(ProcessInfo.processInfo.physicalMemory / 1_073_741_824)
@@ -344,7 +377,7 @@ final class AppModel: ObservableObject {
     }
     var canStartWindows: Bool {
         storageReady && storage?.windowsFolderReady == true && windowsCapacityIssue == nil && supportedHost && hypervisorAvailable && windowsReady && firmware != nil && settings.memoryGB >= 4 &&
-        (!settings.installWindows || (!settings.iso.isEmpty && (!settings.localWindowsAccount || localAccountIssue == nil))) && !busy && !running
+        (!settings.installWindows || (windowsISOReady && (!settings.localWindowsAccount || localAccountIssue == nil))) && !busy && !running
     }
     var canInstallAPK: Bool { running && androidBooted && androidPort != nil && !apkBusy && !busy && adb != nil }
     var adb: String? {
@@ -378,6 +411,7 @@ final class AppModel: ObservableObject {
         do { try storage.validate() } catch { errorMessage = error.localizedDescription; return }
         busy = true
         defer { busy = false; systemCheckLog = log; recordDiagnostic("Systemprüfung", log) }
+        refreshWindowsISO()
         windowsFolderStatus = storage.windowsFolderReady ? "Windows-Ordner vorhanden und beschreibbar." : "Bitte den Windows-Ordner vor dem ersten Start anlegen."
         androidReady = false
         windowsReady = false
@@ -487,6 +521,7 @@ final class AppModel: ObservableObject {
     }
 
     func startWindows() {
+        refreshWindowsISO()
         Task { await startWindowsVM() }
     }
 
@@ -503,9 +538,7 @@ final class AppModel: ObservableObject {
                     password: localPassword, confirmation: localPasswordConfirmation)
             }
             guard FileManager.default.isReadableFile(atPath: firmware) else { throw GuestError.missingFile(firmware) }
-            if settings.installWindows, !FileManager.default.isReadableFile(atPath: settings.iso) {
-                throw GuestError.missingFile(settings.iso)
-            }
+            if settings.installWindows { _ = try WindowsISOInfo.check(path: settings.iso) }
             if !settings.driversISO.isEmpty, settings.driversISO == settings.iso {
                 throw StorageMigration.failure("Windows-ISO und Treiber-ISO sind identisch. Bitte die Treiber-Auswahl entfernen oder eine separate ARM64-Treiber-ISO wählen.")
             }
@@ -528,6 +561,7 @@ final class AppModel: ObservableObject {
             showPlayer(kind: "windows")
             qmpSocket = files.qmpSocket
             connectWindowsPlayer(socket: files.displaySocket)
+            inspectWindowsBoot(socket: files.qmpSocket, installing: settings.installWindows)
         } catch {
             await session.stop()
             windowsSession = nil
@@ -613,12 +647,43 @@ final class AppModel: ObservableObject {
         }
     }
 
+    private func inspectWindowsBoot(socket: String, installing: Bool) {
+        windowsBootProbe?.cancel()
+        windowsBootMediaStatus = installing ? "Installations-DVD wird mit QEMU verbunden …" : "Start von gespeicherter Windows-Festplatte angefordert"
+        windowsBootProbe = Task { [weak self] in
+            let deadline = ProcessInfo.processInfo.systemUptime + 10
+            while !FileManager.default.fileExists(atPath: socket), ProcessInfo.processInfo.systemUptime < deadline {
+                guard !Task.isCancelled, self?.running == true else { return }
+                try? await Task.sleep(nanoseconds: 100_000_000)
+            }
+            guard let self, self.running, !Task.isCancelled else { return }
+            do {
+                let evidence = try await QMPClient.inspect(socket: socket)
+                guard self.running, !Task.isCancelled else { return }
+                if installing {
+                    self.windowsBootMediaStatus = evidence.machineStatus + (evidence.dvdConnected
+                        ? " · Installations-DVD verbunden: " + (evidence.dvdPath ?? self.settings.iso)
+                        : " · QEMU meldet keine eingelegte, schreibgeschützte Installations-DVD")
+                } else { self.windowsBootMediaStatus = evidence.machineStatus + " · Start von gespeicherter Festplatte" }
+            } catch {
+                guard !Task.isCancelled else { return }
+                self.windowsBootMediaStatus = "DVD-/Startstatus konnte nicht von QEMU gelesen werden: \(error.localizedDescription)"
+            }
+            self.recordDiagnostic("Windows · Startmedium", self.windowsBootMediaStatus)
+        }
+    }
+
     private func connectWindowsPlayer(socket: String) {
-        playerStatus = "Windows-Player verbindet …"
+        playerStatus = "Warte auf Windows-Bildschirmanschluss …"
         windowsFrameCount = 0
         displayTask = Task { [weak self] in
-            for _ in 0..<50 {
+            let deadline = ProcessInfo.processInfo.systemUptime + 20
+            while ProcessInfo.processInfo.systemUptime < deadline {
                 guard let self, self.running, !Task.isCancelled else { return }
+                if !FileManager.default.fileExists(atPath: socket) {
+                    try? await Task.sleep(nanoseconds: 100_000_000)
+                    continue
+                }
                 let client = RFBClient()
                 self.windowsPlayer = client
                 client.onFrame = { [weak self] image in
@@ -633,19 +698,31 @@ final class AppModel: ObservableObject {
                     self?.playerStatus = text
                     self?.recordDiagnostic("Windows · Anzeige", text)
                 }
-                do { try await client.run(socket: socket); return }
-                catch {
+                let firstFrameTimeout = Task {
+                    try? await Task.sleep(nanoseconds: 15_000_000_000)
+                    if !Task.isCancelled, self.windowsFrameCount == 0 { client.stop() }
+                }
+                do {
+                    try await client.run(socket: socket)
+                    firstFrameTimeout.cancel()
+                    return
+                } catch {
+                    firstFrameTimeout.cancel()
                     if client.initialized {
                         if !Task.isCancelled {
-                            self.playerStatus = "Windows-Anzeige: \(error.localizedDescription)"
+                            self.playerStatus = self.windowsFrameCount == 0
+                                ? "QEMU liefert kein erstes Bild. Bitte Gesamtprotokoll exportieren."
+                                : "Windows-Anzeige: \(error.localizedDescription)"
                             self.recordDiagnostic("Windows · Anzeige", self.playerStatus)
                         }
                         return
                     }
+                    self.recordDiagnostic("Windows · Anzeigeverbindung", error.localizedDescription)
                 }
-                try? await Task.sleep(nanoseconds: 100_000_000)
+                try? await Task.sleep(nanoseconds: 200_000_000)
             }
-            self?.playerStatus = "Windows-Player nicht erreichbar. QEMU-Protokoll prüfen."
+            self?.playerStatus = "Windows-Bildschirm nicht erreichbar. DVD-/Startstatus und Gesamtprotokoll prüfen."
+            if let self { self.recordDiagnostic("Windows · Anzeige", self.playerStatus) }
         }
     }
 
@@ -823,6 +900,7 @@ final class AppModel: ObservableObject {
         bootTask?.cancel()
         bootTask = nil
         displayTask?.cancel(); displayTask = nil
+        windowsBootProbe?.cancel(); windowsBootProbe = nil
         windowsPlayer?.stop(); windowsPlayer = nil
         if let androidStream { await androidStream.stop() }
         androidStream = nil

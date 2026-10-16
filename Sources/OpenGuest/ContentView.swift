@@ -48,6 +48,7 @@ struct ContentView: View {
         }
         .frame(minWidth: 900, minHeight: 680)
         .tint(.teal)
+        .onChange(of: model.settings.iso) { _, _ in model.refreshWindowsISO() }
         .sheet(isPresented: $model.showStorageSetup) { storageSetup.interactiveDismissDisabled() }
         .alert("Pixelkoje", isPresented: Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })) {
             Button("OK") { model.errorMessage = nil }
@@ -66,7 +67,7 @@ struct ContentView: View {
                 Image(systemName: "square.stack.3d.up.fill").font(.title).foregroundStyle(.teal)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Pixelkoje").font(.headline)
-                    Text("DEVELOPMENT 0.3.8").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
+                    Text("DEVELOPMENT 0.3.9").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
                 }
             }
             ForEach(WorkspaceTab.allCases) { tab in
@@ -257,18 +258,11 @@ struct ContentView: View {
                     }
                     Divider()
                     resourceControls
-                    Toggle("Windows installieren · ISO einlegen", isOn: $model.settings.installWindows)
+                    Toggle("Windows installieren · von DVD starten", isOn: $model.settings.installWindows)
                         .disabled(model.running || model.busy)
                     Text("Nach der Installation ausschalten: Dann bootet die VM von ihrer gespeicherten Windows-Festplatte.")
                         .font(.caption).foregroundStyle(.secondary)
-                    fileRow(title: "Windows-Arm64-ISO", value: model.settings.iso.isEmpty ? "Für die erste Installation auswählen" : model.settings.iso) {
-                        if let file = model.chooseFile(title: "Windows-Arm64-ISO auswählen") { model.settings.iso = file }
-                    }
-                    .disabled(model.running || model.busy)
-                    if !model.settings.iso.isEmpty {
-                        Button("ISO aus Auswahl entfernen") { model.settings.iso = "" }
-                            .font(.caption).disabled(model.running || model.busy)
-                    }
+                    windowsDVDControls
                     fileRow(title: "ARM64-Treiber-ISO (empfohlen)", value: model.settings.driversISO.isEmpty ? "Windows-Gastwerkzeuge / VirtIO-Netzwerktreiber" : model.settings.driversISO) {
                         if let file = model.chooseFile(title: "ARM64-Windows-Gasttreiber-ISO auswählen") { model.settings.driversISO = file }
                     }.disabled(model.running || model.busy)
@@ -512,6 +506,33 @@ struct ContentView: View {
                 Spacer(minLength: 0)
                 Button("Player öffnen") { model.showPlayer(kind: kind) }
             }
+        }
+    }
+
+    private var windowsDVDControls: some View {
+        GroupBox {
+            VStack(alignment: .leading, spacing: 10) {
+                Label("Installations-DVD · Windows ARM64", systemImage: "opticaldiscdrive")
+                    .font(.headline)
+                Text(model.settings.iso.isEmpty ? "Keine ISO ausgewählt" : model.settings.iso)
+                    .font(.system(size: 12, design: .monospaced)).textSelection(.enabled)
+                    .fixedSize(horizontal: false, vertical: true)
+                Label(model.windowsISODetail, systemImage: model.windowsISOReady ? "checkmark.circle" : "exclamationmark.triangle")
+                    .font(.subheadline).foregroundStyle(model.windowsISOReady ? Color.teal : Color.orange)
+                Text(model.settings.installWindows
+                     ? "Diese ISO wird beim nächsten Einrichtungsstart als DVD verbunden."
+                     : "DVD ist nicht zum Start ausgewählt. Die VM startet von ihrer gespeicherten Festplatte.")
+                    .font(.caption).foregroundStyle(.secondary)
+                HStack {
+                    Button("DVD-ISO manuell auswählen …", action: model.chooseWindowsISO)
+                        .buttonStyle(.borderedProminent)
+                    Button("Auswahl entfernen") { model.settings.iso = ""; model.refreshWindowsISO() }
+                        .disabled(model.settings.iso.isEmpty)
+                }.disabled(model.running || model.busy)
+                Text("Eine vorhandene ISO auf Extern auswählen. Der Pfad wird gespeichert. Geprüft werden Dateiverfügbarkeit und Größe; ARM64-Inhalt und Bootfähigkeit sind damit noch nicht bestätigt. Zum Ändern Windows ausschalten.")
+                    .font(.caption).foregroundStyle(.secondary)
+                Text(model.windowsBootMediaStatus).font(.caption).textSelection(.enabled)
+            }.frame(maxWidth: .infinity, alignment: .leading).padding(6)
         }
     }
 

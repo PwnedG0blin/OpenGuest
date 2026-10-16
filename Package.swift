@@ -8,6 +8,7 @@ let package = Package(
     targets: [
         .target(name: "OpenGuestCore"),
         .executableTarget(name: "OpenGuest", dependencies: ["OpenGuestCore"]),
-        .testTarget(name: "OpenGuestCoreTests", dependencies: ["OpenGuestCore"])
+        .testTarget(name: "OpenGuestCoreTests", dependencies: ["OpenGuestCore"]),
+        .testTarget(name: "PlayerIntegrationTests", dependencies: ["OpenGuest", "OpenGuestCore"])
     ]
 )

@@ -73,8 +73,13 @@ private struct GuestPlayerView: View {
                     VStack(spacing: 12) {
                         Image(systemName: kind == "android" ? "apps.iphone" : "desktopcomputer")
                             .font(.system(size: 42))
-                        Text(active ? "System startet …" : "Gastsystem ist ausgeschaltet")
-                    }.foregroundStyle(.white.opacity(0.85)).allowsHitTesting(false)
+                        Text(active ? (kind == "windows" ? model.playerStatus : "System startet …") : "Gastsystem ist ausgeschaltet")
+                            .multilineTextAlignment(.center)
+                        if active && kind == "windows" {
+                            Text(model.windowsBootMediaStatus).font(.caption).multilineTextAlignment(.center)
+                                .textSelection(.enabled)
+                        }
+                    }.padding(24).frame(maxWidth: 650).foregroundStyle(.white.opacity(0.85)).allowsHitTesting(false)
                 }
             }.frame(maxWidth: .infinity, maxHeight: .infinity)
             VStack(alignment: .leading, spacing: 8) {

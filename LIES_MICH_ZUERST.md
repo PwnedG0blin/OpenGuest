@@ -1,3 +1,9 @@
+# Neu in Pixelkoje 0.3.9: Installations-DVD selbst auswählen
+
+Im Windows-Bereich unter „Installations-DVD · Windows ARM64“ auf „DVD-ISO manuell auswählen …“ klicken und die vorhandene ISO auf Extern auswählen. Der vollständige Pfad bleibt gespeichert und sichtbar. Die Auswahl aktiviert „Windows installieren · von DVD starten“. Vor dem Start werden ISO-Endung, Lesbarkeit, reguläre Zieldatei und Größe geprüft. Diese Dateiprüfung bestätigt nicht automatisch ARM64-Architektur oder Bootfähigkeit. Eine Verknüpfung auf eine lesbare ISO bleibt zulässig. Der ISO-Pfad kann bei ausgeschaltetem Gast jederzeit geändert werden. Es erfolgt kein erneuter Download und keine automatische Änderung vorhandener VM-Daten.
+
+Nach dem Start fragt Pixelkoje den tatsächlichen QEMU-Zustand und die eingelegte Installations-DVD ab. Der Bereich zeigt damit getrennt „ausgewählte Datei“ und „von QEMU verbundene DVD“. Im Player ersetzen konkrete Verbindungsschritte oder Fehler die bisher unbegrenzte Startanzeige. Der Bildschirmclient wartet auf den lokalen Socket und begrenzt Verbindungsaufbau und ersten Bildempfang. Diese Korrektur adressiert eine mögliche Startrennbedingung; sie beweist ohne aktuellen Ziel-Mac-Test noch nicht, dass die Windows-Installation erfolgreich bootet. Festplatte, UEFI-Variablen, TPM und Kontodaten bleiben erhalten.
+
 # Neu in Pixelkoje 0.3.8: Android-Leistungsprofile
 
 „Flüssig · empfohlen“ ist voreingestellt. Nach dem Android-Start wird die längste Seite auf höchstens 1600 Pixel verkleinert, mit proportionaler gerader Bildgröße und angepasster Pixeldichte. Beim bisherigen 1080×2400-Gerät ergibt das 720×1600 bei 280 dpi. „Ausgewogen“ begrenzt die lange Seite auf 2000 Pixel; „Originalauflösung“ setzt die Android-Größe und Pixeldichte wieder auf die physischen AVD-Werte zurück. Android-Apps, Konten und Spielstände werden nicht gelöscht. Fehler beim Anwenden führen zu einem Wiederherstellungsversuch der vorherigen Anzeigeüberschreibungen.

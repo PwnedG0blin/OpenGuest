@@ -18,9 +18,24 @@ final class RFBClient {
     func run(socket: String) async throws {
         let connection = NWConnection(to: .unix(path: socket), using: .tcp)
         self.connection = connection
+        onStatus?("Windows-Bildverbindung wird aufgebaut …")
+        connection.stateUpdateHandler = { [weak self, weak connection] state in
+            switch state {
+            case .waiting(let error), .failed(let error):
+                Task { @MainActor [weak self] in self?.onStatus?("Windows-Bildverbindung: \(error.localizedDescription)") }
+                connection?.cancel()
+            default: break
+            }
+        }
+        let handshakeTimeout = Task {
+            try? await Task.sleep(nanoseconds: 8_000_000_000)
+            if !Task.isCancelled { connection.cancel() }
+        }
+        defer { handshakeTimeout.cancel(); connection.stateUpdateHandler = nil }
         connection.start(queue: DispatchQueue(label: "OpenGuest.RFB.transport"))
         defer { connection.cancel(); self.connection = nil }
         let version = try await read(12)
+        onStatus?("Windows-Bildverbindung antwortet · Anzeige wird eingerichtet …")
         guard String(decoding: version, as: UTF8.self).hasPrefix("RFB 003.008") else { throw failure("RFB 3.8 benötigt.") }
         send(Data("RFB 003.008\n".utf8))
         let count = Int(try await read(1)[0])
@@ -40,6 +55,7 @@ final class RFBClient {
         send(Data([0, 0, 0, 0, 32, 24, 0, 1, 0, 255, 0, 255, 0, 255, 16, 8, 0, 0, 0, 0]))
         send(Data([2, 0, 0, 2, 0, 0, 0, 0, 255, 255, 255, 33]))
         initialized = true
+        handshakeTimeout.cancel()
         onStatus?("Windows-Player verbunden · Maus und Tastatur aktiv")
         request(incremental: false)
         while !Task.isCancelled {
