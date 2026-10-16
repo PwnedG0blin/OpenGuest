@@ -11,6 +11,7 @@ final class WindowsSession {
         let displaySocket: String
         let qmpSocket: String
         let proISO: String?
+        let identity: WindowsMachineIdentity
     }
     private var lockFD: Int32 = -1
     private var tpm: Process?
@@ -36,6 +37,7 @@ final class WindowsSession {
         }
         lockFD = fd
 
+        let identity = try WindowsIdentityStore.prepare(root: root)
         let variables = root.appendingPathComponent("uefi-vars.fd")
         if !fm.fileExists(atPath: variables.path) { try fm.copyItem(atPath: variablesTemplate, toPath: variables.path) }
         let disk = root.appendingPathComponent("windows.qcow2")
@@ -90,7 +92,7 @@ final class WindowsSession {
             if fm.fileExists(atPath: socket.path) {
                 return Files(variables: variables.path, disk: disk.path, socket: socket.path,
                              displaySocket: socketDir.appendingPathComponent("display.sock").path,
-                             qmpSocket: socketDir.appendingPathComponent("qmp.sock").path, proISO: editionISO)
+                             qmpSocket: socketDir.appendingPathComponent("qmp.sock").path, proISO: editionISO, identity: identity)
             }
             try await Task.sleep(nanoseconds: 50_000_000)
         }

@@ -101,8 +101,9 @@ public enum LaunchPlan {
 
     public static func windowsVM(qemu: String, firmware: String, variables: String, disk: String,
                                  tpmSocket: String, iso: String?, driversISO: String?, proISO: String?,
-                                 installing: Bool, resources: GuestResources, displaySocket: String, network: Bool, qmpSocket: String) throws -> CommandSpec {
+                                 installing: Bool, resources: GuestResources, displaySocket: String, network: Bool, qmpSocket: String, identity: WindowsMachineIdentity = .legacy) throws -> CommandSpec {
         try resources.validate(windows: true)
+        try identity.validate()
         guard displaySocket.hasPrefix("/tmp/og-"), !displaySocket.contains(","), !displaySocket.contains("\n") else { throw GuestError.invalidResources }
         guard qmpSocket.hasPrefix("/tmp/og-"), !qmpSocket.contains(","), !qmpSocket.contains("\n") else { throw GuestError.invalidResources }
         var args = ["-name", "Pixelkoje — Windows 11 Pro Arm64", "-nodefaults",
@@ -111,7 +112,7 @@ public enum LaunchPlan {
                     "-blockdev", try block("uefi-code", driver: "raw", path: firmware, readOnly: true),
                     "-blockdev", try block("uefi-vars", driver: "raw", path: variables, readOnly: false),
                     "-blockdev", try block("systemdisk", driver: "qcow2", path: disk, readOnly: false),
-                    "-device", "nvme,drive=systemdisk,serial=OpenGuestWindows,bootindex=2",
+                    "-device", "nvme,drive=systemdisk,serial=\(identity.serial),bootindex=2",
                     "-device", "ramfb", "-device", "qemu-xhci,id=usb",
                     "-device", "usb-kbd,bus=usb.0", "-device", "usb-tablet,bus=usb.0",
                     "-display", "none", "-vnc", "unix:\(displaySocket)", "-serial", "none", "-monitor", "none",
@@ -122,7 +123,13 @@ public enum LaunchPlan {
                     // Keep TPM 2.0 and its persistent state; disable only the PPI region.
                     "-device", "tpm-tis-device,tpmdev=tpm0,ppi=off",
                     "-device", "virtio-rng-pci"]
-        if network { args += ["-netdev", "user,id=net0", "-device", "virtio-net-pci,netdev=net0"] }
+        if let uuid = identity.uuid {
+            args += ["-uuid", uuid, "-smbios", "type=1,manufacturer=Pixelkoje,product=Pixelkoje Windows ARM64,serial=\(identity.serial)"]
+        }
+        if network {
+            let mac = identity.mac.map { ",mac=" + $0 } ?? ""
+            args += ["-netdev", "user,id=net0", "-device", "virtio-net-pci,netdev=net0" + mac]
+        }
         else { args += ["-nic", "none"] }
         if installing, let iso, !iso.isEmpty {
             args += ["-blockdev", try block("installer", driver: "raw", path: iso, readOnly: true),

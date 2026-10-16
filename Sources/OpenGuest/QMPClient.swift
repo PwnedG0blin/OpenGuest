@@ -22,6 +22,18 @@ enum QMPClient {
         return try WindowsBootEvidence(status: JSONSerialization.data(withJSONObject: state),
                                        blocks: JSONSerialization.data(withJSONObject: blocks))
     }
+    static func machineUUID(socket: String) async throws -> String {
+        let stream = LocalStream(socket: socket)
+        let timeout = watchdog(stream)
+        defer { timeout.cancel(); stream.close() }
+        _ = try await line(stream)
+        _ = try await command("qmp_capabilities", id: 1, stream: stream)
+        let response = try await command("query-uuid", id: 2, stream: stream) as? [String: Any]
+        guard let uuid = response?["UUID"] as? String, UUID(uuidString: uuid) != nil else {
+            throw StorageMigration.failure("QEMU hat keine gültige VM-UUID zurückgegeben.")
+        }
+        return uuid.lowercased()
+    }
     static func typeText(_ input: WindowsTextInput, socket: String, progress: @escaping (Int) -> Void) async throws {
         let stream = LocalStream(socket: socket)
         let timeout = watchdog(stream, seconds: Double(input.chordCount) * 0.08 + 10)

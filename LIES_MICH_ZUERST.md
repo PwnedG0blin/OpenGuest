@@ -1,3 +1,11 @@
+# Neu in Pixelkoje 0.3.14: Windows-Gerätekennung und ISO-Prüfung
+
+Windows vollständig herunterfahren. Im Windows-Bereich zeigt „Windows-Gerätekennung“ die bisherige oder eigene Kennung. Bestehende VMs behalten zunächst unverändert ihre frühere virtuelle Hardware. Über „Eigene Gerätekennung einrichten …“ lässt sich nach dem Hinweis eine eigene UUID, Seriennummer und Netzwerk-MAC dauerhaft einrichten. Die ursprüngliche Kennung wird unter Windows/Machine gesichert und lässt sich dort über die App wiederherstellen. Windows-Festplatte, UEFI-Dateien und TPM bleiben erhalten. Bei aktivierter Verschlüsselung den BitLocker-Wiederherstellungsschlüssel bereithalten; auch eine erneute Windows-Aktivierung kann nötig sein. Die Kennung wird nicht bei jedem Start gewechselt.
+
+Anschließend „Vorhandenes Windows starten“ wählen. Beim Öffnen der App wird bei vorhandener Festplatte der normale Festplattenstart voreingestellt. „Nächster Start: Windows von DVD einrichten“ gilt einmalig; nach dem Prozessstart schaltet die App für den nächsten Start auf die gespeicherte Festplatte zurück. Die ISO-Auswahl bleibt gespeichert. Eine erneute Installation wird dadurch nicht automatisch angestoßen. Ein bereits in Windows gespeichertes BMW-/Autopilot-Profil wird mit der Änderung allein nicht entfernt. Die feste alte Seriennummer und fehlende eigene UUID sind korrigierte Fehler im Starter; ob sie die konkrete Firmenzuordnung verursacht haben, muss anhand des Gastzustands noch bestätigt werden. Es werden keine Firmenrichtlinien gelöscht oder Microsoft-Registrierungen verändert. Das Gesamtprotokoll enthält die von QEMU bestätigte UUID.
+
+Bei „Installations-DVD“ liest „ISO mit Microsoft-Prüfsumme vergleichen“ die vorhandene Datei und berechnet SHA-256. Ein exakter Treffer bestätigt die deutsche Microsoft-Windows-11-26H2-ARM64-ISO. Abweichungen können auch durch andere Versionen oder Sprachen entstehen. Die Funktion lädt und kopiert keine ISO. Diese Version liefert noch keine geprüfte Secure-Boot-Firmware; eine entsprechende Setup-Meldung ist gesondert zu beheben.
+
 # Neu in Pixelkoje 0.3.13: Entwicklerhinweis und Profil-Links
 
 Unten in der Seitenleiste steht jetzt „Entwickelt von PwnedG0blin“. Die Links „X · @PwnedG0blin“ und „Patreon · Unterstützen“ öffnen das jeweilige Profil im normalen Mac-Browser. Beide Links werden nur auf deinen Klick geöffnet.

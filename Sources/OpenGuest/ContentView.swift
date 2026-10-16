@@ -20,6 +20,8 @@ struct ContentView: View {
     @ObservedObject var model: AppModel
     @State private var selection: WorkspaceTab = .android
     @State private var showStopConfirmation = false
+    @State private var showIdentityChange = false
+    @State private var showIdentityRestore = false
 
     var body: some View {
         HStack(spacing: 0) {
@@ -67,7 +69,7 @@ struct ContentView: View {
                 Image(systemName: "square.stack.3d.up.fill").font(.title).foregroundStyle(.teal)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Pixelkoje").font(.headline)
-                    Text("DEVELOPMENT 0.3.13").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
+                    Text("DEVELOPMENT 0.3.14").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
                 }
             }
             ForEach(WorkspaceTab.allCases) { tab in
@@ -206,6 +208,7 @@ struct ContentView: View {
     private var windows: some View {
         VStack(alignment: .leading, spacing: 18) {
             playerPane(kind: "windows", title: "Windows Player")
+            windowsIdentityCard
             card {
                 VStack(alignment: .leading, spacing: 12) {
                     Label("Windows-Speicherort", systemImage: "externaldrive.fill").font(.headline)
@@ -254,9 +257,9 @@ struct ContentView: View {
                     }
                     Divider()
                     resourceControls
-                    Toggle("Windows installieren · von DVD starten", isOn: $model.settings.installWindows)
+                    Toggle("Nächster Start: Windows von DVD einrichten", isOn: $model.settings.installWindows)
                         .disabled(model.running || model.busy)
-                    Text("Nach der Installation ausschalten: Dann bootet die VM von ihrer gespeicherten Windows-Festplatte.")
+                    Text("Der DVD-Start gilt einmalig. Danach startet die VM von ihrer gespeicherten Festplatte; die ISO-Auswahl bleibt erhalten. Für einen weiteren DVD-Start diese Option erneut einschalten.")
                         .font(.caption).foregroundStyle(.secondary)
                     windowsDVDControls
                     fileRow(title: "ARM64-Treiber-ISO (empfohlen)", value: model.settings.driversISO.isEmpty ? "Windows-Gastwerkzeuge / VirtIO-Netzwerktreiber" : model.settings.driversISO) {
@@ -306,6 +309,8 @@ struct ContentView: View {
                         Button(action: model.startWindows) { Label(model.settings.installWindows ? "Windows einrichten" : "Windows starten", systemImage: "play.fill") }
                             .buttonStyle(.borderedProminent).controlSize(.large)
                             .disabled(!model.canStartWindows)
+                        Button("Vorhandenes Windows starten", action: model.startExistingWindows)
+                            .disabled(!model.canResumeWindows)
                         Spacer()
                         Link("Windows Arm64 ↗", destination: URL(string: "https://www.microsoft.com/de-de/software-download/windows11arm64")!)
                     }
@@ -315,6 +320,44 @@ struct ContentView: View {
                     }.disabled(model.busy)
                 }
             }
+        }
+    }
+
+    private var windowsIdentityCard: some View {
+        card {
+            VStack(alignment: .leading, spacing: 12) {
+                Label("Windows-Gerätekennung", systemImage: "cpu").font(.headline).foregroundStyle(.teal)
+                Text(model.windowsIdentityStatus).font(.subheadline).textSelection(.enabled)
+                    .fixedSize(horizontal: false, vertical: true)
+                if let identity = model.windowsIdentity, identity.mode == .unique {
+                    Text("Seriennummer: \(identity.serial) · Netzwerk-MAC: \(identity.mac ?? "")")
+                        .font(.caption.monospaced()).textSelection(.enabled)
+                }
+                if model.windowsIdentity?.mode == .legacy {
+                    Text("Die bisherige Standardkennung wurde von mehreren VMs verwendet. Eine eigene Kennung verhindert diese Überschneidung; eine damit zusammenhängende Firmenzuordnung ist noch im Gast zu prüfen.")
+                        .font(.caption).foregroundStyle(.orange).fixedSize(horizontal: false, vertical: true)
+                    Button("Eigene Gerätekennung einrichten …") { showIdentityChange = true }
+                        .buttonStyle(.borderedProminent).disabled(model.running || model.busy || !model.storageReady)
+                }
+                if model.windowsIdentityCanRestore {
+                    Button("Ursprüngliche Kennung wiederherstellen …") { showIdentityRestore = true }
+                        .disabled(model.running || model.busy || !model.storageReady)
+                }
+                Text("UUID, Seriennummer und MAC bleiben bei Neustarts gleich und liegen im Windows-Ordner auf deinem gewählten Datenträger. Ein schon in Windows gespeichertes Autopilot-Firmenprofil wird durch die Kennung allein nicht entfernt.")
+                    .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .confirmationDialog("Eigene Windows-Gerätekennung einrichten?", isPresented: $showIdentityChange) {
+            Button("Eigene Kennung übernehmen") { Task { await model.changeWindowsIdentity() } }
+            Button("Abbrechen", role: .cancel) { }
+        } message: {
+            Text("Die bisherige Kennung wird im gewählten Windows-Ordner gesichert. Die VM erhält eine eigene UUID, Seriennummer und MAC. Windows-Festplatte, UEFI-Dateien und TPM werden nicht geändert. Windows kann eine erneute Aktivierung oder bei Verschlüsselung den BitLocker-Wiederherstellungsschlüssel verlangen. Danach ist der Start vom vorhandenen Windows ausgewählt.")
+        }
+        .confirmationDialog("Ursprüngliche Gerätekennung wiederherstellen?", isPresented: $showIdentityRestore) {
+            Button("Kennung wiederherstellen") { Task { await model.changeWindowsIdentity(restore: true) } }
+            Button("Abbrechen", role: .cancel) { }
+        } message: {
+            Text("Die ursprünglichen virtuellen Gerätekennungen werden aus der gespeicherten Sicherung übernommen. Die Festplatte wird nicht zurückgesetzt. Auch bei dieser Hardwareänderung kann Windows eine Aktivierung oder einen BitLocker-Schlüssel verlangen.")
         }
     }
 
@@ -528,6 +571,19 @@ struct ContentView: View {
                 Text("Eine vorhandene ISO auf Extern auswählen. Der Pfad wird gespeichert. Geprüft werden Dateiverfügbarkeit und Größe; ARM64-Inhalt und Bootfähigkeit sind damit noch nicht bestätigt. Zum Ändern Windows ausschalten.")
                     .font(.caption).foregroundStyle(.secondary)
                 Text(model.windowsBootMediaStatus).font(.caption).textSelection(.enabled)
+                Divider()
+                HStack {
+                    Button("ISO mit Microsoft-Prüfsumme vergleichen") { Task { await model.verifyWindowsISO() } }
+                        .disabled(model.running || model.busy || !model.windowsISOReady || !model.storageReady)
+                    Link("Microsoft-Prüfwerte ↗", destination: URL(string: WindowsISOHash.source)!)
+                }
+                Text(model.windowsISOHashStatus).font(.caption).fixedSize(horizontal: false, vertical: true)
+                if !model.windowsISOHashDigest.isEmpty {
+                    Text("SHA-256: " + model.windowsISOHashDigest).font(.caption.monospaced()).textSelection(.enabled)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Text("Verglichen wird die deutsche ARM64-ISO von Windows 11 26H2. Andere Versionen oder Sprachen brauchen ihren eigenen offiziellen Prüfwert. Es wird nichts neu heruntergeladen.")
+                    .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }.frame(maxWidth: .infinity, alignment: .leading).padding(6)
         }
     }

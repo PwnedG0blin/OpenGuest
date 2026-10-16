@@ -60,12 +60,74 @@ final class AppModel: ObservableObject {
     @Published private(set) var windowsISOReady = false
     @Published private(set) var windowsISODetail = "Noch keine Installations-DVD ausgewählt"
     @Published private(set) var windowsBootMediaStatus = "DVD-Verbindung wird nach dem Start direkt bei QEMU geprüft"
+    @Published private(set) var windowsIdentity: WindowsMachineIdentity?
+    @Published private(set) var windowsIdentityStatus = "Gerätekennung noch nicht geprüft"
+    @Published private(set) var windowsIdentityCanRestore = false
+    @Published private(set) var windowsISOHashStatus = "Originalität der ISO noch nicht geprüft"
+    @Published private(set) var windowsISOHashDigest = ""
+    private var hashedISOPath = ""
+
+    func refreshWindowsIdentity() {
+        guard let storage, storageReady else { windowsIdentity = nil; windowsIdentityCanRestore = false; return }
+        do {
+            let saved = try WindowsIdentityStore.load(root: storage.windows)
+            windowsIdentity = saved ?? (FileManager.default.fileExists(atPath: storage.windows.appendingPathComponent("windows.qcow2").path) ? .legacy : nil)
+            windowsIdentityStatus = windowsIdentity?.summary ?? "Neue Windows-VM: eigene UUID, Seriennummer und MAC werden vor dem ersten Start gespeichert."
+            windowsIdentityCanRestore = try WindowsIdentityStore.canRestore(root: storage.windows)
+        } catch {
+            windowsIdentity = nil; windowsIdentityCanRestore = false
+            windowsIdentityStatus = "Gerätekennung nicht lesbar: " + error.localizedDescription
+        }
+    }
+    func changeWindowsIdentity(restore: Bool = false) async {
+        guard !running, !busy, let storage, storageReady else { return }
+        busy = true
+        defer { busy = false }
+        do {
+            let value = try await Task.detached(priority: .utility) {
+                try WindowsIdentityStore.useUnique(storage: storage, restore: restore)
+            }.value
+            refreshWindowsIdentity()
+            windowsIdentityStatus = (restore ? "Ursprüngliche Kennung wiederhergestellt. " : "Eigene Kennung gespeichert. ") + value.summary
+            // Resume the existing OS; changing hardware is not a request to reinstall Windows.
+            settings.installWindows = false
+            recordDiagnostic("Windows · Gerätekennung", windowsIdentityStatus)
+        } catch { errorMessage = error.localizedDescription }
+    }
+    func verifyWindowsISO() async {
+        guard !running, !busy, storageReady, windowsISOReady else { return }
+        busy = true
+        let path = settings.iso
+        hashedISOPath = path
+        windowsISOHashDigest = ""
+        windowsISOHashStatus = "SHA-256 wird berechnet. Die vorhandene ISO wird nur gelesen …"
+        defer { busy = false }
+        do {
+            let result = try await Task.detached(priority: .utility) { try WindowsISOHash.calculate(path: path) }.value
+            guard settings.iso == path else { return }
+            windowsISOHashDigest = result.sha256
+            let checkedAt = DateFormatter.localizedString(from: Date(), dateStyle: .short, timeStyle: .short)
+            let detail = result.matchesMicrosoftGerman26H2
+                ? "Original bestätigt: Microsoft Windows 11 26H2 · ARM64 · Deutsch. SHA-256 stimmt überein."
+                : "Kein Treffer für Microsoft Windows 11 26H2 ARM64 Deutsch. Andere Version/Sprache oder eine veränderte Datei möglich. Das allein beweist keine Beschädigung."
+            windowsISOHashStatus = "Prüfergebnis vom \(checkedAt): " + detail
+            recordDiagnostic("Windows · ISO-Prüfsumme", windowsISOHashStatus + " SHA-256: " + result.sha256)
+        } catch {
+            windowsISOHashStatus = "Prüfsumme nicht ermittelt: " + error.localizedDescription
+            recordDiagnostic("Windows · ISO-Prüfsumme", windowsISOHashStatus)
+        }
+    }
     @Published var windowsTextLayout = WindowsTextLayout(rawValue: UserDefaults.standard.string(forKey: "Pixelkoje.windowsTextLayout") ?? "german") ?? .german {
         didSet { UserDefaults.standard.set(windowsTextLayout.rawValue, forKey: "Pixelkoje.windowsTextLayout") }
     }
     @Published private(set) var windowsPasteBusy = false
     @Published private(set) var windowsPasteStatus = ""
     func refreshWindowsISO() {
+        if hashedISOPath != settings.iso {
+            hashedISOPath = settings.iso
+            windowsISOHashDigest = ""
+            windowsISOHashStatus = "Originalität der ISO noch nicht geprüft"
+        }
         do {
             let info = try WindowsISOInfo.check(path: settings.iso)
             windowsISOReady = true
@@ -143,7 +205,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var apkBusy = false
     @Published private(set) var apkStatus = ""
     @Published private(set) var sessionName = "Kein Gast gestartet"
-    @Published private(set) var log = "Pixelkoje 0.3.13 · Entwicklungsprototyp\nSystem prüfen, dann einen Gast auswählen."
+    @Published private(set) var log = "Pixelkoje 0.3.14 · Entwicklungsprototyp\nSystem prüfen, dann einen Gast auswählen."
     @Published private(set) var lastCommand = ""
     @Published var errorMessage: String? {
         didSet {
@@ -188,6 +250,8 @@ final class AppModel: ObservableObject {
         Windows-Ordner: \(windowsFolderStatus)
         Gewünschte Windows-Festplatte: \(windowsDiskSize) GB · Geprüfte Größe in Bytes: \(windowsDiskBytes.map { String($0) } ?? "Noch nicht ermittelt")
         Festplattenstatus: \(windowsDiskStatus)
+        Windows-Gerätekennung: \(windowsIdentityStatus)
+        ISO-Prüfsumme: \(windowsISOHashStatus) · \(windowsISOHashDigest)
         Windows-Einrichtung: \(settings.installWindows) · lokales Konto: \(settings.localWindowsAccount)
         Benutzername-Länge: \(settings.localWindowsUser.count)
         Kennwortlänge: \(localPassword.count) · Wiederholungslänge: \(localPasswordConfirmation.count) · Übereinstimmung: \(localPassword == localPasswordConfirmation)
@@ -381,10 +445,15 @@ final class AppModel: ObservableObject {
     var canStartAndroid: Bool {
         storageReady && supportedHost && hypervisorAvailable && androidReady && selectedDevice?.supported == true && adb != nil && ScrcpySession.installed && !busy && !running
     }
-    var canStartWindows: Bool {
-        storageReady && storage?.windowsFolderReady == true && windowsCapacityIssue == nil && supportedHost && hypervisorAvailable && windowsReady && firmware != nil && settings.memoryGB >= 4 &&
-        (!settings.installWindows || (windowsISOReady && (!settings.localWindowsAccount || localAccountIssue == nil))) && !busy && !running
+    private var windowsHostReady: Bool {
+        storageReady && storage?.windowsFolderReady == true && windowsCapacityIssue == nil && supportedHost && hypervisorAvailable && windowsReady && firmware != nil && settings.memoryGB >= 4 && !busy && !running
     }
+    var canStartWindows: Bool {
+        windowsHostReady && (settings.installWindows
+            ? (windowsISOReady && (!settings.localWindowsAccount || localAccountIssue == nil))
+            : windowsDiskBytes != nil)
+    }
+    var canResumeWindows: Bool { windowsHostReady && windowsDiskBytes != nil }
     var canInstallAPK: Bool { running && androidBooted && androidPort != nil && !apkBusy && !busy && adb != nil }
     var adb: String? {
         guard let sdk else { return nil }
@@ -408,6 +477,8 @@ final class AppModel: ObservableObject {
         guard storage != nil else { showStorageSetup = true; return }
         updateBackupPaths()
         await refresh()
+        // Prefer the saved disk when upgrading from versions that kept DVD boot enabled.
+        if windowsDiskBytes != nil { settings.installWindows = false }
         // Launching Pixelkoje only prepares the main window. Guests always start on an explicit click.
     }
 
@@ -418,6 +489,7 @@ final class AppModel: ObservableObject {
         busy = true
         defer { busy = false; systemCheckLog = log; recordDiagnostic("Systemprüfung", log) }
         refreshWindowsISO()
+        refreshWindowsIdentity()
         windowsFolderStatus = storage.windowsFolderReady ? "Windows-Ordner vorhanden und beschreibbar." : "Bitte den Windows-Ordner vor dem ersten Start anlegen."
         androidReady = false
         windowsReady = false
@@ -476,7 +548,7 @@ final class AppModel: ObservableObject {
                 let hasCocoa = display.output.contains("-vnc")
                 let hasTPM = RuntimeDiscovery.hasDevice("tpm-tis-device", in: hardware.output)
                 windowsReady = acceleration.status == 0 && display.status == 0 && hardware.status == 0 && hasHVF && hasCocoa && hasTPM && swtpm != nil && qemuImg != nil && variablesTemplate != nil
-                windowsAcceleration = windowsReady ? "HVF, VNC, TPM und UEFI gefunden" : "QEMU, swtpm oder passende UEFI-Dateien fehlen"
+                windowsAcceleration = windowsReady ? "HVF, VNC, TPM und UEFI-Dateien gefunden · Secure Boot nicht geprüft" : "QEMU, swtpm oder passende UEFI-Dateien fehlen"
                 log += "\nQEMU-Beschleuniger:\n\(acceleration.output)\nQEMU-Geräte:\n\(hardware.output)\n"
                 if firmware == nil { log += "ARM64-UEFI-Firmware fehlt. Bitte eine edk2-aarch64-code.fd auswählen.\n" }
                 if swtpm == nil { log += "swtpm fehlt. Für Windows wird ein dauerhaftes TPM 2.0 benötigt.\n" }
@@ -531,20 +603,27 @@ final class AppModel: ObservableObject {
         Task { await startWindowsVM() }
     }
 
+    func startExistingWindows() {
+        guard canResumeWindows else { return }
+        settings.installWindows = false
+        startWindows()
+    }
+
     private func startWindowsVM() async {
         guard canStartWindows, let capacity = windowsCapacityGiB, let qemu, let firmware, let qemuImg, let swtpm, let variablesTemplate else { return }
+        let installing = settings.installWindows
         busy = true
         defer { busy = false }
         let session = WindowsSession()
         do {
-            try checkStorageSpace(minimumGB: settings.installWindows ? 25 : 2)
+            try checkStorageSpace(minimumGB: installing ? 25 : 2)
             var account: WindowsEdition.LocalAccount?
-            if settings.installWindows && settings.localWindowsAccount {
+            if installing && settings.localWindowsAccount {
                 account = try WindowsEdition.validateSetupAccount(name: settings.localWindowsUser,
                     password: localPassword, confirmation: localPasswordConfirmation)
             }
             guard FileManager.default.isReadableFile(atPath: firmware) else { throw GuestError.missingFile(firmware) }
-            if settings.installWindows { _ = try WindowsISOInfo.check(path: settings.iso) }
+            if installing { _ = try WindowsISOInfo.check(path: settings.iso) }
             if !settings.driversISO.isEmpty, settings.driversISO == settings.iso {
                 throw StorageMigration.failure("Windows-ISO und Treiber-ISO sind identisch. Bitte die Treiber-Auswahl entfernen oder eine separate ARM64-Treiber-ISO wählen.")
             }
@@ -555,19 +634,27 @@ final class AppModel: ObservableObject {
                 try await persistWindowsCredential(account, storage: storage)
             }
             let files = try await session.prepare(qemuImg: qemuImg, swtpm: swtpm, variablesTemplate: variablesTemplate,
-                                                  capacityGiB: capacity, selectPro: settings.installWindows && settings.selectPro, localAccount: account)
+                                                  capacityGiB: capacity, selectPro: installing && settings.selectPro, localAccount: account)
             windowsDiskBytes = Int64(capacity) * 1_073_741_824
             let spec = try LaunchPlan.windowsVM(qemu: qemu, firmware: firmware, variables: files.variables, disk: files.disk,
                                                tpmSocket: files.socket, iso: settings.iso, driversISO: settings.driversISO,
-                                               proISO: files.proISO, installing: settings.installWindows, resources: resources,
-                                               displaySocket: files.displaySocket, network: settings.windowsNetwork, qmpSocket: files.qmpSocket)
+                                               proISO: files.proISO, installing: installing, resources: resources,
+                                               displaySocket: files.displaySocket, network: settings.windowsNetwork, qmpSocket: files.qmpSocket, identity: files.identity)
+            windowsIdentity = files.identity
+            windowsIdentityStatus = files.identity.summary
+            recordDiagnostic("Windows · Gerätekennung", files.identity.summary)
             windowsSession = session
             try start(spec, title: "Windows 11 Pro Arm64")
+            // Consume the DVD choice after a successful process launch, retaining its path.
+            settings.installWindows = false
+            recordDiagnostic("Windows · Startmedium", installing
+                ? "Einmaliger DVD-Start; nächster Start von der gespeicherten Festplatte."
+                : "Start von der gespeicherten Festplatte; keine Installations-DVD eingebunden.")
             activeGuest = "windows"
             showPlayer(kind: "windows")
             qmpSocket = files.qmpSocket
             connectWindowsPlayer(socket: files.displaySocket)
-            inspectWindowsBoot(socket: files.qmpSocket, installing: settings.installWindows)
+            inspectWindowsBoot(socket: files.qmpSocket, installing: installing)
         } catch {
             await session.stop()
             windowsSession = nil
@@ -676,6 +763,18 @@ final class AppModel: ObservableObject {
                 self.windowsBootMediaStatus = "DVD-/Startstatus konnte nicht von QEMU gelesen werden: \(error.localizedDescription)"
             }
             self.recordDiagnostic("Windows · Startmedium", self.windowsBootMediaStatus)
+            do {
+                let actual = try await QMPClient.machineUUID(socket: socket)
+                guard self.running, !Task.isCancelled else { return }
+                let expected = self.windowsIdentity?.uuid ?? "00000000-0000-0000-0000-000000000000"
+                self.windowsIdentityStatus = actual == expected
+                    ? "QEMU bestätigt VM-UUID: " + actual + (self.windowsIdentity?.mode == .legacy ? " · bisherige Standardkennung" : " · eigene Gerätekennung")
+                    : "VM-UUID weicht von der gespeicherten Kennung ab: " + actual
+            } catch {
+                guard !Task.isCancelled else { return }
+                self.windowsIdentityStatus = "VM-UUID nicht bei QEMU bestätigt: " + error.localizedDescription
+            }
+            self.recordDiagnostic("Windows · Gerätekennung geprüft", self.windowsIdentityStatus)
         }
     }
 

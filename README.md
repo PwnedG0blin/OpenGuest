@@ -1,3 +1,11 @@
+# Pixelkoje 0.3.14: stable per-VM Windows hardware identity and ISO verification
+
+New VMs receive a persistent UUID, SMBIOS/NVMe serial and locally administered unicast MAC before disk creation. Existing disks retain the legacy identity until the user explicitly opts in while the VM is off. The prior identity is saved with a validated reversible change record in the selected Windows/Machine folder; repeat clicks and rollback/reapply reuse the same identity. The disk, UEFI variables and TPM are not rewritten. Identity changes may affect activation or BitLocker; the UI explains this before applying them. A session lock prevents changes while another player uses the VM. Damaged/missing identity files inside an existing Machine folder fail closed instead of regenerating identifiers. QMP confirms the actual running UUID in the combined diagnostic report.
+
+The fixed legacy serial and absent per-VM UUID were concrete launcher defects. They are a plausible source of unintended Autopilot matching, not a proven cause of a particular tenant assignment. This update does not delete Windows policies, cached Autopilot data, cloud registrations or accounts, and does not claim to remove an existing company sign-in. The guest's resulting setup must still be checked. Secure Boot support is explicitly unverified; no new firmware or requirement bypass is included.
+
+“Vorhandenes Windows starten” explicitly selects the saved disk instead of the installer DVD. App launch prefers an existing saved disk, including when upgrading from a version that kept installation mode enabled. An explicitly chosen DVD start applies once: after QEMU launches, disk boot is saved for the next launch while the ISO path remains available. This does not reset or reinstall the existing disk. “ISO mit Microsoft-Prüfsumme vergleichen” reads the selected ISO with a 1 MiB streaming SHA-256 buffer and compares it with Microsoft's German 26H2 ARM64 reference from https://www.microsoft.com/de-de/software-download/windows11arm64 (checked 2026-10-16). A mismatch is reported as an unknown/different image, not automatically as corruption. No ISO download or copy is performed by this check.
+
 # Pixelkoje 0.3.13: developer credit and profile links
 
 The sidebar credits PwnedG0blin and provides explicit links to the developer’s X profile and Patreon page. Clicking a link opens it in the Mac’s browser. Both appearances use readable teal links; no profile page is loaded automatically.
@@ -32,7 +40,7 @@ The app, executable, player windows and installer are now named Pixelkoje. Exist
 
 Windows startup fix in **0.3.6**: TPM stays enabled with persistent state, but its optional physical-presence interface (PPI) is disabled. This avoids QEMU #4587's `HV_BAD_ARGUMENT` during device initialization with HVF on Apple Silicon. This does not disable Secure Boot checks, bypass Windows requirements or erase VM data. The installed UEFI firmware must still support the intended Windows configuration. Source: https://gitlab.com/qemu-project/qemu/-/work_items/4587 . CI now initializes a real swtpm + QEMU TPM under TCG and, where the runner provides it, HVF. It does not test a complete Windows installation.
 
-Current test build: **0.3.13**. Opening the app shows the main window only; guests require an explicit Start action. Starting Android or Windows opens its own resizable player window. The Android page can also open Google's account chooser in the normal external Mac browser; this does not sign the Android guest in automatically.
+Current test build: **0.3.14**. Opening the app shows the main window only; guests require an explicit Start action. Starting Android or Windows opens its own resizable player window. The Android page can also open Google's account chooser in the normal external Mac browser; this does not sign the Android guest in automatically.
 
 # Pixelkoje
 
