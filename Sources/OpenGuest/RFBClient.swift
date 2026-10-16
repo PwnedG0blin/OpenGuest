@@ -13,6 +13,7 @@ final class RFBClient {
     private var width = 0
     private var height = 0
     private(set) var initialized = false
+    private var wheel = WindowsWheelScroll()
     var onFrame: ((NSImage) -> Void)?
     var onStatus: ((String) -> Void)?
 
@@ -34,7 +35,7 @@ final class RFBClient {
         }
         defer { handshakeTimeout.cancel(); connection.stateUpdateHandler = nil }
         connection.start(queue: DispatchQueue(label: "OpenGuest.RFB.transport"))
-        defer { connection.cancel(); self.connection = nil }
+        defer { connection.cancel(); self.connection = nil; initialized = false; wheel.reset() }
         let version = try await read(12)
         onStatus?("Windows-Bildverbindung antwortet · Anzeige wird eingerichtet …")
         guard String(decoding: version, as: UTF8.self).hasPrefix("RFB 003.008") else { throw failure("RFB 3.8 benötigt.") }
@@ -102,12 +103,31 @@ final class RFBClient {
         }
     }
 
-    func stop() { connection?.cancel() }
+    func stop() { wheel.reset(); connection?.cancel() }
+    func resetScroll() { wheel.reset() }
 
     func pointer(x: Int, y: Int, mask: UInt8) {
         guard initialized, width > 0, height > 0 else { return }
+        send(pointerMessage(x: x, y: y, mask: mask))
+    }
+
+    func scroll(x: Int, y: Int, vertical: Double, mask: UInt8) {
+        guard initialized, connection != nil, width > 0, height > 0 else { return }
+        let steps = wheel.consume(vertical)
+        guard steps != 0 else { return }
+        let base = mask & 7
+        let button: UInt8 = steps > 0 ? 8 : 16
+        var message = Data()
+        for _ in 0..<abs(steps) {
+            message.append(pointerMessage(x: x, y: y, mask: base | button))
+            message.append(pointerMessage(x: x, y: y, mask: base))
+        }
+        // Keep wheel presses and releases together; never release a held mouse button.
+        send(message)
+    }
+    private func pointerMessage(x: Int, y: Int, mask: UInt8) -> Data {
         let x = UInt16(max(0, min(width - 1, x))), y = UInt16(max(0, min(height - 1, y)))
-        send(Data([5, mask, UInt8(x >> 8), UInt8(x & 255), UInt8(y >> 8), UInt8(y & 255)]))
+        return Data([5, mask, UInt8(x >> 8), UInt8(x & 255), UInt8(y >> 8), UInt8(y & 255)])
     }
 
     func key(_ symbol: UInt32, down: Bool) {

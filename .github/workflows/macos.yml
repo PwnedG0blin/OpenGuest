@@ -41,14 +41,14 @@ jobs:
           mkdir -p dist/installer
           /usr/bin/ditto dist/Pixelkoje.app dist/installer/Pixelkoje.app
           ln -s /Applications dist/installer/Applications
-          /usr/bin/hdiutil create -volname Pixelkoje -srcfolder dist/installer -ov -format UDZO dist/Pixelkoje_0.3.14_AppleSilicon.dmg
+          /usr/bin/hdiutil create -volname Pixelkoje -srcfolder dist/installer -ov -format UDZO dist/Pixelkoje_0.3.15_AppleSilicon.dmg
       - name: Upload compiled app
         uses: actions/upload-artifact@v7
         with:
           name: Pixelkoje-macOS-AppleSilicon-test-app
           path: |
             dist/Pixelkoje-macOS-AppleSilicon.app.zip
-            dist/Pixelkoje_0.3.14_AppleSilicon.dmg
+            dist/Pixelkoje_0.3.15_AppleSilicon.dmg
             dist/paste-preview/*.png
           if-no-files-found: error
           retention-days: 14

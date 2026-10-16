@@ -125,6 +125,14 @@ final class ScrcpySession {
         control?.send(ScrcpyWire.touch(x: x, y: y, width: width, height: height, action: action))
     }
     func key(_ code: UInt32, down: Bool) { control?.send(ScrcpyWire.key(code, down: down)) }
+    func scroll(x: Int, y: Int, horizontal: Double, vertical: Double, mask: UInt8) {
+        // A mouse-wheel event must not interfere with an in-progress synthetic touch drag.
+        guard !touchDown else { return }
+        let buttons = UInt32(mask & 1) | UInt32((mask & 4) >> 1) | UInt32((mask & 2) << 1)
+        let data = ScrcpyWire.scroll(x: x, y: y, width: width, height: height,
+                                     horizontal: horizontal, vertical: vertical, buttons: buttons)
+        if !data.isEmpty { control?.send(data) }
+    }
     func text(_ text: String) { control?.send(ScrcpyWire.text(text)) }
 
     func stop() async {

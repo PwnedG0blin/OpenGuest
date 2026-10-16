@@ -1,3 +1,13 @@
+# Pixelkoje 0.3.15: trackpad scrolling and display controls
+
+The native player now handles AppKit scroll-wheel events, including precise two-finger motion and macOS momentum. AppKit already applies the natural-scroll preference; the player does not invert it again. Android receives scrcpy 4.0 fractional vertical/horizontal scroll messages at the guest coordinate. Windows accumulates small vertical deltas into bounded RFB wheel steps and sends every press/release pair together while preserving held buttons. QEMU's current VNC/USB-tablet path has no horizontal wheel support; Windows scrolling remains wheel-based rather than pixel scrolling. No global input monitor or Accessibility permission is used.
+
+Both player windows can fit the image to the window or zoom from 25–300%, with a saved setting per guest type. At 100%, one received framebuffer pixel maps to one Mac backing pixel. Scrollbars pan an enlarged image; trackpad scrolling remains guest input. Pointer mapping uses the same centered/cropped image geometry. Momentum remains anchored to the control where the gesture began; cancel, focus loss, display resize and detach clear scroll state.
+
+Android can use a custom even pixel width/height and DPI, applied live after boot or on its next start. Values are bounded and previous display overrides remain available for rollback if applying fails. Restore selects the physical display and density. Higher-resolution guests can still be downscaled by the chosen streaming profile. Windows has a button that sends Windows+I; actual guest resolution/text scaling is chosen under System > Display from the modes its installed driver offers. Player zoom does not change Windows display modes or install a new graphics driver. VM disks, UEFI variables, TPM and accounts are retained.
+
+Regression tests cover fractional motion, reversal/reset, scrcpy's pinned 21-byte scroll packet, Retina/letterbox/zoom coordinate geometry, custom Android bounds/rollback, native AppKit event delivery and actual RFB wheel bytes received by a local peer. Full target-device gesture feel and guest resolution choices still require manual verification.
+
 # Pixelkoje 0.3.14: stable per-VM Windows hardware identity and ISO verification
 
 New VMs receive a persistent UUID, SMBIOS/NVMe serial and locally administered unicast MAC before disk creation. Existing disks retain the legacy identity until the user explicitly opts in while the VM is off. The prior identity is saved with a validated reversible change record in the selected Windows/Machine folder; repeat clicks and rollback/reapply reuse the same identity. The disk, UEFI variables and TPM are not rewritten. Identity changes may affect activation or BitLocker; the UI explains this before applying them. A session lock prevents changes while another player uses the VM. Damaged/missing identity files inside an existing Machine folder fail closed instead of regenerating identifiers. QMP confirms the actual running UUID in the combined diagnostic report.
@@ -40,7 +50,7 @@ The app, executable, player windows and installer are now named Pixelkoje. Exist
 
 Windows startup fix in **0.3.6**: TPM stays enabled with persistent state, but its optional physical-presence interface (PPI) is disabled. This avoids QEMU #4587's `HV_BAD_ARGUMENT` during device initialization with HVF on Apple Silicon. This does not disable Secure Boot checks, bypass Windows requirements or erase VM data. The installed UEFI firmware must still support the intended Windows configuration. Source: https://gitlab.com/qemu-project/qemu/-/work_items/4587 . CI now initializes a real swtpm + QEMU TPM under TCG and, where the runner provides it, HVF. It does not test a complete Windows installation.
 
-Current test build: **0.3.14**. Opening the app shows the main window only; guests require an explicit Start action. Starting Android or Windows opens its own resizable player window. The Android page can also open Google's account chooser in the normal external Mac browser; this does not sign the Android guest in automatically.
+Current test build: **0.3.15**. Opening the app shows the main window only; guests require an explicit Start action. Starting Android or Windows opens its own resizable player window. The Android page can also open Google's account chooser in the normal external Mac browser; this does not sign the Android guest in automatically.
 
 # Pixelkoje
 

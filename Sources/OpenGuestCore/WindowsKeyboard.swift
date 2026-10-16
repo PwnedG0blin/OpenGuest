@@ -29,4 +29,8 @@ public enum WindowsKeyboard {
         Event(symbol: 0xffe1, down: true), Event(symbol: 0xffc7, down: true),
         Event(symbol: 0xffc7, down: false), Event(symbol: 0xffe1, down: false)
     ]
+    public static let settings: [Event] = [
+        Event(symbol: 0xffeb, down: true), Event(symbol: 0x69, down: true),
+        Event(symbol: 0x69, down: false), Event(symbol: 0xffeb, down: false)
+    ]
 }

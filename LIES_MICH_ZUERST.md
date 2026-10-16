@@ -1,3 +1,15 @@
+# Neu in Pixelkoje 0.3.15: Trackpad, Auflösung und Skalierung
+
+Mit zwei Fingern über dem Gastbild hoch/runter scrollen. Die macOS-Scrollrichtung und der macOS-Nachlauf werden übernommen. Android unterstützt außerdem seitliches Scrollen. Windows nutzt mit dem aktuellen VNC-/USB-Tablet-Pfad Mausradschritte; kleine Trackpad-Bewegungen werden dafür gesammelt. Seitliches Windows-Scrollen und native Windows-Pixelgesten sind damit noch nicht verfügbar. Beim Scrollen wird kein zusätzlicher Klick ausgelöst.
+
+Im Player „An Fenster anpassen“ wählen oder ausschalten und „Ansicht“ zwischen 25 und 300 Prozent einstellen. 100 Prozent entspricht einem empfangenen Bildpixel pro Mac-Bildpixel. Vergrößerte Bilder lassen sich über die Scrollleisten verschieben. Zwei-Finger-Gesten bleiben Eingaben für den Gast. Android und Windows merken sich ihre Ansichtsgröße getrennt.
+
+„Android-Auflösung …“ bietet eigene Breite, Höhe und dpi. Bei gleicher Pixelauflösung machen größere dpi die Android-Schrift und Bedienelemente größer. Nach dem Android-Start „Jetzt in Android anwenden“ wählen; sonst gelten die gemerkten Werte beim nächsten Start. „Originalauflösung und Dichte wiederherstellen“ setzt beide Android-Überschreibungen zurück. Das Leistungsprofil begrenzt weiterhin Streamgröße und Bitrate; eine hohe Gastauflösung garantiert daher kein entsprechend großes übertragenes Bild.
+
+Bei Windows „Windows-Einstellungen …“ wählen, danach im Gast System → Anzeige öffnen. Dort lassen sich die vom Gasttreiber angebotene Auflösung und Windows-Skalierung wählen. Die Player-Ansichtsgröße ist davon unabhängig; diese Version ergänzt keinen Grafiktreiber und keine neuen Windows-Anzeigemodi.
+
+Vor dem Ersetzen Windows regulär herunterfahren und Pixelkoje schließen. Vorhandene Systeme auf dem gewählten Datenträger weiterverwenden. Es gibt weiterhin keinen automatischen Gaststart beim Öffnen der App.
+
 # Neu in Pixelkoje 0.3.14: Windows-Gerätekennung und ISO-Prüfung
 
 Windows vollständig herunterfahren. Im Windows-Bereich zeigt „Windows-Gerätekennung“ die bisherige oder eigene Kennung. Bestehende VMs behalten zunächst unverändert ihre frühere virtuelle Hardware. Über „Eigene Gerätekennung einrichten …“ lässt sich nach dem Hinweis eine eigene UUID, Seriennummer und Netzwerk-MAC dauerhaft einrichten. Die ursprüngliche Kennung wird unter Windows/Machine gesichert und lässt sich dort über die App wiederherstellen. Windows-Festplatte, UEFI-Dateien und TPM bleiben erhalten. Bei aktivierter Verschlüsselung den BitLocker-Wiederherstellungsschlüssel bereithalten; auch eine erneute Windows-Aktivierung kann nötig sein. Die Kennung wird nicht bei jedem Start gewechselt.

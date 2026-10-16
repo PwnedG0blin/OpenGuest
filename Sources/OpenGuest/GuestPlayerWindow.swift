@@ -20,7 +20,7 @@ final class GuestPlayerWindows: NSObject, NSWindowDelegate {
             window.title = android ? "Android Player · Pixelkoje" : "Windows Player · Pixelkoje"
             window.isReleasedWhenClosed = false
             window.isRestorable = false
-            window.contentMinSize = NSSize(width: 360, height: 320)
+            window.contentMinSize = NSSize(width: 360, height: 480)
             window.collectionBehavior.insert(.fullScreenPrimary)
             window.delegate = self
             window.contentView = NSHostingView(rootView: GuestPlayerView(model: model, kind: kind))
@@ -47,6 +47,16 @@ private struct GuestPlayerView: View {
     private var active: Bool { model.activeGuest == kind }
     @State private var pastePresented = false
     @State private var pasteDraft = ""
+    @AppStorage private var fitsWindow: Bool
+    @AppStorage private var zoomPercent: Double
+    @State private var androidDisplayPresented = false
+    private var safeZoom: Double { zoomPercent.isFinite ? max(25, min(300, zoomPercent)) : 100 }
+
+    init(model: AppModel, kind: String) {
+        self.model = model; self.kind = kind
+        _fitsWindow = AppStorage(wrappedValue: true, "Pixelkoje.playerFit.\(kind)")
+        _zoomPercent = AppStorage(wrappedValue: 100, "Pixelkoje.playerZoom.\(kind)")
+    }
 
     private func beginPaste() {
         guard active, kind == "windows", !model.windowsPasteBusy else { return }
@@ -77,7 +87,9 @@ private struct GuestPlayerView: View {
                                   sourceSize: model.playerSize,
                                   pointer: { model.pointer(x: $0, y: $1, mask: $2) },
                                   key: { model.keyboard(code: $0, text: $1, down: $2) },
-                                  paste: kind == "windows" ? { beginPaste() } : nil)
+                                  paste: kind == "windows" ? { beginPaste() } : nil,
+                                  scroll: { model.scroll(x: $0, y: $1, horizontal: $2, vertical: $3, mask: $4) },
+                                  resetScroll: { model.resetScroll() }, zoomPercent: fitsWindow ? nil : safeZoom)
                 }
                 if !active || model.playerSize == .zero {
                     VStack(spacing: 12) {
@@ -93,6 +105,33 @@ private struct GuestPlayerView: View {
                 }
             }.frame(maxWidth: .infinity, maxHeight: .infinity)
             VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Toggle("An Fenster anpassen", isOn: $fitsWindow).toggleStyle(.checkbox)
+                    Spacer(minLength: 4)
+                    if kind == "android" {
+                        Button("Android-Auflösung …") { androidDisplayPresented = true }
+                    } else {
+                        Button("Windows-Einstellungen …", action: model.openWindowsDisplaySettings)
+                            .disabled(!active || model.playerSize == .zero || model.windowsPasteBusy)
+                            .help("Windows + I; danach System → Anzeige für die vom Gast unterstützten Auflösungen und Skalierungen.")
+                    }
+                }
+                if !fitsWindow {
+                    HStack {
+                        Text("Ansicht")
+                        Slider(value: $zoomPercent, in: 25...300, step: 5)
+                        Text("\(Int(safeZoom)) %").monospacedDigit().frame(width: 50, alignment: .trailing)
+                        Button("100 %") { zoomPercent = 100 }
+                    }
+                }
+                Text(fitsWindow
+                    ? "Zwei Finger: im Gast scrollen. Bild passt sich der Fenstergröße an."
+                    : "100 % = ein Gast-Bildpixel pro Mac-Bildpixel. Bild über Scrollleisten verschieben; zwei Finger scrollen im Gast.")
+                    .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                if kind == "windows" {
+                    Text("Auflösung und Textgröße in Windows: System → Anzeige. Die verfügbaren Modi hängen vom Gasttreiber ab; „Ansicht“ vergrößert nur das Playerbild.")
+                        .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                }
                 if kind == "windows" {
                     HStack {
                         Button("Einrichtungskonsole öffnen", action: model.openWindowsSetupConsole)
@@ -134,9 +173,11 @@ private struct GuestPlayerView: View {
                     .font(.caption).foregroundStyle(.secondary)
             }.padding(12)
         }
-        .frame(minWidth: 360, minHeight: 320)
+        .frame(minWidth: 360, minHeight: 480)
+        .onAppear { zoomPercent = safeZoom }
         .sheet(isPresented: $pastePresented, onDismiss: { pasteDraft = "" }) {
             WindowsPasteSheet(model: model, text: $pasteDraft)
         }
+        .sheet(isPresented: $androidDisplayPresented) { AndroidDisplaySheet(model: model) }
     }
 }

@@ -60,4 +60,21 @@ public enum ScrcpyWire {
             integer(UInt64(y), bytes: 4) + integer(UInt64(width), bytes: 2) + integer(UInt64(height), bytes: 2) +
             integer(action == 1 ? 0 : 65535, bytes: 2) + Data(repeating: 0, count: 8)
     }
+
+    /// scrcpy 4.0 INJECT_SCROLL_EVENT: signed 16-bit fixed point, range [-16, 16].
+    public static func scroll(x: Int, y: Int, width: Int, height: Int,
+                              horizontal: Double, vertical: Double, buttons: UInt32 = 0) -> Data {
+        guard (1...8192).contains(width), (1...8192).contains(height),
+              horizontal.isFinite, vertical.isFinite else { return Data() }
+        func fixed(_ value: Double) -> UInt64 {
+            let scaled = Int((max(-16, min(16, value)) * 2048).rounded(.towardZero))
+            return UInt64(UInt16(bitPattern: Int16(max(-32768, min(32767, scaled)))))
+        }
+        let h = fixed(horizontal), v = fixed(vertical)
+        guard h != 0 || v != 0 else { return Data() }
+        return Data([3]) + integer(UInt64(max(0, min(width - 1, x))), bytes: 4) +
+            integer(UInt64(max(0, min(height - 1, y))), bytes: 4) +
+            integer(UInt64(width), bytes: 2) + integer(UInt64(height), bytes: 2) +
+            integer(h, bytes: 2) + integer(v, bytes: 2) + integer(UInt64(buttons), bytes: 4)
+    }
 }

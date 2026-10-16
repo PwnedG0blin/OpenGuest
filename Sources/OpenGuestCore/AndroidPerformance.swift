@@ -17,18 +17,35 @@ public enum AndroidPerformance: String, CaseIterable, Hashable {
     }
 }
 
+public struct AndroidCustomDisplay: Equatable, Sendable {
+    public let width: Int
+    public let height: Int
+    public let density: Int
+    public init(width: Int, height: Int, density: Int) throws {
+        guard (320...4096).contains(width), (320...4096).contains(height),
+              width.isMultiple(of: 2), height.isMultiple(of: 2), width * height <= 8_388_608,
+              (72...960).contains(density) else {
+            throw GuestError.commandFailed(1, "Breite/Höhe: gerade Zahlen von 320–4096 Pixeln, insgesamt höchstens 8,4 Megapixel. Dichte: 72–960 dpi.")
+        }
+        self.width = width; self.height = height; self.density = density
+    }
+}
+
 public struct AndroidDisplayPlan {
     public let commands: [[String]]
     public let rollback: [[String]]
     public let summary: String
-    public init(sizeOutput: String, densityOutput: String, profile: AndroidPerformance) throws {
+    public init(sizeOutput: String, densityOutput: String, profile: AndroidPerformance, custom: AndroidCustomDisplay? = nil) throws {
         let physical = try Self.size(in: sizeOutput, prefix: "Physical size:")
         let density = try Self.density(in: densityOutput, prefix: "Physical density:")
         let oldSize = try? Self.size(in: sizeOutput, prefix: "Override size:")
         let oldDensity = try? Self.density(in: densityOutput, prefix: "Override density:")
         rollback = [["wm", "size", oldSize.map { "\($0.0)x\($0.1)" } ?? "reset"],
                     ["wm", "density", oldDensity.map(String.init) ?? "reset"]]
-        if profile == .native {
+        if let custom {
+            commands = [["wm", "size", "\(custom.width)x\(custom.height)"], ["wm", "density", "\(custom.density)"]]
+            summary = "Android: \(custom.width) × \(custom.height) · \(custom.density) dpi · eigene Anzeige"
+        } else if profile == .native {
             commands = [["wm", "size", "reset"], ["wm", "density", "reset"]]
             summary = "Original: \(physical.0) × \(physical.1) · \(density) dpi"
         } else {

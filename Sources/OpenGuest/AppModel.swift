@@ -45,6 +45,45 @@ final class AppModel: ObservableObject {
     @Published private(set) var androidRendererStatus = "Grafikrenderer wird beim Android-Start geprüft"
     @Published private(set) var androidSoftwareRendering = false
     @Published private(set) var androidDisplayStatus = "Leistungsprofil wird nach dem Android-Start angewendet"
+    @Published var androidCustomDisplay = UserDefaults.standard.bool(forKey: "Pixelkoje.androidCustomDisplay") {
+        didSet { UserDefaults.standard.set(androidCustomDisplay, forKey: "Pixelkoje.androidCustomDisplay") }
+    }
+    @Published var androidDisplayWidth = UserDefaults.standard.string(forKey: "Pixelkoje.androidWidth") ?? "720" {
+        didSet { UserDefaults.standard.set(androidDisplayWidth, forKey: "Pixelkoje.androidWidth") }
+    }
+    @Published var androidDisplayHeight = UserDefaults.standard.string(forKey: "Pixelkoje.androidHeight") ?? "1600" {
+        didSet { UserDefaults.standard.set(androidDisplayHeight, forKey: "Pixelkoje.androidHeight") }
+    }
+    @Published var androidDisplayDensity = UserDefaults.standard.string(forKey: "Pixelkoje.androidDensity") ?? "280" {
+        didSet { UserDefaults.standard.set(androidDisplayDensity, forKey: "Pixelkoje.androidDensity") }
+    }
+    @Published private(set) var androidDisplayBusy = false
+    private func requestedAndroidDisplay() throws -> AndroidCustomDisplay? {
+        guard androidCustomDisplay else { return nil }
+        guard let w = Int(androidDisplayWidth.trimmingCharacters(in: .whitespacesAndNewlines)),
+              let h = Int(androidDisplayHeight.trimmingCharacters(in: .whitespacesAndNewlines)),
+              let dpi = Int(androidDisplayDensity.trimmingCharacters(in: .whitespacesAndNewlines)) else {
+            throw GuestError.commandFailed(1, "Bitte Breite, Höhe und Dichte als ganze Zahlen eingeben.")
+        }
+        return try AndroidCustomDisplay(width: w, height: h, density: dpi)
+    }
+    var androidDisplayIssue: String? {
+        do { _ = try requestedAndroidDisplay(); return nil } catch { return error.localizedDescription }
+    }
+    var canEditAndroidDisplay: Bool { !busy && !androidDisplayBusy && (!running || (activeGuest == "android" && androidBooted)) }
+    var canApplyAndroidDisplay: Bool { canEditAndroidDisplay && running && activeGuest == "android" && androidBooted && androidDisplayIssue == nil }
+    func applyAndroidDisplayNow() async {
+        guard canApplyAndroidDisplay, storageReady, let port = androidPort else { return }
+        androidDisplayBusy = true
+        defer { androidDisplayBusy = false }
+        await applyAndroidDisplay(port: port)
+    }
+    func restoreAndroidDisplay() async {
+        guard canEditAndroidDisplay else { return }
+        androidCustomDisplay = false; androidProfile = .native
+        if canApplyAndroidDisplay { await applyAndroidDisplayNow() }
+        else { androidDisplayStatus = "Originalauflösung wird beim nächsten Android-Start wiederhergestellt." }
+    }
     @Published private(set) var decoderFPS = 0.0
     @Published private(set) var decoderRecoveries = 0
 
@@ -205,7 +244,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var apkBusy = false
     @Published private(set) var apkStatus = ""
     @Published private(set) var sessionName = "Kein Gast gestartet"
-    @Published private(set) var log = "Pixelkoje 0.3.14 · Entwicklungsprototyp\nSystem prüfen, dann einen Gast auswählen."
+    @Published private(set) var log = "Pixelkoje 0.3.15 · Entwicklungsprototyp\nSystem prüfen, dann einen Gast auswählen."
     @Published private(set) var lastCommand = ""
     @Published var errorMessage: String? {
         didSet {
@@ -443,7 +482,7 @@ final class AppModel: ObservableObject {
     }
     var selectedDevice: AndroidDevice? { devices.first { $0.name == settings.selectedAVD } }
     var canStartAndroid: Bool {
-        storageReady && supportedHost && hypervisorAvailable && androidReady && selectedDevice?.supported == true && adb != nil && ScrcpySession.installed && !busy && !running
+        storageReady && supportedHost && hypervisorAvailable && androidReady && selectedDevice?.supported == true && adb != nil && ScrcpySession.installed && androidDisplayIssue == nil && !busy && !running
     }
     private var windowsHostReady: Bool {
         storageReady && storage?.windowsFolderReady == true && windowsCapacityIssue == nil && supportedHost && hypervisorAvailable && windowsReady && firmware != nil && settings.memoryGB >= 4 && !busy && !running
@@ -454,7 +493,7 @@ final class AppModel: ObservableObject {
             : windowsDiskBytes != nil)
     }
     var canResumeWindows: Bool { windowsHostReady && windowsDiskBytes != nil }
-    var canInstallAPK: Bool { running && androidBooted && androidPort != nil && !apkBusy && !busy && adb != nil }
+    var canInstallAPK: Bool { running && androidBooted && androidPort != nil && !apkBusy && !busy && !androidDisplayBusy && adb != nil }
     var adb: String? {
         guard let sdk else { return nil }
         let path = URL(fileURLWithPath: sdk).appendingPathComponent("platform-tools/adb").path
@@ -693,7 +732,8 @@ final class AppModel: ObservableObject {
             let size = try await Self.capture(CommandSpec(executable: adb, arguments: ["-s", serial, "shell", "wm", "size"]))
             let density = try await Self.capture(CommandSpec(executable: adb, arguments: ["-s", serial, "shell", "wm", "density"]))
             guard size.status == 0, density.status == 0 else { throw GuestError.commandFailed(1, "Bildschirmwerte nicht lesbar") }
-            let plan = try AndroidDisplayPlan(sizeOutput: size.output, densityOutput: density.output, profile: androidProfile)
+            let plan = try AndroidDisplayPlan(sizeOutput: size.output, densityOutput: density.output, profile: androidProfile,
+                                             custom: requestedAndroidDisplay())
             do {
                 for command in plan.commands {
                     try Task.checkCancellation()
@@ -835,6 +875,18 @@ final class AppModel: ObservableObject {
         if activeGuest == "windows", windowsPasteBusy { return }
         if activeGuest == "android" { androidStream?.pointer(x: x, y: y, mask: mask) }
         else if activeGuest == "windows" { windowsPlayer?.pointer(x: x, y: y, mask: mask) }
+    }
+
+    func scroll(x: Int, y: Int, horizontal: Double, vertical: Double, mask: UInt8) {
+        if activeGuest == "windows", !windowsPasteBusy { windowsPlayer?.scroll(x: x, y: y, vertical: vertical, mask: mask) }
+        else if activeGuest == "android" { androidStream?.scroll(x: x, y: y, horizontal: horizontal, vertical: vertical, mask: mask) }
+    }
+    func resetScroll() { windowsPlayer?.resetScroll() }
+
+    func openWindowsDisplaySettings() {
+        guard running, activeGuest == "windows", !windowsPasteBusy,
+              windowsPlayer?.sendKeySequence(WindowsKeyboard.settings) == true else { return }
+        playerStatus = "Windows + I gesendet · Unter System → Anzeige Auflösung und Windows-Skalierung wählen."
     }
 
     func keyboard(code: UInt16, text: String, down: Bool) {

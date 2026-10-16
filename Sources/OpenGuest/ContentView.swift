@@ -69,7 +69,7 @@ struct ContentView: View {
                 Image(systemName: "square.stack.3d.up.fill").font(.title).foregroundStyle(.teal)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Pixelkoje").font(.headline)
-                    Text("DEVELOPMENT 0.3.14").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
+                    Text("DEVELOPMENT 0.3.15").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
                 }
             }
             ForEach(WorkspaceTab.allCases) { tab in
@@ -151,6 +151,9 @@ struct ContentView: View {
                     Text("Flüssig reduziert die Android-Auflösung und Streamgröße. Änderungen gelten beim nächsten Android-Start. Originalauflösung hebt die Bildschirm-Anpassung wieder auf.")
                         .font(.caption).foregroundStyle(.secondary)
                     Text(model.androidDisplayStatus).font(.caption).textSelection(.enabled)
+                    DisclosureGroup("Auflösung und Android-Skalierung") {
+                        AndroidDisplayControls(model: model).padding(.top, 8)
+                    }
                     Label(model.androidRendererStatus, systemImage: model.androidSoftwareRendering ? "exclamationmark.triangle" : "info.circle")
                         .font(.caption).foregroundStyle(model.androidSoftwareRendering ? Color.orange : Color.secondary)
                     Toggle("Kaltstart beim nächsten Start", isOn: $model.settings.coldBoot)
