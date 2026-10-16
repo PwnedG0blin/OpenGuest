@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import OpenGuestCore
 
 /// One retained window per player. Closing the display never terminates a guest.
 @MainActor
@@ -44,6 +45,14 @@ private struct GuestPlayerView: View {
     @ObservedObject var model: AppModel
     let kind: String
     private var active: Bool { model.activeGuest == kind }
+    @State private var pastePresented = false
+    @State private var pasteDraft = ""
+
+    private func beginPaste() {
+        guard active, kind == "windows", !model.windowsPasteBusy else { return }
+        pasteDraft = NSPasteboard.general.string(forType: .string) ?? ""
+        pastePresented = true
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -67,7 +76,8 @@ private struct GuestPlayerView: View {
                                   videoLayer: kind == "android" ? model.h264Player.layer : nil,
                                   sourceSize: model.playerSize,
                                   pointer: { model.pointer(x: $0, y: $1, mask: $2) },
-                                  key: { model.keyboard(code: $0, text: $1, down: $2) })
+                                  key: { model.keyboard(code: $0, text: $1, down: $2) },
+                                  paste: kind == "windows" ? { beginPaste() } : nil)
                 }
                 if !active || model.playerSize == .zero {
                     VStack(spacing: 12) {
@@ -86,12 +96,25 @@ private struct GuestPlayerView: View {
                 if kind == "windows" {
                     HStack {
                         Button("Einrichtungskonsole öffnen", action: model.openWindowsSetupConsole)
-                            .disabled(!active || model.playerSize == .zero)
+                            .disabled(!active || model.playerSize == .zero || model.windowsPasteBusy)
                             .help("Sendet Shift + F10 direkt an Windows, ohne eine Funktionstaste auf dem Mac zu drücken.")
                         Spacer(minLength: 0)
                     }
                     Text("Sendet Shift + F10. In Windows Setup öffnet das normalerweise eine Konsole.")
                         .font(.caption).foregroundStyle(.secondary)
+                    HStack {
+                        Button("Text einfügen …", action: beginPaste)
+                            .disabled(!active || model.playerSize == .zero || model.windowsPasteBusy)
+                            .help("Text aus der Mac-Zwischenablage in Windows eingeben. Auch mit ⌘V im Windows-Bild.")
+                        if model.windowsPasteBusy {
+                            ProgressView().controlSize(.small)
+                            Button("Abbrechen", action: model.cancelWindowsPaste)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    if !model.windowsPasteStatus.isEmpty {
+                        Text(model.windowsPasteStatus).font(.caption).fixedSize(horizontal: false, vertical: true)
+                    }
                 }
                 HStack(spacing: 12) {
                     if kind == "android" {
@@ -112,5 +135,8 @@ private struct GuestPlayerView: View {
             }.padding(12)
         }
         .frame(minWidth: 360, minHeight: 320)
+        .sheet(isPresented: $pastePresented, onDismiss: { pasteDraft = "" }) {
+            WindowsPasteSheet(model: model, text: $pasteDraft)
+        }
     }
 }

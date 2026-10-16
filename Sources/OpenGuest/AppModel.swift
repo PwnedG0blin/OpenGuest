@@ -60,6 +60,11 @@ final class AppModel: ObservableObject {
     @Published private(set) var windowsISOReady = false
     @Published private(set) var windowsISODetail = "Noch keine Installations-DVD ausgewählt"
     @Published private(set) var windowsBootMediaStatus = "DVD-Verbindung wird nach dem Start direkt bei QEMU geprüft"
+    @Published var windowsTextLayout = WindowsTextLayout(rawValue: UserDefaults.standard.string(forKey: "Pixelkoje.windowsTextLayout") ?? "german") ?? .german {
+        didSet { UserDefaults.standard.set(windowsTextLayout.rawValue, forKey: "Pixelkoje.windowsTextLayout") }
+    }
+    @Published private(set) var windowsPasteBusy = false
+    @Published private(set) var windowsPasteStatus = ""
     func refreshWindowsISO() {
         do {
             let info = try WindowsISOInfo.check(path: settings.iso)
@@ -138,7 +143,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var apkBusy = false
     @Published private(set) var apkStatus = ""
     @Published private(set) var sessionName = "Kein Gast gestartet"
-    @Published private(set) var log = "Pixelkoje 0.3.10 · Entwicklungsprototyp\nSystem prüfen, dann einen Gast auswählen."
+    @Published private(set) var log = "Pixelkoje 0.3.11 · Entwicklungsprototyp\nSystem prüfen, dann einen Gast auswählen."
     @Published private(set) var lastCommand = ""
     @Published var errorMessage: String? {
         didSet {
@@ -353,6 +358,7 @@ final class AppModel: ObservableObject {
     private var displayTask: Task<Void, Never>?
     private var qmpSocket: String?
     private var windowsBootProbe: Task<Void, Never>?
+    private var windowsPasteTask: Task<Void, Never>?
     private var stopRequested = false
 
     let totalMemoryGB = Int(ProcessInfo.processInfo.physicalMemory / 1_073_741_824)
@@ -727,11 +733,13 @@ final class AppModel: ObservableObject {
     }
 
     func pointer(x: Int, y: Int, mask: UInt8) {
+        if activeGuest == "windows", windowsPasteBusy { return }
         if activeGuest == "android" { androidStream?.pointer(x: x, y: y, mask: mask) }
         else if activeGuest == "windows" { windowsPlayer?.pointer(x: x, y: y, mask: mask) }
     }
 
     func keyboard(code: UInt16, text: String, down: Bool) {
+        if activeGuest == "windows", windowsPasteBusy { return }
         if activeGuest == "android" {
             let special: [UInt16: UInt32] = [36: 66, 51: 67, 48: 61, 53: 111, 123: 21, 124: 22, 125: 20, 126: 19,
                 117: 112, 115: 122, 119: 123, 116: 92, 121: 93, 56: 59, 60: 60, 59: 113, 62: 114, 58: 57, 61: 58, 55: 117, 54: 118]
@@ -743,10 +751,34 @@ final class AppModel: ObservableObject {
     }
 
     func openWindowsSetupConsole() {
-        guard running, activeGuest == "windows",
+        guard running, activeGuest == "windows", !windowsPasteBusy,
               windowsPlayer?.sendKeySequence(WindowsKeyboard.setupConsole) == true else { return }
         playerStatus = "Shift + F10 an Windows gesendet · Zum Tippen in das Windows-Bild klicken."
     }
+
+    func pasteWindowsText(_ input: WindowsTextInput) {
+        guard running, activeGuest == "windows", !windowsPasteBusy, let socket = qmpSocket else { return }
+        windowsPasteBusy = true
+        windowsPasteStatus = "Text wird eingefügt: 0 / \(input.count) Zeichen …"
+        windowsPasteTask = Task { [weak self] in
+            guard let self else { return }
+            var completed = 0
+            defer { self.windowsPasteBusy = false; self.windowsPasteTask = nil }
+            do {
+                try await QMPClient.typeText(input, socket: socket) { count in
+                    completed = count
+                    self.windowsPasteStatus = "Text wird eingefügt: \(count) / \(input.count) Zeichen …"
+                }
+                self.windowsPasteStatus = "\(input.count) Zeichen an Windows übertragen. Bei einem Befehl jetzt Enter im Windows-Fenster drücken."
+            } catch {
+                self.windowsPasteStatus = Task.isCancelled
+                    ? "Einfügen abgebrochen. Bereits übertragener Text bleibt im Windows-Feld stehen."
+                    : "Einfügen unterbrochen (\(completed) / \(input.count) Zeichen bestätigt). \(error.localizedDescription)"
+            }
+        }
+    }
+
+    func cancelWindowsPaste() { windowsPasteTask?.cancel() }
 
     func androidNavigation(_ code: UInt32) { androidStream?.key(code, down: true); androidStream?.key(code, down: false) }
 
@@ -776,6 +808,7 @@ final class AppModel: ObservableObject {
     }
 
     func shutdownGuest() {
+        windowsPasteTask?.cancel()
         guard running else { return }
         playerStatus = "Geordnetes Herunterfahren angefordert …"
         Task {
@@ -901,6 +934,9 @@ final class AppModel: ObservableObject {
         bootTask = nil
         displayTask?.cancel(); displayTask = nil
         windowsBootProbe?.cancel(); windowsBootProbe = nil
+        windowsPasteTask?.cancel()
+        await windowsPasteTask?.value
+        windowsPasteTask = nil
         windowsPlayer?.stop(); windowsPlayer = nil
         if let androidStream { await androidStream.stop() }
         androidStream = nil

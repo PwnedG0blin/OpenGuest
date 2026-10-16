@@ -1,3 +1,9 @@
+# Pixelkoje 0.3.11: paste Mac text into Windows Setup and applications
+
+The Windows player offers “Text einfügen …” and Command+V in the focused display. Only that explicit action reads plain text from the Mac pasteboard into an editable preview. Choose the keyboard layout used inside Windows (German or US); the physical Mac keyboard does not determine it. A fully validated plan types the text using paced QMP physical-key chords, without a guest clipboard agent or shared network service. QEMU releases each chord after a bounded hold time, including when the sender is canceled or disconnected. Command+V is consumed locally without sending a Windows key that could open Start. Other Command chords retain their prior guest behavior.
+
+Caps Lock must be off inside Windows. The supported character sets are printable US ASCII, plus German layout characters and selected German dead-key accents. Unsupported characters and inputs longer than 4096 characters reject the whole plan before sending. Trailing line breaks are removed so a copied command is not submitted; internal line breaks require an explicit toggle because they generate Enter. Transfer progress and cancel are available, and copied contents are never persisted or logged. This is Mac-to-Windows text entry, not bidirectional clipboard or file transfer. Native tests cover shortcut routing, actual QMP requests and cancellation; a real running QEMU accepts representative chords without a Windows OS image. Target Windows field behavior still needs confirmation on the user's Mac.
+
 # Pixelkoje 0.3.10: Windows function keys and setup console shortcut
 
 Maps macOS F1–F12 hardware codes to RFB function-key symbols instead of sending AppKit's private-use text as Unicode. The Windows player adds an explicit setup-console button that sends a complete Shift+F10 press/release chord without depending on the Mac's media-key settings. The button reports that the shortcut was sent; whether Windows opens the console depends on the guest's current screen and policy. A local RFB peer regression test records the production client's actual shortcut bytes, including modifier releases. This release does not change Windows accounts, organizational enrollment, VM identity, firmware, disks, or setup media. An unexpected organization sign-in must be diagnosed separately.
@@ -18,7 +24,7 @@ The app, executable, player windows and installer are now named Pixelkoje. Exist
 
 Windows startup fix in **0.3.6**: TPM stays enabled with persistent state, but its optional physical-presence interface (PPI) is disabled. This avoids QEMU #4587's `HV_BAD_ARGUMENT` during device initialization with HVF on Apple Silicon. This does not disable Secure Boot checks, bypass Windows requirements or erase VM data. The installed UEFI firmware must still support the intended Windows configuration. Source: https://gitlab.com/qemu-project/qemu/-/work_items/4587 . CI now initializes a real swtpm + QEMU TPM under TCG and, where the runner provides it, HVF. It does not test a complete Windows installation.
 
-Current test build: **0.3.10**. Opening the app shows the main window only; guests require an explicit Start action. Starting Android or Windows opens its own resizable player window. The Android page can also open Google's account chooser in the normal external Mac browser; this does not sign the Android guest in automatically.
+Current test build: **0.3.11**. Opening the app shows the main window only; guests require an explicit Start action. Starting Android or Windows opens its own resizable player window. The Android page can also open Google's account chooser in the normal external Mac browser; this does not sign the Android guest in automatically.
 
 # Pixelkoje
 
