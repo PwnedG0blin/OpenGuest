@@ -7,7 +7,7 @@ final class AndroidSystemsTests: XCTestCase {
         let temporary: URL
         let keep = "MyWorkingAndroid16"
         init() throws {
-            temporary = FileManager.default.temporaryDirectory.appendingPathComponent("AndroidSystems-\(UUID().uuidString)")
+            temporary = FileManager.default.temporaryDirectory.resolvingSymlinksInPath().appendingPathComponent("AndroidSystems-\(UUID().uuidString)")
             let root = temporary.appendingPathComponent("External/OpenGuest")
             try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
             try "test-id".write(to: root.appendingPathComponent(".openguest-storage-id"), atomically: true, encoding: .utf8)
