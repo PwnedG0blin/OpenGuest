@@ -1,4 +1,4 @@
-# Pixelkoje 0.3.18: S26 Ultra display preset and portrait player window
+# Pixelkoje 0.3.19: S26 Ultra display preset and portrait player window
 
 Android display controls offer a 1440×3120 portrait preset with adjustable 500 dpi logical scaling. Samsung lists this resolution and roughly 500 physical ppi; our 500 dpi is an app preset, not a claim about Samsung's default Android logical density. This changes display settings only; it does not install Samsung firmware. The player adds explicit Fit and Phone window actions. The latter uses the current stream aspect ratio and available screen, re-measures wrapped controls, and enables fit. In full screen it enables fit without leaving full screen. AppKit immediately updates the video layer frame after geometry changes; no black pixels inside a game are cropped.
 
@@ -64,7 +64,7 @@ The app, executable, player windows and installer are now named Pixelkoje. Exist
 
 Windows startup fix in **0.3.6**: TPM stays enabled with persistent state, but its optional physical-presence interface (PPI) is disabled. This avoids QEMU #4587's `HV_BAD_ARGUMENT` during device initialization with HVF on Apple Silicon. This does not disable Secure Boot checks, bypass Windows requirements or erase VM data. The installed UEFI firmware must still support the intended Windows configuration. Source: https://gitlab.com/qemu-project/qemu/-/work_items/4587 . CI now initializes a real swtpm + QEMU TPM under TCG and, where the runner provides it, HVF. It does not test a complete Windows installation.
 
-Current test build: **0.3.18**. Opening the app shows the main window only; guests require an explicit Start action. Starting Android or Windows opens its own resizable player window. The Android page can also open Google's account chooser in the normal external Mac browser; this does not sign the Android guest in automatically.
+Current test build: **0.3.19**. Opening the app shows the main window only; guests require an explicit Start action. Starting Android or Windows opens its own resizable player window. The Android page can also open Google's account chooser in the normal external Mac browser; this does not sign the Android guest in automatically.
 
 # Pixelkoje
 
@@ -79,3 +79,17 @@ Source: https://github.com/PwnedG0blin/OpenGuest
 0.2.1 fixes migration verification: every source file is SHA-256 checked, while additional target files such as AppleDouble/Finder metadata are preserved. Missing or changed payload still blocks migration. Detailed errors name the affected path; original-change detection protects against concurrent writers. Three regression tests cover target extras, invalid payload and interrupted migration recovery.
 
 0.2.2 improves the storage setup dialog: 16-point readable body/status/path text, high contrast status cards, explicit error heading, larger controls and scrollable long messages. Copy progress remains readable while only actions are disabled.
+
+## Android 16, Android 17 und Updates
+
+Android 16 mit Google Play ist der Standard. Vorhandene passende Profile werden wiederverwendet; Nutzerdaten werden bei der Einrichtung nicht überschrieben. Neue Profile erhalten 64 GiB. Unter „Downloads und Einrichtung“ lässt sich Android 17 als separates Profil installieren.
+
+Stable ist voreingestellt. Beta, Dev und Canary schließen zusätzliche von Google angebotene SDK-Revisionen ein. Eine tägliche Updateprüfung beim Öffnen lädt nichts herunter. Optional kann das gewählte Systemabbild vor jedem Android-Start aktualisiert werden. Updates erfolgen nur bei ausgeschalteten Gästen; danach wird ein Kaltstart verwendet. Ein Wechsel der Android-Hauptversion erfordert ein eigenes Profil. Dies ist keine Pixel-Beta-Registrierung und garantiert nicht, dass jede Pixel-Beta als Google-Play-ARM64-Emulatorabbild verfügbar ist.
+
+Für die Bereinigung das funktionierende Android 16 auswählen, alle Emulatoren beenden und unter „Alte Android-Profile und Daten bereinigen“ die Liste erstellen. Die Löschaktion entfernt ausschließlich die aufgelisteten anderen Profile im gewählten Datenordner, nicht mehr benötigte andere SDK-Systemabbilder und erkannte Android-15-Sicherungen aus der Speichervergrößerung. Apps, Konten und Spielstände dieser alten Profile sowie diese Sicherungen werden endgültig gelöscht. Das gewählte Android 16, Windows, Installationsmedien und andere Sicherungen bleiben erhalten. Extern referenzierte Systemabbilder werden vorsichtshalber behalten. Die App löscht beim Start nichts automatisch.
+
+### Android-Bildübertragung
+
+Die Stream-Warteschlange ist nach Bildanzahl, Datenmenge und Zeitspanne begrenzt. Bei Rückstau werden veraltete H.264-Referenzketten verworfen und erst ab einem neuen Schlüsselbild wieder angezeigt. Empfang und Decoder-Zuführung sind getrennt; FPS-Anzeigen werden sekündlich aktualisiert, auch wenn keine neuen Bilder eintreffen. „Anzeige neu verbinden“ startet nur den Videostream neu. Android und laufende Downloads werden dabei nicht neu gestartet.
+
+Der bewährte Modus „Mac-GPU bevorzugen“ bleibt Standard. Optional lässt sich Vulkan für einen OpenGL-ES-Kompatibilitätstest ausschalten. Dies ist kein neuer BlueStacks- oder MuMu-Renderer und garantiert keine konstante Spielbildrate. Hohe Android-Auflösungen, Spiele, Encoder und Gastlast können weiterhin die Bildrate begrenzen.

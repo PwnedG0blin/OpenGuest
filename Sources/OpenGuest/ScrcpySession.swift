@@ -19,6 +19,13 @@ final class ScrcpySession {
     private var video: LocalStream?
     private var control: LocalStream?
     private var streamTask: Task<Void, Never>?
+    private var deliveryTask: Task<Void, Never>?
+    private var statisticsTask: Task<Void, Never>?
+    private var queue = H264FrameQueue()
+    var onDiscontinuity: (() -> Void)?
+    var onQueueDrops: ((Int) -> Void)?
+    private var receivedFrames = 0
+    private var receivedEpoch = ProcessInfo.processInfo.systemUptime
     private var port: Int?
     private var adb = ""
     private var serial = ""
@@ -68,6 +75,16 @@ final class ScrcpySession {
         child.standardError = handle
         try child.run()
         server = child
+        receivedFrames = 0; receivedEpoch = ProcessInfo.processInfo.systemUptime
+        statisticsTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+                guard !Task.isCancelled, let self else { return }
+                let now = ProcessInfo.processInfo.systemUptime
+                self.onFPS?(Double(self.receivedFrames) / max(0.001, now - self.receivedEpoch))
+                self.receivedFrames = 0; self.receivedEpoch = now
+            }
+        }
         streamTask = Task { [weak self] in
             guard let self else { return }
             do { try await self.receive(port: port) }
@@ -96,20 +113,35 @@ final class ScrcpySession {
         guard let socket else { throw failure("Stream-Server antwortet nicht. Das Server-Protokoll enthält die Ursache.") }
         control = LocalStream(port: port)
         onStatus?("H.264-Stream verbunden · Mac-Videodecoder")
-        var frames = 0
-        var epoch = ProcessInfo.processInfo.systemUptime
         while !Task.isCancelled {
-            let header = try ScrcpyWire.header(await socket.read(12))
+            let rawHeader = try await socket.read(12)
+            let header = try ScrcpyWire.header(rawHeader)
             switch header {
             case .session(let w, let h): width = w; height = h; onSize?(CGSize(width: CGFloat(w), height: CGFloat(h)))
             case .packet(let count, let pts, let config):
                 let data = try await socket.read(count)
-                try await onPacket?(data, pts, config)
-                if !config { frames += 1 }
-                let now = ProcessInfo.processInfo.systemUptime
-                if now - epoch >= 1 {
-                    onFPS?(Double(frames) / (now - epoch))
-                    frames = 0; epoch = now
+                try Task.checkCancellation()
+                if !config { receivedFrames += 1 }
+                let previousDrops = queue.droppedFrames
+                queue.append(data: data, pts: pts, configuration: config, keyframe: rawHeader[0] & 0x20 != 0)
+                if queue.droppedFrames != previousDrops { onQueueDrops?(queue.droppedFrames) }
+                deliverQueuedFrames()
+            }
+        }
+    }
+
+    private func deliverQueuedFrames() {
+        guard deliveryTask == nil else { return }
+        deliveryTask = Task { [weak self] in
+            guard let self else { return }
+            defer { self.deliveryTask = nil }
+            while !Task.isCancelled, let frame = self.queue.pop() {
+                do {
+                    if frame.resetDecoder { self.onDiscontinuity?() }
+                    try await self.onPacket?(frame.data, frame.pts, frame.configuration)
+                } catch {
+                    if !Task.isCancelled { self.onStatus?("Mac-Videodecoder: \(error.localizedDescription)") }
+                    break
                 }
             }
         }
@@ -142,7 +174,12 @@ final class ScrcpySession {
     }
 
     func stop() async {
-        streamTask?.cancel(); video?.close(); control?.close()
+        streamTask?.cancel(); deliveryTask?.cancel(); statisticsTask?.cancel()
+        video?.close(); control?.close()
+        // Wait for the old delivery task before a new session can reuse the display layer.
+        await deliveryTask?.value
+        deliveryTask = nil; statisticsTask = nil; queue = H264FrameQueue()
+        onFPS?(0)
         streamTask = nil; video = nil; control = nil
         if let server {
             await Task.detached {

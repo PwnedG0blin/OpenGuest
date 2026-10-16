@@ -24,6 +24,13 @@ final class H264Player {
         onStatistics?(0, 0)
     }
 
+    func resetReferences() {
+        generation += 1
+        layer.flush(); waitingForKeyframe = true
+        recoveries += 1
+        onStatistics?(0, recoveries)
+    }
+
     func packet(_ data: Data, pts: UInt64, configuration: Bool) async throws {
         let packetGeneration = generation
         let units = ScrcpyWire.nalUnits(data)

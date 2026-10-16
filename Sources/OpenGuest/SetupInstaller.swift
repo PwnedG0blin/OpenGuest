@@ -32,7 +32,7 @@ final class SetupInstaller: ObservableObject {
     }
 
     func install(_ selected: Set<SetupComponent>, storage: GuestStorage, existingISO: String,
-                 existingDrivers: String, microsoftLink: String, ready: Set<SetupComponent>) async throws -> (iso: String?, drivers: String?) {
+                 existingDrivers: String, microsoftLink: String, ready: Set<SetupComponent>, androidChannel: Int = 0, preferredAndroidProfile: String = "") async throws -> (iso: String?, drivers: String?) {
         guard !running else { throw StorageMigration.failure("Einrichtung läuft bereits.") }
         try storage.validate()
         let pending = selected.subtracting(ready)
@@ -55,11 +55,11 @@ final class SetupInstaller: ObservableObject {
             try storage.validate()
             status = item.title
             if ready.contains(item) { status = "\(item.title): vorhanden, kein erneuter Download."; continue }
-            let minimum: Int64 = item == .android ? 16 : item == .windowsISO ? 12 : 1
+            let minimum: Int64 = (item == .android || item == .android17) ? 80 : item == .windowsISO ? 12 : 1
             guard let free = storage.freeBytes, free >= minimum * 1_073_741_824 else {
                 throw StorageMigration.failure("Für \(item.title) werden mindestens \(minimum) GB auf \(storage.root) benötigt.")
             }
-            if item == .android {
+            if item == .android || item == .android17 {
                 try await run(CommandSpec(executable: "/bin/bash", arguments: [try Self.bundledScript("Android_Werkzeuge_einrichten.command").path]), storage: storage)
             }
             if item == .windowsDrivers, !existingDrivers.isEmpty, FileManager.default.isReadableFile(atPath: existingDrivers) {
@@ -71,7 +71,9 @@ final class SetupInstaller: ObservableObject {
                 continue
             }
             if let script = item.script {
-                try await run(CommandSpec(executable: "/bin/bash", arguments: [try Self.bundledScript(script).path]), storage: storage)
+                let args = [try Self.bundledScript(script).path] + ((item == .android || item == .android17)
+                    ? [item == .android ? "16" : "17", "install", String(androidChannel), preferredAndroidProfile] : [])
+                try await run(CommandSpec(executable: "/bin/bash", arguments: args), storage: storage)
             } else if let isoURL {
                 let media = storage.url.appendingPathComponent("Installationsmedien")
                 try FileManager.default.createDirectory(at: media, withIntermediateDirectories: true)
@@ -99,6 +101,19 @@ final class SetupInstaller: ObservableObject {
         }
         status = "Einrichtung abgeschlossen. Vorhandene Komponenten wurden wiederverwendet."
         return (iso, drivers)
+    }
+
+    func manageAndroid(_ system: AndroidSystem, mode: String, channel: Int, storage: GuestStorage) async throws {
+        guard !running, ["check", "update"].contains(mode), (0...3).contains(channel) else {
+            throw StorageMigration.failure("Android-Verwaltung ist gerade nicht verfügbar.")
+        }
+        running = true
+        defer { running = false }
+        status = mode == "check" ? "Android-Updates prüfen …" : "Android-Systemabbild aktualisieren …"
+        try await run(CommandSpec(executable: "/bin/bash", arguments: [try Self.bundledScript("Android_System_verwalten.command").path,
+            String(system.rawValue), mode, String(channel)]), storage: storage)
+        status = mode == "check" ? "Updateprüfung abgeschlossen. Verfügbare Pakete stehen im Protokoll; es wurde nichts installiert."
+            : "Systemabbild aktualisiert. Nächster Start erfolgt als Kaltstart; Apps und Konten bleiben im Profil."
     }
 
     static func validateISO(_ url: URL) throws {

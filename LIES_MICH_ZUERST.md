@@ -1,4 +1,4 @@
-# Neu in Pixelkoje 0.3.18: S26-Ultra-Displayprofil und Telefonfenster
+# Neu in Pixelkoje 0.3.19: S26-Ultra-Displayprofil und Telefonfenster
 
 Unter Android-Auflösung das Profil „Galaxy S26 Ultra · 1440 × 3120 · 500 dpi“ wählen und „Jetzt in Android anwenden“ anklicken. 500 dpi sind eine anpassbare Skalierungsvorgabe. „Bild einpassen“ setzt die Darstellung auf die verfügbare Bildfläche zurück. „Telefonfenster“ passt das Mac-Fenster an das Seitenverhältnis des Streams und die verfügbare Monitorhöhe an; frei vergrößern/verkleinern bleibt möglich. Im Vollbild wird nur Einpassen aktiviert. Ein von einem Spiel selbst erzeugter schwarzer Rand wird nicht automatisch abgeschnitten. Apps und Daten bleiben erhalten.
 
@@ -158,7 +158,7 @@ Beim ersten Start dieser Version (auch nach 0.1) wählst du den Datenordner. Wä
 2. Neue App nach Programme kopieren und von dort öffnen. Die DMG danach auswerfen.
 3. Ordner **Extern** wählen → **Speicherort einrichten und Daten übernehmen**. Kopieren und SHA-256-Prüfung können bei großen Geräten dauern. SSD währenddessen angeschlossen lassen.
 4. Bisherige Standardordner für SDK, Android-Geräte, Windows-Festplatte/TPM, Streaming und Protokolle werden übernommen. In Pixelkoje ausgewählte Windows-/Treiber-ISOs aus Downloads werden ebenfalls übernommen. Kompatibilitäts-Verknüpfungen halten bisherige Android-Studio- und AVD-Pfade gültig.
-5. Unter Einrichtung **System prüfen**, dann bei Android bevorzugt **OpenGuest_GooglePlay** wählen. Falls es fehlt: **Android vorbereiten …**, anschließend **Videostream einrichten …**.
+5. Unter Einrichtung **System prüfen**, dann bei Android bevorzugt **Pixelkoje_Android16_64GB** wählen. Falls es fehlt: **Android vorbereiten …**, anschließend **Videostream einrichten …**.
 6. Nach erfolgreichem Test Gast herunterfahren und Android Studio beenden. Unter **Einrichtung → Daten und Speicherplatz** die gelisteten internen Sicherungen kontrollieren, den Test bestätigen und **Geprüfte interne Kopien endgültig entfernen …** wählen. Erst dabei wird interner Platz frei; die aktiven SSD-Daten bleiben erhalten. Geänderte Sicherungen oder fehlende Ziele blockieren die Bereinigung.
 
 Auf Extern liegen SDK/Systemabbilder, Android-Apps/Spielstände, Windows-Datenträger/TPM, Streaming, Protokolle sowie die ausgewählten Installations-ISOs. Ein kleiner Pfadzeiger und App-Einstellungen bleiben intern. Die Mac-App, Android Studio, Homebrew/QEMU und macOS-Caches/Auslagerungsdateien werden nicht automatisch verschoben oder gelöscht. Keine pauschale Bereinigung von Downloads, Xcode oder Homebrew.
@@ -184,7 +184,7 @@ Eine kostenlose Mac-App mit eigenem Android Player und Windows Player. Open Sour
 ## Android zum ersten Mal einrichten
 
 1. Xcode und **Android Studio für Apple Silicon** installieren. Android Studio einmal starten und den SDK einrichten. Im SDK Manager unter SDK Tools auch **Android SDK Command-line Tools (latest)** installieren.
-2. **Android_einrichten.command** ausführen. Die Google-/SDK-Lizenzen selbst bestätigen. Das Skript lädt ein offizielles Android-15-ARM64-Abbild mit Google Play und erstellt das Gerät `OpenGuest_GooglePlay`. Bestehende Geräte werden nicht überschrieben.
+2. **Android_einrichten.command** ausführen. Die Google-/SDK-Lizenzen selbst bestätigen. Das Skript lädt ein offizielles Android-16-ARM64-Abbild mit Google Play und erstellt das Gerät `Pixelkoje_Android16_64GB` mit 64 GiB. Bestehende Geräte werden nicht überschrieben.
 3. **Android_Streaming_einrichten.command** ausführen. Es bezieht den genau passenden scrcpy-4.0-Server aus dem offiziellen Release und prüft den dort veröffentlichten SHA-256-Wert. Fehlt dieser, bricht es ab. Keine Installation eines beliebigen Ersatzpakets.
 4. **Start.command** ausführen. Es führt zunächst die Swift-Tests aus, baut die lokale Test-App und öffnet sie. Danach Android oder Windows auswählen und ausdrücklich über die Start-Schaltfläche starten. Weitere Starts können über `dist/Pixelkoje.app` erfolgen.
 
@@ -226,3 +226,17 @@ Windows: ARM64-CPU mit HVF, einfacher Framebuffer und eigener lokaler Player. Be
 Der komplette eigene Quellcode liegt im ZIP und darf nach MIT weitergegeben und verändert werden. Pixelkoje kostet nichts und hat kein Abo. Der Quellcode liegt öffentlich auf https://github.com/PwnedG0blin/OpenGuest. Die Test-App ist lokal/ad-hoc signiert, aber noch nicht mit Developer ID signiert oder Apple-notarisiert. Google-/Microsoft-Systemdateien und fremde Engines behalten ihre eigenen Lizenzbedingungen; Windows selbst wird dadurch nicht kostenlos.
 
 Der vorbereitete GitHub-Workflow „Build macOS test app“ kann nach Einrichtung eines Repositorys auf einem Apple-Silicon-Mac testen, kompilieren und eine `.app.zip` als Build-Artefakt bereitstellen. Der erste Build ist erfolgreich abgeschlossen. Das wäre zunächst die kompilierte Test-App; Engines und Betriebssysteme müssten weiterhin separat eingerichtet werden. Ein vollständiger Installer mit komfortabler Ersteinrichtung ist noch nicht fertig.
+
+## Android 16, Android 17 und Updates
+
+Android 16 mit Google Play ist der Standard. Vorhandene passende Profile werden wiederverwendet; Nutzerdaten werden bei der Einrichtung nicht überschrieben. Neue Profile erhalten 64 GiB. Unter „Downloads und Einrichtung“ lässt sich Android 17 als separates Profil installieren.
+
+Stable ist voreingestellt. Beta, Dev und Canary schließen zusätzliche von Google angebotene SDK-Revisionen ein. Eine tägliche Updateprüfung beim Öffnen lädt nichts herunter. Optional kann das gewählte Systemabbild vor jedem Android-Start aktualisiert werden. Updates erfolgen nur bei ausgeschalteten Gästen; danach wird ein Kaltstart verwendet. Ein Wechsel der Android-Hauptversion erfordert ein eigenes Profil. Dies ist keine Pixel-Beta-Registrierung und garantiert nicht, dass jede Pixel-Beta als Google-Play-ARM64-Emulatorabbild verfügbar ist.
+
+Für die Bereinigung das funktionierende Android 16 auswählen, alle Emulatoren beenden und unter „Alte Android-Profile und Daten bereinigen“ die Liste erstellen. Die Löschaktion entfernt ausschließlich die aufgelisteten anderen Profile im gewählten Datenordner, nicht mehr benötigte andere SDK-Systemabbilder und erkannte Android-15-Sicherungen aus der Speichervergrößerung. Apps, Konten und Spielstände dieser alten Profile sowie diese Sicherungen werden endgültig gelöscht. Das gewählte Android 16, Windows, Installationsmedien und andere Sicherungen bleiben erhalten. Extern referenzierte Systemabbilder werden vorsichtshalber behalten. Die App löscht beim Start nichts automatisch.
+
+### Android-Bildübertragung
+
+Die Stream-Warteschlange ist nach Bildanzahl, Datenmenge und Zeitspanne begrenzt. Bei Rückstau werden veraltete H.264-Referenzketten verworfen und erst ab einem neuen Schlüsselbild wieder angezeigt. Empfang und Decoder-Zuführung sind getrennt; FPS-Anzeigen werden sekündlich aktualisiert, auch wenn keine neuen Bilder eintreffen. „Anzeige neu verbinden“ startet nur den Videostream neu. Android und laufende Downloads werden dabei nicht neu gestartet.
+
+Der bewährte Modus „Mac-GPU bevorzugen“ bleibt Standard. Optional lässt sich Vulkan für einen OpenGL-ES-Kompatibilitätstest ausschalten. Dies ist kein neuer BlueStacks- oder MuMu-Renderer und garantiert keine konstante Spielbildrate. Hohe Android-Auflösungen, Spiele, Encoder und Gastlast können weiterhin die Bildrate begrenzen.

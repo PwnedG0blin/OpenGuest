@@ -139,6 +139,10 @@ struct ContentView: View {
                         Text("Mac-GPU bevorzugen").tag("host")
                         Text("Software (Fehlersuche)").tag("software")
                     }.disabled(model.running || model.busy)
+                    Toggle("Vulkan für Android-Spiele zulassen", isOn: $model.androidVulkanEnabled)
+                        .disabled(model.running || model.busy)
+                    Text("Mac-GPU nutzt die Grafikübersetzung des Android Emulators. Vulkan aus: OpenGL-ES-Kompatibilitätstest für Spiele ohne Vulkan-Pflicht. Ein Wechsel gilt beim nächsten Start und kann je nach Spiel helfen oder die Kompatibilität einschränken.")
+                        .font(.caption).foregroundStyle(.secondary)
                     Picker("Android-Leistungsprofil", selection: $model.androidProfile) {
                         ForEach(AndroidPerformance.allCases, id: \.rawValue) { profile in
                             Text(profile.title).tag(profile)

@@ -18,7 +18,26 @@ import OpenGuestCore
 @MainActor
 final class AppModel: ObservableObject {
     @Published var windowsTextLayout: WindowsTextLayout = .german
-    let running = true
+    let running = false
+    struct Settings { var iso = ""; var selectedAVD = "Pixelkoje_Android16_64GB" }
+    @Published var settings = Settings()
+    @Published var androidSDKChannel = 0
+    @Published var androidCheckUpdatesOnOpen = true
+    @Published var androidAutoUpdateBeforeStart = false
+    let busy = false
+    let storageReady = true
+    let storage: GuestStorage? = GuestStorage(root: "/Volumes/Extern/OpenGuest", id: "preview")
+    let setupReady: Set<SetupComponent> = [.android, .streaming]
+    let canManageAndroid = true
+    let selectedAndroidSystem: AndroidSystem? = .android16
+    let androidMaintenanceStatus = "Android 16 ist bereit · bestehende Apps und Konten bleiben erhalten."
+    let androidCleanupPlan: AndroidCleanupPlan? = nil
+    let qemu: String? = nil
+    let swtpm: String? = nil
+    func manageAndroidUpdates(install: Bool) async { }
+    func previewAndroidCleanup() async { }
+    func cleanupOldAndroid() async { }
+    func installComponents(_ selection: Set<SetupComponent>, microsoftLink: String) async { }
     let windowsPasteBusy = false
     @Published var androidCustomDisplay = true
     @Published var androidDisplayWidth = "1200"
@@ -97,6 +116,9 @@ struct PastePreview {
             try render(AndroidDisplaySheet(model: AppModel()).environment(\.colorScheme, scheme),
                        size: NSSize(width: 500, height: 520), appearance: appearance,
                        to: directory.appendingPathComponent("android-display-\(dark ? "dark" : "light").png"))
+            try render(SetupDownloadsView(model: AppModel(), installer: SetupInstaller()).environment(\.colorScheme, scheme),
+                       size: NSSize(width: 820, height: 1300), appearance: appearance,
+                       to: directory.appendingPathComponent("android-management-\(dark ? "dark" : "light").png"))
             let image = NSImage(size: NSSize(width: 1000, height: 600), flipped: false) { rect in
                 NSColor.systemTeal.setFill(); rect.fill()
                 NSColor.systemIndigo.setFill(); NSRect(x: 0, y: 0, width: 1000, height: 300).fill()
@@ -117,6 +139,7 @@ struct PastePreview {
 SWIFT
 xcrun swiftc -parse-as-library -target "$(uname -m)-apple-macosx14.0" -I "$binary_dir/Modules" \
     Sources/OpenGuest/WindowsPasteSheet.swift Sources/OpenGuest/DeveloperCredits.swift \
+    Sources/OpenGuest/SetupDownloadsView.swift Sources/OpenGuest/SetupInstaller.swift \
     Sources/OpenGuest/AndroidDisplaySheet.swift Sources/OpenGuest/AndroidPasteSheet.swift Sources/OpenGuest/PlayerSurface.swift "$preview_tmp/Preview.swift" \
     "$binary_dir"/OpenGuestCore.build/*.o -o "$preview_tmp/render-paste"
 "$preview_tmp/render-paste" "$preview_dir"

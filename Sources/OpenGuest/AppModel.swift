@@ -345,7 +345,7 @@ final class AppModel: ObservableObject {
         Leistungsprofil: \(androidProfile.rawValue) · Ziel: \(androidTargetFPS) FPS · Stream-Maximum: \(androidProfile.streamMaxSize)
         Android-Bildschirm: \(androidDisplayStatus)
         Android-Grafikrenderer: \(androidRendererStatus)
-        Decoder-Zuführung: \(Int(decoderFPS.rounded())) FPS · Wiederanläufe: \(decoderRecoveries)
+        Decoder-Zuführung: \(Int(decoderFPS.rounded())) FPS · Wiederanläufe: \(decoderRecoveries) · verworfene verspätete Frames: \(androidDroppedFrames)
         Grafik gewählt: \(settings.gpu) · RAM: \(settings.memoryGB) GB · CPU: \(settings.cores)
         Player: \(playerStatus) · Video-Frames/s: \(Int(streamFPS.rounded()))
         Windows: \(windowsAcceleration)
@@ -462,6 +462,11 @@ final class AppModel: ObservableObject {
     @Published private(set) var playerStatus = "Player noch nicht gestartet"
     @Published private(set) var activeGuest = ""
     @Published private(set) var streamFPS = 0.0
+    @Published private(set) var androidDroppedFrames = 0
+    @Published private(set) var androidReconnectBusy = false
+    @Published var androidVulkanEnabled = UserDefaults.standard.object(forKey: "Pixelkoje.androidVulkanEnabled") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(androidVulkanEnabled, forKey: "Pixelkoje.androidVulkanEnabled"); settings.coldBoot = true }
+    }
     @Published private(set) var windowsFrameCount = 0
     @Published private(set) var googleServicesStatus = "Google-Dienste werden nach dem Android-Start geprüft."
     let h264Player = H264Player()
@@ -485,10 +490,14 @@ final class AppModel: ObservableObject {
         }
         var ready: Set<SetupComponent> = []
         if fm.isExecutableFile(atPath: storage.sdk.appendingPathComponent("emulator/emulator").path),
-           fm.isExecutableFile(atPath: storage.sdk.appendingPathComponent("platform-tools/adb").path),
-           fm.isReadableFile(atPath: storage.sdk.appendingPathComponent("system-images/android-35/google_apis_playstore/arm64-v8a/system.img").path),
-           fm.isReadableFile(atPath: storage.avd.appendingPathComponent("OpenGuest_GooglePlay.avd/config.ini").path) {
-            ready.insert(.android)
+           fm.isExecutableFile(atPath: storage.sdk.appendingPathComponent("platform-tools/adb").path) {
+            for system in AndroidSystem.allCases {
+                let relative = "system-images/\(system.platform)/google_apis_playstore/arm64-v8a/system.img"
+                if fm.isReadableFile(atPath: storage.sdk.appendingPathComponent(relative).path),
+                   devices.contains(where: { androidSystem(for: $0.name) == system }) {
+                    ready.insert(system == .android16 ? .android : .android17)
+                }
+            }
         }
         if ScrcpySession.installed { ready.insert(.streaming) }
         if externalFile(settings.iso) { ready.insert(.windowsISO) }
@@ -501,16 +510,92 @@ final class AppModel: ObservableObject {
         busy = true
         do {
             let result = try await installer.install(selection, storage: storage, existingISO: settings.iso,
-                existingDrivers: settings.driversISO, microsoftLink: microsoftLink, ready: setupReady)
+                existingDrivers: settings.driversISO, microsoftLink: microsoftLink, ready: setupReady, androidChannel: androidSDKChannel, preferredAndroidProfile: settings.selectedAVD)
             if let iso = result.iso { settings.iso = iso }
             if let drivers = result.drivers { settings.driversISO = drivers }
-            if selection.contains(.android) { settings.selectedAVD = "OpenGuest_GooglePlay" }
             // Pick up a driver ISO left by a previous interrupted setup as well.
             let drivers = storage.url.appendingPathComponent("Installationsmedien/utm-guest-tools.iso")
             if settings.driversISO.isEmpty, (try? SetupInstaller.validateISO(drivers)) != nil {
                 settings.driversISO = drivers.path
             }
         } catch { errorMessage = error.localizedDescription }
+        busy = false
+        await refresh()
+        if selection.contains(.android17), let device = devices.first(where: { androidSystem(for: $0.name) == .android17 }) {
+            settings.selectedAVD = device.name
+            settings.coldBoot = true
+        } else if selection.contains(.android), let device = devices.first(where: { androidSystem(for: $0.name) == .android16 }) {
+            settings.selectedAVD = device.name
+            settings.coldBoot = true
+        }
+    }
+
+    @Published var androidSDKChannel = min(3, max(0, UserDefaults.standard.integer(forKey: "Pixelkoje.androidSDKChannel"))) {
+        didSet { UserDefaults.standard.set(androidSDKChannel, forKey: "Pixelkoje.androidSDKChannel") }
+    }
+    @Published var androidCheckUpdatesOnOpen = UserDefaults.standard.object(forKey: "Pixelkoje.androidCheckUpdatesOnOpen") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(androidCheckUpdatesOnOpen, forKey: "Pixelkoje.androidCheckUpdatesOnOpen") }
+    }
+    @Published var androidAutoUpdateBeforeStart = UserDefaults.standard.bool(forKey: "Pixelkoje.androidAutoUpdateBeforeStart") {
+        didSet { UserDefaults.standard.set(androidAutoUpdateBeforeStart, forKey: "Pixelkoje.androidAutoUpdateBeforeStart") }
+    }
+    @Published private(set) var androidMaintenanceStatus = "Android 16 ist das Standardsystem. Android 17 wird separat eingerichtet."
+    @Published private(set) var androidCleanupPlan: AndroidCleanupPlan?
+
+    func androidSystem(for name: String) -> AndroidSystem? {
+        guard let storage else { return nil }
+        return AndroidSystem.detect(RuntimeDiscovery.avdConfig(name: name, environment: storage.environment))
+    }
+    var selectedAndroidSystem: AndroidSystem? { androidSystem(for: settings.selectedAVD) }
+    var canManageAndroid: Bool { storageReady && !running && !busy && !installer.running }
+
+    func manageAndroidUpdates(install: Bool) async {
+        guard canManageAndroid, let storage, let system = selectedAndroidSystem else { return }
+        busy = true
+        errorMessage = nil
+        do {
+            try await installer.manageAndroid(system, mode: install ? "update" : "check", channel: androidSDKChannel, storage: storage)
+            if install { settings.coldBoot = true; androidCleanupPlan = nil }
+            androidMaintenanceStatus = installer.status
+            recordDiagnostic("Android · Updates", "Android \(system.rawValue), Kanal \(androidSDKChannel), \(install ? "Abbild aktualisiert" : "Updateprüfung")")
+        } catch {
+            androidMaintenanceStatus = error.localizedDescription
+            errorMessage = error.localizedDescription
+        }
+        busy = false
+        if install { await refresh() }
+    }
+
+    private func requireAndroidStopped() async throws {
+        let result = try await Self.capture(CommandSpec(executable: "/usr/bin/pgrep", arguments: ["-f", "/emulator/qemu/|sdk/emulator/emulator"]))
+        guard result.status == 1 else {
+            throw StorageMigration.failure("Bitte auch separat gestartete Android-Emulatoren vollständig beenden.")
+        }
+    }
+    func previewAndroidCleanup() async {
+        guard canManageAndroid, let storage else { return }
+        androidCleanupPlan = nil
+        busy = true
+        let name = settings.selectedAVD
+        do {
+            try await requireAndroidStopped()
+            let plan = try await Task.detached { try AndroidMaintenance.plan(storage: storage, keeping: name) }.value
+            androidCleanupPlan = plan
+            androidMaintenanceStatus = plan.paths.isEmpty ? "Keine alten Android-Daten gefunden." : "\(plan.paths.count) Einträge zur endgültigen Entfernung. Android 16 bleibt erhalten."
+        } catch { androidMaintenanceStatus = error.localizedDescription; errorMessage = error.localizedDescription }
+        busy = false
+    }
+    func cleanupOldAndroid() async {
+        guard canManageAndroid, let storage, let plan = androidCleanupPlan, plan.keeping == settings.selectedAVD else { return }
+        busy = true
+        do {
+            try await requireAndroidStopped()
+            try await Task.detached { try AndroidMaintenance.cleanup(storage: storage, expected: plan) }.value
+            androidCleanupPlan = nil
+            settings.coldBoot = true
+            androidMaintenanceStatus = "Alte Android-Profile, andere Systemabbilder und erkannte alte Android-Sicherungen entfernt. Android 16 bleibt erhalten."
+            recordDiagnostic("Android · Bereinigung", "\(plan.paths.count) Einträge entfernt; Profil \(plan.keeping) erhalten")
+        } catch { androidMaintenanceStatus = error.localizedDescription; errorMessage = error.localizedDescription; androidCleanupPlan = nil }
         busy = false
         await refresh()
     }
@@ -586,6 +671,11 @@ final class AppModel: ObservableObject {
         await refresh()
         // Prefer the saved disk when upgrading from versions that kept DVD boot enabled.
         if windowsDiskBytes != nil { settings.installWindows = false }
+        if androidCheckUpdatesOnOpen, canManageAndroid, selectedAndroidSystem != nil,
+           Date().timeIntervalSince1970 - UserDefaults.standard.double(forKey: "Pixelkoje.androidLastUpdateCheck") > 86_400 {
+            UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "Pixelkoje.androidLastUpdateCheck")
+            await manageAndroidUpdates(install: false)
+        }
         // Launching Pixelkoje only prepares the main window. Guests always start on an explicit click.
     }
 
@@ -637,8 +727,9 @@ final class AppModel: ObservableObject {
                     .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
                     .filter { !$0.isEmpty && !$0.contains(" ") && !$0.contains(":") && !$0.contains("/") }
                     .map { RuntimeDiscovery.device(name: $0, environment: environment) }
-                if !devices.contains(where: { $0.name == settings.selectedAVD }) {
-                    settings.selectedAVD = devices.first(where: { $0.name == "OpenGuest_GooglePlay" && $0.supported })?.name ?? devices.first(where: { $0.supported && $0.googlePlay })?.name ?? devices.first(where: \.supported)?.name ?? devices.first?.name ?? ""
+                if !devices.contains(where: { $0.name == settings.selectedAVD }) || selectedAndroidSystem == nil {
+                    settings.selectedAVD = devices.first(where: { $0.supported && androidSystem(for: $0.name) == .android16 })?.name
+                        ?? devices.first(where: { $0.supported && $0.googlePlay })?.name ?? devices.first(where: \.supported)?.name ?? devices.first?.name ?? ""
                 }
                 if devices.isEmpty { log += "Kein AVD gefunden. In Android Studio ein arm64-v8a-Gerät erstellen.\n" }
             } catch {
@@ -684,19 +775,28 @@ final class AppModel: ObservableObject {
     }
 
     func startAndroid() {
+        if androidAutoUpdateBeforeStart, selectedAndroidSystem != nil {
+            Task {
+                await manageAndroidUpdates(install: true)
+                if errorMessage == nil { launchAndroid() }
+            }
+        } else { launchAndroid() }
+    }
+
+    private func launchAndroid() {
         guard canStartAndroid, let sdk, let storage, let device = selectedDevice else { return }
         do {
             try checkStorageSpace(minimumGB: 16)
             let port = try AndroidPorts.available()
             let base = try LaunchPlan.android(sdk: sdk, device: device, resources: resources,
-                                              coldBoot: settings.coldBoot, gpu: settings.gpu, port: port)
+                                              coldBoot: settings.coldBoot, gpu: settings.gpu, port: port, vulkan: androidVulkanEnabled)
             let spec = CommandSpec(executable: base.executable, arguments: base.arguments, environment: storage.environment)
             try start(spec, title: "Android · \(device.name)")
             activeGuest = "android"
             androidRendererStatus = "Grafikrenderer wird geprüft"; androidSoftwareRendering = false
             androidDisplayStatus = "Leistungsprofil wird angewendet, sobald Android bereit ist"
             streamFPS = 0; decoderFPS = 0; decoderRecoveries = 0
-            recordDiagnostic("Android · Leistung", "Profil \(androidProfile.rawValue), Ziel \(androidTargetFPS) FPS, GPU angefordert \(settings.gpu)")
+            recordDiagnostic("Android · Leistung", "Profil \(androidProfile.rawValue), Ziel \(androidTargetFPS) FPS, GPU angefordert \(settings.gpu), Vulkan \(androidVulkanEnabled ? "erlaubt" : "aus"), begrenzte Stream-Warteschlange")
             playerStatus = "Android startet …"
             androidPort = port
             androidBooted = false
@@ -840,7 +940,13 @@ final class AppModel: ObservableObject {
         stream.onPacket = { [weak self] data, pts, config in try await self?.h264Player.packet(data, pts: pts, configuration: config) }
         stream.onSize = { [weak self] size in self?.playerSize = size }
         stream.onStatus = { [weak self] text in self?.playerStatus = text }
-        stream.onFPS = { [weak self] fps in self?.streamFPS = fps }
+        androidDroppedFrames = 0
+        stream.onDiscontinuity = { [weak self] in self?.h264Player.resetReferences() }
+        stream.onQueueDrops = { [weak self] count in self?.androidDroppedFrames = count }
+        stream.onFPS = { [weak self] fps in
+            self?.streamFPS = fps
+            if fps == 0 { self?.decoderFPS = 0 }
+        }
         androidStream = stream
         do {
             try await stream.start(adb: adb, serial: "emulator-\(port)", profile: androidProfile, fps: androidTargetFPS)
@@ -849,6 +955,21 @@ final class AppModel: ObservableObject {
             await stream.stop()
             if !Task.isCancelled { playerStatus = "Android-Anzeige konnte nicht starten: \(error.localizedDescription)" }
         }
+    }
+
+    var canReconnectAndroidDisplay: Bool {
+        running && activeGuest == "android" && androidBooted && !busy && !androidReconnectBusy
+    }
+    func reconnectAndroidDisplay() async {
+        guard canReconnectAndroidDisplay, let port = androidPort else { return }
+        androidReconnectBusy = true
+        defer { androidReconnectBusy = false }
+        playerStatus = "Android-Anzeige wird neu verbunden …"
+        if let stream = androidStream { await stream.stop() }
+        guard running, androidPort == port else { return }
+        androidStream = nil
+        await connectAndroidPlayer(port: port)
+        recordDiagnostic("Android · Anzeige", "Stream auf Benutzerwunsch neu verbunden; Gast nicht neu gestartet")
     }
 
     private func inspectWindowsBoot(socket: String, installing: Bool) {

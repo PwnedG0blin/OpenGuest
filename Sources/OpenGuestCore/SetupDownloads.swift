@@ -1,11 +1,12 @@
 import Foundation
 
 public enum SetupComponent: String, CaseIterable, Identifiable {
-    case android, streaming, windowsDrivers, windowsISO
+    case android, android17, streaming, windowsDrivers, windowsISO
     public var id: String { rawValue }
     public var title: String {
         switch self {
-        case .android: return "Android 15 mit Google Play"
+        case .android: return "Android 16 mit Google Play · 64 GB"
+        case .android17: return "Android 17 mit Google Play · separates 64-GB-Profil"
         case .streaming: return "Android-Videostream"
         case .windowsDrivers: return "Windows-ARM64-Treiber"
         case .windowsISO: return "Windows 11 ARM64 · Installations-ISO"
@@ -13,7 +14,7 @@ public enum SetupComponent: String, CaseIterable, Identifiable {
     }
     public var script: String? {
         switch self {
-        case .android: return "Android_einrichten.command"
+        case .android, .android17: return "Android_System_verwalten.command"
         case .streaming: return "Android_Streaming_einrichten.command"
         case .windowsDrivers: return "Windows_Treiber_einrichten.command"
         case .windowsISO: return nil

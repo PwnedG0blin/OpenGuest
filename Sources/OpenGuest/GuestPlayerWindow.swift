@@ -132,6 +132,8 @@ private struct GuestPlayerView: View {
                         Button("Bild einpassen") { fitsWindow = true }
                         Button("Telefonfenster") { fitsWindow = true; model.fitAndroidPlayerWindow() }
                     }
+                    Button("Anzeige neu verbinden") { Task { await model.reconnectAndroidDisplay() } }
+                        .disabled(!model.canReconnectAndroidDisplay)
                     Button("Text einfügen …", action: beginPaste).disabled(!active || model.playerSize == .zero)
                         .help("Text vom Mac nach Android übertragen. Auch mit ⌘V im Gastbild.")
                     if !model.androidPasteStatus.isEmpty { Text(model.androidPasteStatus).font(.caption) }

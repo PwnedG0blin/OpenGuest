@@ -67,7 +67,7 @@ public struct AndroidDevice: Identifiable, Equatable {
 
 public enum LaunchPlan {
     public static func android(sdk: String, device: AndroidDevice, resources: GuestResources,
-                               coldBoot: Bool, gpu: String, port: Int = 5554) throws -> CommandSpec {
+                               coldBoot: Bool, gpu: String, port: Int = 5554, vulkan: Bool = true) throws -> CommandSpec {
         try resources.validate()
         guard !device.name.isEmpty, !device.name.hasPrefix("-"),
               !device.name.contains("/"), !device.name.contains("\\"),
@@ -80,6 +80,7 @@ public enum LaunchPlan {
                     "-memory", String(resources.memoryMiB), "-cores", String(resources.cores),
                     "-port", String(port), "-no-window", "-camera-back", "none", "-camera-front", "none"]
         if coldBoot { args.append("-no-snapshot-load") }
+        if !vulkan { args += ["-feature", "-Vulkan"] }
         return CommandSpec(executable: URL(fileURLWithPath: sdk).appendingPathComponent("emulator/emulator").path,
                            arguments: args, environment: ["ANDROID_HOME": sdk, "ANDROID_SDK_ROOT": sdk])
     }
