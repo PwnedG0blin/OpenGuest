@@ -66,7 +66,7 @@ struct ContentView: View {
                 Image(systemName: "square.stack.3d.up.fill").font(.title).foregroundStyle(.teal)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Pixelkoje").font(.headline)
-                    Text("DEVELOPMENT 0.3.7").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
+                    Text("DEVELOPMENT 0.3.8").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
                 }
             }
             ForEach(WorkspaceTab.allCases) { tab in
@@ -140,6 +140,20 @@ struct ContentView: View {
                         Text("Mac-GPU bevorzugen").tag("host")
                         Text("Software (Fehlersuche)").tag("software")
                     }.disabled(model.running || model.busy)
+                    Picker("Android-Leistungsprofil", selection: $model.androidProfile) {
+                        ForEach(AndroidPerformance.allCases, id: \.rawValue) { profile in
+                            Text(profile.title).tag(profile)
+                        }
+                    }.disabled(model.running || model.busy)
+                    Picker("Stream-Ziel", selection: $model.androidTargetFPS) {
+                        Text("60 FPS").tag(60)
+                        Text("30 FPS · weniger Last").tag(30)
+                    }.disabled(model.running || model.busy)
+                    Text("Flüssig reduziert die Android-Auflösung und Streamgröße. Änderungen gelten beim nächsten Android-Start. Originalauflösung hebt die Bildschirm-Anpassung wieder auf.")
+                        .font(.caption).foregroundStyle(.secondary)
+                    Text(model.androidDisplayStatus).font(.caption).textSelection(.enabled)
+                    Label(model.androidRendererStatus, systemImage: model.androidSoftwareRendering ? "exclamationmark.triangle" : "info.circle")
+                        .font(.caption).foregroundStyle(model.androidSoftwareRendering ? Color.orange : Color.secondary)
                     Toggle("Kaltstart beim nächsten Start", isOn: $model.settings.coldBoot)
                         .disabled(model.running || model.busy)
                     if let device = model.selectedDevice {
@@ -489,8 +503,10 @@ struct ContentView: View {
                     Text(active ? model.playerStatus : "Eigenes Fenster · frei skalierbar · Vollbild möglich")
                         .font(.subheadline).foregroundStyle(.secondary)
                     if active && kind == "android" {
-                        Text("\(Int(model.streamFPS.rounded())) Video-Frames/s · Ziel 60")
+                        Text("Stream: \(Int(model.streamFPS.rounded())) FPS · Decoder-Zuführung: \(Int(model.decoderFPS.rounded())) FPS · Ziel \(model.androidTargetFPS)")
                             .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                        Text("Empfangene und an den Decoder übergebene Bilder; keine Messung der Spiel-FPS.")
+                            .font(.caption).foregroundStyle(.secondary)
                     }
                 }
                 Spacer(minLength: 0)

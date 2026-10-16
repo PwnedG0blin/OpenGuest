@@ -23,7 +23,7 @@ final class ScrcpySession {
     private var adb = ""
     private var serial = ""
     private var remote = ""
-    var onPacket: ((Data, UInt64, Bool) throws -> Void)?
+    var onPacket: ((Data, UInt64, Bool) async throws -> Void)?
     var onSize: ((CGSize) -> Void)?
     var onStatus: ((String) -> Void)?
     var onFPS: ((Double) -> Void)?
@@ -31,7 +31,7 @@ final class ScrcpySession {
     private(set) var height = 0
     private var touchDown = false
 
-    func start(adb: String, serial: String) async throws {
+    func start(adb: String, serial: String, profile: AndroidPerformance, fps: Int) async throws {
         guard let storage = GuestStorage.load() else { throw failure("Speicherort fehlt.") }
         try storage.validate()
         self.adb = adb; self.serial = serial
@@ -61,8 +61,8 @@ final class ScrcpySession {
         child.executableURL = URL(fileURLWithPath: adb)
         child.arguments = ["-s", serial, "shell", "CLASSPATH=\(remote)", "app_process", "/", "com.genymobile.scrcpy.Server", ScrcpyWire.version,
                            "scid=\(scid)", "tunnel_forward=true", "audio=false", "control=true", "video_codec=h264",
-                           "max_size=1920", "max_fps=60", "video_bit_rate=12000000", "video_codec_options=i-frame-interval=1", "send_device_meta=false",
-                           "send_stream_meta=false", "send_frame_meta=true", "send_dummy_byte=true", "clipboard_autosync=false", "cleanup=true"]
+                           "video_codec_options=i-frame-interval=1", "send_device_meta=false",
+                           "send_stream_meta=false", "send_frame_meta=true", "send_dummy_byte=true", "clipboard_autosync=false", "cleanup=true"] + profile.streamOptions(fps: fps)
         child.standardInput = FileHandle.nullDevice
         child.standardOutput = handle
         child.standardError = handle
@@ -95,7 +95,7 @@ final class ScrcpySession {
         }
         guard let socket else { throw failure("Stream-Server antwortet nicht. Das Server-Protokoll enthält die Ursache.") }
         control = LocalStream(port: port)
-        onStatus?("H.264-Stream verbunden · Ziel 60 FPS · Mac-Videodecoder")
+        onStatus?("H.264-Stream verbunden · Mac-Videodecoder")
         var frames = 0
         var epoch = ProcessInfo.processInfo.systemUptime
         while !Task.isCancelled {
@@ -104,7 +104,7 @@ final class ScrcpySession {
             case .session(let w, let h): width = w; height = h; onSize?(CGSize(width: CGFloat(w), height: CGFloat(h)))
             case .packet(let count, let pts, let config):
                 let data = try await socket.read(count)
-                try onPacket?(data, pts, config)
+                try await onPacket?(data, pts, config)
                 if !config { frames += 1 }
                 let now = ProcessInfo.processInfo.systemUptime
                 if now - epoch >= 1 {

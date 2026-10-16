@@ -51,8 +51,9 @@ private struct GuestPlayerView: View {
                 Text(kind == "android" ? "Android" : "Windows Arm").font(.headline)
                 Spacer(minLength: 0)
                 if active && kind == "android" {
-                    Text("\(Int(model.streamFPS.rounded())) Video-Frames/s")
+                    Text("Stream \(Int(model.streamFPS.rounded())) · Decoder \(Int(model.decoderFPS.rounded())) FPS")
                         .font(.caption.monospacedDigit())
+                        .help("Empfangene Bilder / Decoder-Zuführung. Keine Messung der Spiel-FPS.")
                 }
                 Button { model.togglePlayerFullScreen(kind: kind) } label: {
                     Image(systemName: "arrow.up.left.and.arrow.down.right")

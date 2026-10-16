@@ -1,3 +1,7 @@
+# Pixelkoje 0.3.8: Android performance profiles
+
+Adds reversible guest display-size/density overrides (smooth, balanced, native), bounded stream sizes/bitrates and 30/60 FPS targets without changing the existing settings JSON schema. Renderer evidence distinguishes forced software rendering from a recognized Apple GPU. A one-time default prefers host GPU over auto; explicit software preference is preserved. Decoder submission waits up to 60 ms for backpressure before flushing/reference recovery, with reset-generation and cancellation checks. Received video FPS and submitted decoder FPS are labelled separately, neither as game FPS nor as displayed-frame measurements. These changes do not replace the emulator or remove its forced-software limitation. Real game performance must be compared on the user's Mac.
+
 # Pixelkoje 0.3.7 (formerly OpenGuest)
 
 Windows installer media are now explicit read-only optical drives over USB-BOT. Remembered Windows setup credentials are verified by reading back the app’s own Keychain item, restored without an authentication prompt where possible, and retained in the masked fields after guest startup. If macOS requires access permission, the user can explicitly load the saved item; cancellation is reported clearly. The application does not save passwords in UserDefaults or diagnostics. CI checks optical-device initialization, not Windows OS installation.
@@ -6,7 +10,7 @@ The app, executable, player windows and installer are now named Pixelkoje. Exist
 
 Windows startup fix in **0.3.6**: TPM stays enabled with persistent state, but its optional physical-presence interface (PPI) is disabled. This avoids QEMU #4587's `HV_BAD_ARGUMENT` during device initialization with HVF on Apple Silicon. This does not disable Secure Boot checks, bypass Windows requirements or erase VM data. The installed UEFI firmware must still support the intended Windows configuration. Source: https://gitlab.com/qemu-project/qemu/-/work_items/4587 . CI now initializes a real swtpm + QEMU TPM under TCG and, where the runner provides it, HVF. It does not test a complete Windows installation.
 
-Current test build: **0.3.7**. Opening the app shows the main window only; guests require an explicit Start action. Starting Android or Windows opens its own resizable player window. The Android page can also open Google's account chooser in the normal external Mac browser; this does not sign the Android guest in automatically.
+Current test build: **0.3.8**. Opening the app shows the main window only; guests require an explicit Start action. Starting Android or Windows opens its own resizable player window. The Android page can also open Google's account chooser in the normal external Mac browser; this does not sign the Android guest in automatically.
 
 # Pixelkoje
 

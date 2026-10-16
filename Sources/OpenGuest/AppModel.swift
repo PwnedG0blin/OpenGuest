@@ -35,6 +35,18 @@ struct AppSettings: Codable {
 @MainActor
 final class AppModel: ObservableObject {
     @Published var settings = AppSettings.load() { didSet { settings.save() } }
+    @Published var androidProfile = AndroidPerformance(rawValue: UserDefaults.standard.string(forKey: "Pixelkoje.androidProfile") ?? "smooth") ?? .smooth {
+        didSet { UserDefaults.standard.set(androidProfile.rawValue, forKey: "Pixelkoje.androidProfile") }
+    }
+    @Published var androidTargetFPS = UserDefaults.standard.integer(forKey: "Pixelkoje.androidFPS") == 30 ? 30 : 60 {
+        didSet { UserDefaults.standard.set(androidTargetFPS, forKey: "Pixelkoje.androidFPS") }
+    }
+    @Published private(set) var androidRendererStatus = "Grafikrenderer wird beim Android-Start geprüft"
+    @Published private(set) var androidSoftwareRendering = false
+    @Published private(set) var androidDisplayStatus = "Leistungsprofil wird nach dem Android-Start angewendet"
+    @Published private(set) var decoderFPS = 0.0
+    @Published private(set) var decoderRecoveries = 0
+
     @Published private(set) var devices: [AndroidDevice] = []
     @Published private(set) var sdk: String?
     @Published private(set) var qemu: String?
@@ -96,7 +108,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var apkBusy = false
     @Published private(set) var apkStatus = ""
     @Published private(set) var sessionName = "Kein Gast gestartet"
-    @Published private(set) var log = "Pixelkoje 0.3.7 · Entwicklungsprototyp\nSystem prüfen, dann einen Gast auswählen."
+    @Published private(set) var log = "Pixelkoje 0.3.8 · Entwicklungsprototyp\nSystem prüfen, dann einen Gast auswählen."
     @Published private(set) var lastCommand = ""
     @Published var errorMessage: String? {
         didSet {
@@ -130,6 +142,10 @@ final class AppModel: ObservableObject {
         Gast: \(activeGuest.isEmpty ? "Keiner" : activeGuest) · \(sessionName)
         Android: \(androidAcceleration)
         Android-Profil: \(settings.selectedAVD)
+        Leistungsprofil: \(androidProfile.rawValue) · Ziel: \(androidTargetFPS) FPS · Stream-Maximum: \(androidProfile.streamMaxSize)
+        Android-Bildschirm: \(androidDisplayStatus)
+        Android-Grafikrenderer: \(androidRendererStatus)
+        Decoder-Zuführung: \(Int(decoderFPS.rounded())) FPS · Wiederanläufe: \(decoderRecoveries)
         Grafik gewählt: \(settings.gpu) · RAM: \(settings.memoryGB) GB · CPU: \(settings.cores)
         Player: \(playerStatus) · Video-Frames/s: \(Int(streamFPS.rounded()))
         Windows: \(windowsAcceleration)
@@ -339,6 +355,10 @@ final class AppModel: ObservableObject {
     var resources: GuestResources { GuestResources(memoryMiB: settings.memoryGB * 1024, cores: settings.cores) }
 
     init() {
+        if !UserDefaults.standard.bool(forKey: "Pixelkoje.performanceDefaultsApplied") {
+            if settings.gpu == "auto" { settings.gpu = "host"; settings.save() }
+            UserDefaults.standard.set(true, forKey: "Pixelkoje.performanceDefaultsApplied")
+        }
         settings.memoryGB = min(max(2, settings.memoryGB), maxMemoryGB)
         settings.cores = min(max(2, settings.cores), maxCores)
     }
@@ -453,6 +473,10 @@ final class AppModel: ObservableObject {
             let spec = CommandSpec(executable: base.executable, arguments: base.arguments, environment: storage.environment)
             try start(spec, title: "Android · \(device.name)")
             activeGuest = "android"
+            androidRendererStatus = "Grafikrenderer wird geprüft"; androidSoftwareRendering = false
+            androidDisplayStatus = "Leistungsprofil wird angewendet, sobald Android bereit ist"
+            streamFPS = 0; decoderFPS = 0; decoderRecoveries = 0
+            recordDiagnostic("Android · Leistung", "Profil \(androidProfile.rawValue), Ziel \(androidTargetFPS) FPS, GPU angefordert \(settings.gpu)")
             playerStatus = "Android startet …"
             androidPort = port
             androidBooted = false
@@ -522,6 +546,8 @@ final class AppModel: ObservableObject {
                 guard !Task.isCancelled, self.running, self.androidPort == port else { return }
                 if result?.status == 0 && result?.output.trimmingCharacters(in: .whitespacesAndNewlines) == "1" {
                     self.androidBooted = true
+                    await self.applyAndroidDisplay(port: port)
+                    guard !Task.isCancelled, self.running, self.androidPort == port else { return }
                     self.apkStatus = "Android bereit · APKs können installiert werden"
                     await self.connectAndroidPlayer(port: port)
                     await self.checkGoogleServices(port: port)
@@ -533,6 +559,36 @@ final class AppModel: ObservableObject {
         }
     }
 
+    private func applyAndroidDisplay(port: Int) async {
+        guard let adb else { return }
+        let serial = "emulator-\(port)"
+        do {
+            let size = try await Self.capture(CommandSpec(executable: adb, arguments: ["-s", serial, "shell", "wm", "size"]))
+            let density = try await Self.capture(CommandSpec(executable: adb, arguments: ["-s", serial, "shell", "wm", "density"]))
+            guard size.status == 0, density.status == 0 else { throw GuestError.commandFailed(1, "Bildschirmwerte nicht lesbar") }
+            let plan = try AndroidDisplayPlan(sizeOutput: size.output, densityOutput: density.output, profile: androidProfile)
+            do {
+                for command in plan.commands {
+                    try Task.checkCancellation()
+                    guard running, androidPort == port else { return }
+                    let result = try await Self.capture(CommandSpec(executable: adb, arguments: ["-s", serial, "shell"] + command))
+                    guard result.status == 0, !result.output.lowercased().contains("error:") else {
+                        throw GuestError.commandFailed(result.status, result.output)
+                    }
+                }
+                androidDisplayStatus = plan.summary + " · Stream bis \(androidProfile.streamMaxSize) px"
+            } catch {
+                if running, androidPort == port {
+                    for command in plan.rollback {
+                        _ = try? await Self.capture(CommandSpec(executable: adb, arguments: ["-s", serial, "shell"] + command))
+                    }
+                }
+                throw error
+            }
+        } catch { androidDisplayStatus = "Auflösung nicht angepasst; bisherige Werte bleiben soweit möglich erhalten: \(error.localizedDescription)" }
+        recordDiagnostic("Android · Bildschirm", androidDisplayStatus)
+    }
+
     private func connectAndroidPlayer(port: Int) async {
         guard let adb, running, androidPort == port else { return }
         h264Player.reset()
@@ -540,13 +596,16 @@ final class AppModel: ObservableObject {
         h264Player.onSize = { [weak self, weak stream] size in
             self?.playerSize = size; stream?.setSize(size)
         }
-        stream.onPacket = { [weak self] data, pts, config in try self?.h264Player.packet(data, pts: pts, configuration: config) }
+        h264Player.onStatistics = { [weak self] fps, recoveries in
+            self?.decoderFPS = fps; self?.decoderRecoveries = recoveries
+        }
+        stream.onPacket = { [weak self] data, pts, config in try await self?.h264Player.packet(data, pts: pts, configuration: config) }
         stream.onSize = { [weak self] size in self?.playerSize = size }
         stream.onStatus = { [weak self] text in self?.playerStatus = text }
         stream.onFPS = { [weak self] fps in self?.streamFPS = fps }
         androidStream = stream
         do {
-            try await stream.start(adb: adb, serial: "emulator-\(port)")
+            try await stream.start(adb: adb, serial: "emulator-\(port)", profile: androidProfile, fps: androidTargetFPS)
             if Task.isCancelled || !running { await stream.stop() }
         } catch {
             await stream.stop()
@@ -742,7 +801,19 @@ final class AppModel: ObservableObject {
         let size = (try? reader.seekToEnd()) ?? 0
         try? reader.seek(toOffset: size > 60_000 ? size - 60_000 : 0)
         let data = (try? reader.read(upToCount: 60_000)) ?? Data()
-        log = "\(sessionCommand)\n\n" + String(decoding: data, as: UTF8.self)
+        let text = String(decoding: data, as: UTF8.self)
+        log = "\(sessionCommand)\n\n" + text
+        if activeGuest == "android" {
+            // Renderer selection is near the beginning even when the live log is long.
+            try? reader.seek(toOffset: 0)
+            let head = (try? reader.read(upToCount: 96_000)) ?? Data()
+            let renderer = AndroidRenderer.inspect(String(decoding: head, as: UTF8.self) + text)
+            if renderer.kind != .unknown, renderer.summary != androidRendererStatus {
+                androidRendererStatus = renderer.summary
+                androidSoftwareRendering = renderer.kind == .software
+                recordDiagnostic("Android · Grafik", renderer.summary)
+            }
+        }
     }
 
     private func didExit(code: Int32) async {

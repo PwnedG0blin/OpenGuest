@@ -10,11 +10,22 @@ final class H264Player {
     private var sps = Data()
     private var pps = Data()
     private var waitingForKeyframe = true
+    private var generation = 0
+    private var submitted = 0
+    private var epoch = ProcessInfo.processInfo.systemUptime
+    private var recoveries = 0
+    var onStatistics: ((Double, Int) -> Void)?
 
     init() { layer.videoGravity = .resizeAspect; layer.backgroundColor = CGColor(gray: 0, alpha: 1) }
-    func reset() { layer.flushAndRemoveImage(); format = nil; sps = Data(); pps = Data(); waitingForKeyframe = true }
+    func reset() {
+        generation += 1
+        layer.flushAndRemoveImage(); format = nil; sps = Data(); pps = Data(); waitingForKeyframe = true
+        submitted = 0; recoveries = 0; epoch = ProcessInfo.processInfo.systemUptime
+        onStatistics?(0, 0)
+    }
 
-    func packet(_ data: Data, pts: UInt64, configuration: Bool) throws {
+    func packet(_ data: Data, pts: UInt64, configuration: Bool) async throws {
+        let packetGeneration = generation
         let units = ScrcpyWire.nalUnits(data)
         guard !units.isEmpty else { throw failure("Ungültiger H.264-Datenstrom.") }
         var changed = false
@@ -56,9 +67,28 @@ final class H264Player {
                                  Unmanaged.passUnretained(kCFBooleanTrue).toOpaque())
         }
         if layer.status == .failed { throw failure("Mac-Videodecoder: \(layer.error?.localizedDescription ?? "Unbekannter Fehler")") }
-        // Dropping a reference frame requires waiting for a fresh IDR frame.
-        if layer.isReadyForMoreMediaData { layer.enqueue(sample) }
-        else { layer.flush(); waitingForKeyframe = true }
+        // Brief decoder backpressure must not immediately discard a reference chain.
+        // Backpressure propagates to the stream reader; cap it to avoid unbounded latency.
+        let deadline = ProcessInfo.processInfo.systemUptime + 0.060
+        while !layer.isReadyForMoreMediaData {
+            try Task.checkCancellation()
+            guard packetGeneration == generation else { return }
+            if ProcessInfo.processInfo.systemUptime >= deadline {
+                layer.flush(); waitingForKeyframe = true; recoveries += 1
+                onStatistics?(0, recoveries)
+                return
+            }
+            try await Task.sleep(nanoseconds: 2_000_000)
+        }
+        try Task.checkCancellation()
+        guard packetGeneration == generation else { return }
+        layer.enqueue(sample)
+        submitted += 1
+        let now = ProcessInfo.processInfo.systemUptime
+        if now - epoch >= 1 {
+            onStatistics?(Double(submitted) / (now - epoch), recoveries)
+            submitted = 0; epoch = now
+        }
     }
 
     private func configure() throws {
