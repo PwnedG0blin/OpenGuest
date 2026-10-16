@@ -134,6 +134,12 @@ final class ScrcpySession {
         if !data.isEmpty { control?.send(data) }
     }
     func text(_ text: String) { control?.send(ScrcpyWire.text(text)) }
+    func paste(_ input: AndroidClipboardText) async throws {
+        guard let control, server?.isRunning == true, width > 0, height > 0 else {
+            throw failure("Android-Eingabeverbindung noch nicht bereit.")
+        }
+        try await control.sendChecked(ScrcpyWire.paste(input))
+    }
 
     func stop() async {
         streamTask?.cancel(); video?.close(); control?.close()
@@ -179,6 +185,14 @@ final class LocalStream {
         connection.start(queue: DispatchQueue(label: "OpenGuest.local.socket"))
     }
     func send(_ data: Data) { connection.send(content: data, completion: .contentProcessed { _ in }) }
+    func sendChecked(_ data: Data) async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            connection.send(content: data, completion: .contentProcessed { error in
+                if let error { continuation.resume(throwing: error) }
+                else { continuation.resume() }
+            })
+        }
+    }
     func close() { connection.cancel() }
     func read(_ count: Int) async throws -> Data {
         guard (0...16_777_216).contains(count) else { throw GuestError.invalidResources }

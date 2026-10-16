@@ -101,7 +101,8 @@ public enum LaunchPlan {
 
     public static func windowsVM(qemu: String, firmware: String, variables: String, disk: String,
                                  tpmSocket: String, iso: String?, driversISO: String?, proISO: String?,
-                                 installing: Bool, resources: GuestResources, displaySocket: String, network: Bool, qmpSocket: String, identity: WindowsMachineIdentity = .legacy) throws -> CommandSpec {
+                                 installing: Bool, resources: GuestResources, displaySocket: String, network: Bool, qmpSocket: String, identity: WindowsMachineIdentity = .legacy,
+                                 graphics: WindowsGraphics = .basic, resolution: WindowsDisplayMode = .fullHD) throws -> CommandSpec {
         try resources.validate(windows: true)
         try identity.validate()
         guard displaySocket.hasPrefix("/tmp/og-"), !displaySocket.contains(","), !displaySocket.contains("\n") else { throw GuestError.invalidResources }
@@ -113,7 +114,7 @@ public enum LaunchPlan {
                     "-blockdev", try block("uefi-vars", driver: "raw", path: variables, readOnly: false),
                     "-blockdev", try block("systemdisk", driver: "qcow2", path: disk, readOnly: false),
                     "-device", "nvme,drive=systemdisk,serial=\(identity.serial),bootindex=2",
-                    "-device", "ramfb", "-device", "qemu-xhci,id=usb",
+                    "-device", graphics.device(resolution: resolution), "-device", "qemu-xhci,id=usb",
                     "-device", "usb-kbd,bus=usb.0", "-device", "usb-tablet,bus=usb.0",
                     "-display", "none", "-vnc", "unix:\(displaySocket)", "-serial", "none", "-monitor", "none",
                     "-qmp", "unix:\(qmpSocket),server=on,wait=off",

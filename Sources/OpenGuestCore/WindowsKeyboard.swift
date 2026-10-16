@@ -33,4 +33,8 @@ public enum WindowsKeyboard {
         Event(symbol: 0xffeb, down: true), Event(symbol: 0x69, down: true),
         Event(symbol: 0x69, down: false), Event(symbol: 0xffeb, down: false)
     ]
+    public static let explorer: [Event] = [
+        Event(symbol: 0xffeb, down: true), Event(symbol: 0x65, down: true),
+        Event(symbol: 0x65, down: false), Event(symbol: 0xffeb, down: false)
+    ]
 }

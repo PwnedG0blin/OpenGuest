@@ -69,7 +69,7 @@ struct ContentView: View {
                 Image(systemName: "square.stack.3d.up.fill").font(.title).foregroundStyle(.teal)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Pixelkoje").font(.headline)
-                    Text("DEVELOPMENT 0.3.15").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
+                    Text("DEVELOPMENT 0.3.16").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
                 }
             }
             ForEach(WorkspaceTab.allCases) { tab in
@@ -265,6 +265,23 @@ struct ContentView: View {
                     Text("Der DVD-Start gilt einmalig. Danach startet die VM von ihrer gespeicherten Festplatte; die ISO-Auswahl bleibt erhalten. Für einen weiteren DVD-Start diese Option erneut einschalten.")
                         .font(.caption).foregroundStyle(.secondary)
                     windowsDVDControls
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Windows-Grafik und Auflösung").font(.headline)
+                        Picker("Grafikadapter", selection: $model.windowsGraphics) {
+                            ForEach(WindowsGraphics.allCases, id: \.rawValue) { Text($0.title).tag($0) }
+                        }.disabled(model.running || model.busy)
+                        if model.windowsGraphics == .virtio {
+                            Picker("Bevorzugter Modus", selection: $model.windowsResolution) {
+                                ForEach(WindowsDisplayMode.allCases, id: \.rawValue) { Text($0.title).tag($0) }
+                            }.disabled(model.running || model.busy)
+                        }
+                        Text("Basisgrafik liefert eine feste Firmware-Anzeige. Für frei wählbare Auflösungen zuerst die ARM64-Gasttreiber von der Treiber-CD in Windows installieren. Dann Windows herunterfahren, Virtio-GPU wählen und vorhandenes Windows starten. Der bevorzugte Modus ist eine Monitorvorgabe; erst der Gasttreiber aktiviert passende Windows-Modi. Bei schwarzem Bild ausgeschaltet zur Basisgrafik zurückwechseln. Keine Neuinstallation nötig.")
+                            .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                        Text("Virtio hier ist 2D-Anzeige, keine 3D-Beschleunigung. Anzeigeoptionen werden pro Windows-Datenordner gemerkt.")
+                            .font(.caption).foregroundStyle(.secondary)
+                        Button("Treiber-CD in Windows suchen", action: model.openWindowsDriverDisc)
+                            .disabled(model.activeGuest != "windows" || !model.running || model.windowsPasteBusy)
+                    }
                     fileRow(title: "ARM64-Treiber-ISO (empfohlen)", value: model.settings.driversISO.isEmpty ? "Windows-Gastwerkzeuge / VirtIO-Netzwerktreiber" : model.settings.driversISO) {
                         if let file = model.chooseFile(title: "ARM64-Windows-Gasttreiber-ISO auswählen") { model.settings.driversISO = file }
                     }.disabled(model.running || model.busy)

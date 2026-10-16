@@ -105,6 +105,42 @@ final class AppModel: ObservableObject {
     @Published private(set) var windowsISOHashStatus = "Originalität der ISO noch nicht geprüft"
     @Published private(set) var windowsISOHashDigest = ""
     private var hashedISOPath = ""
+    @Published var windowsGraphics: WindowsGraphics = .basic { didSet { saveWindowsDisplayChoice() } }
+    @Published var windowsResolution: WindowsDisplayMode = .fullHD { didSet { saveWindowsDisplayChoice() } }
+    private var loadingWindowsDisplay = false
+    private func saveWindowsDisplayChoice() {
+        guard !loadingWindowsDisplay, let storage else { return }
+        UserDefaults.standard.set(windowsGraphics.rawValue, forKey: "Pixelkoje.windowsGraphics.\(storage.id)")
+        UserDefaults.standard.set(windowsResolution.rawValue, forKey: "Pixelkoje.windowsResolution.\(storage.id)")
+    }
+    private func loadWindowsDisplayChoice() {
+        guard let storage else { return }
+        loadingWindowsDisplay = true
+        defer { loadingWindowsDisplay = false }
+        windowsGraphics = WindowsGraphics(rawValue: UserDefaults.standard.string(forKey: "Pixelkoje.windowsGraphics.\(storage.id)") ?? "") ?? .basic
+        windowsResolution = WindowsDisplayMode(rawValue: UserDefaults.standard.string(forKey: "Pixelkoje.windowsResolution.\(storage.id)") ?? "") ?? .fullHD
+    }
+    @Published private(set) var androidPasteStatus = ""
+    @discardableResult
+    func pasteAndroidText(_ input: AndroidClipboardText) async -> Bool {
+        guard running, activeGuest == "android", androidBooted, !busy, let stream = androidStream else {
+            androidPasteStatus = "Android-Eingabeverbindung noch nicht bereit."; return false
+        }
+        do {
+            try await stream.paste(input)
+            androidPasteStatus = "Text an Android gesendet. Das Eingabefeld muss im Gast aktiv sein."
+            return true
+        } catch {
+            // Clipboard contents and errors containing payload are never logged.
+            androidPasteStatus = "Text konnte nicht übertragen werden. Android-Verbindung prüfen und erneut versuchen."
+            return false
+        }
+    }
+    func openWindowsDriverDisc() {
+        guard running, activeGuest == "windows", !windowsPasteBusy,
+              windowsPlayer?.sendKeySequence(WindowsKeyboard.explorer) == true else { return }
+        playerStatus = "Windows-Explorer angefordert · Unter Dieser PC die eingelegte Treiber-CD öffnen."
+    }
 
     func refreshWindowsIdentity() {
         guard let storage, storageReady else { windowsIdentity = nil; windowsIdentityCanRestore = false; return }
@@ -244,7 +280,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var apkBusy = false
     @Published private(set) var apkStatus = ""
     @Published private(set) var sessionName = "Kein Gast gestartet"
-    @Published private(set) var log = "Pixelkoje 0.3.15 · Entwicklungsprototyp\nSystem prüfen, dann einen Gast auswählen."
+    @Published private(set) var log = "Pixelkoje 0.3.16 · Entwicklungsprototyp\nSystem prüfen, dann einen Gast auswählen."
     @Published private(set) var lastCommand = ""
     @Published var errorMessage: String? {
         didSet {
@@ -529,6 +565,7 @@ final class AppModel: ObservableObject {
         defer { busy = false; systemCheckLog = log; recordDiagnostic("Systemprüfung", log) }
         refreshWindowsISO()
         refreshWindowsIdentity()
+        loadWindowsDisplayChoice()
         windowsFolderStatus = storage.windowsFolderReady ? "Windows-Ordner vorhanden und beschreibbar." : "Bitte den Windows-Ordner vor dem ersten Start anlegen."
         androidReady = false
         windowsReady = false
@@ -678,7 +715,9 @@ final class AppModel: ObservableObject {
             let spec = try LaunchPlan.windowsVM(qemu: qemu, firmware: firmware, variables: files.variables, disk: files.disk,
                                                tpmSocket: files.socket, iso: settings.iso, driversISO: settings.driversISO,
                                                proISO: files.proISO, installing: installing, resources: resources,
-                                               displaySocket: files.displaySocket, network: settings.windowsNetwork, qmpSocket: files.qmpSocket, identity: files.identity)
+                                               displaySocket: files.displaySocket, network: settings.windowsNetwork, qmpSocket: files.qmpSocket, identity: files.identity,
+                                               graphics: windowsGraphics, resolution: windowsResolution)
+            recordDiagnostic("Windows · Grafik", windowsGraphics.title + " · bevorzugter Modus " + windowsResolution.title)
             windowsIdentity = files.identity
             windowsIdentityStatus = files.identity.summary
             recordDiagnostic("Windows · Gerätekennung", files.identity.summary)

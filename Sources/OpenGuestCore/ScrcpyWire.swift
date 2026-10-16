@@ -52,6 +52,12 @@ public enum ScrcpyWire {
         let payload = Data(text.utf8.prefix(1024))
         return Data([1]) + integer(UInt64(payload.count), bytes: 4) + payload
     }
+    public static func paste(_ input: AndroidClipboardText) -> Data {
+        let payload = Data(input.text.utf8)
+        // SET_CLIPBOARD, sequence 0 = no acknowledgement requested, then paste=true.
+        // This client deliberately does not synchronize the guest clipboard back to macOS.
+        return Data([9]) + Data(repeating: 0, count: 8) + Data([1]) + integer(UInt64(payload.count), bytes: 4) + payload
+    }
     public static func touch(x: Int, y: Int, width: Int, height: Int, action: UInt8) -> Data {
         guard (1...8192).contains(width), (1...8192).contains(height), action <= 2 else { return Data() }
         let x = max(0, min(width - 1, x)), y = max(0, min(height - 1, y))

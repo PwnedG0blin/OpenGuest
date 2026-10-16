@@ -32,6 +32,8 @@ final class AppModel: ObservableObject {
     func applyAndroidDisplayNow() async { }
     func restoreAndroidDisplay() async { }
     func pasteWindowsText(_ input: WindowsTextInput) { }
+    let androidPasteStatus = ""
+    func pasteAndroidText(_ input: AndroidClipboardText) async -> Bool { true }
 }
 
 @main
@@ -81,6 +83,11 @@ struct PastePreview {
                 try render(view, size: NSSize(width: 600, height: 680), appearance: appearance,
                            to: directory.appendingPathComponent(filename))
             }
+            for (name, text) in [("unicode", "Grüße vom Mac 👋 · @PwnedG0blin"), ("empty", ""), ("multiline", "Erste Zeile\nZweite Zeile")] {
+                try render(AndroidPasteSheet(model: AppModel(), text: .constant(text)).environment(\.colorScheme, scheme),
+                    size: NSSize(width: 560, height: 560), appearance: appearance,
+                    to: directory.appendingPathComponent("android-paste-\(name)-\(dark ? "dark" : "light").png"))
+            }
             let credits = DeveloperCredits().padding(20).frame(width: 214)
                 .background(Color(nsColor: .controlBackgroundColor)).environment(\.colorScheme, scheme)
             try render(credits, size: NSSize(width: 214, height: 250), appearance: appearance,
@@ -108,6 +115,6 @@ struct PastePreview {
 SWIFT
 xcrun swiftc -parse-as-library -target "$(uname -m)-apple-macosx14.0" -I "$binary_dir/Modules" \
     Sources/OpenGuest/WindowsPasteSheet.swift Sources/OpenGuest/DeveloperCredits.swift \
-    Sources/OpenGuest/AndroidDisplaySheet.swift Sources/OpenGuest/PlayerSurface.swift "$preview_tmp/Preview.swift" \
+    Sources/OpenGuest/AndroidDisplaySheet.swift Sources/OpenGuest/AndroidPasteSheet.swift Sources/OpenGuest/PlayerSurface.swift "$preview_tmp/Preview.swift" \
     "$binary_dir"/OpenGuestCore.build/*.o -o "$preview_tmp/render-paste"
 "$preview_tmp/render-paste" "$preview_dir"

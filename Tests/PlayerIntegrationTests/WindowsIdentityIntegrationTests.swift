@@ -5,7 +5,7 @@ import OpenGuestCore
 
 final class WindowsIdentityIntegrationTests: XCTestCase {
     @MainActor
-    func testProductionIdentityArgumentsAreAcceptedAndUUIDConfirmedByRealQEMU() async throws {
+    func testProductionIdentityAndVirtioGraphicsAcceptedAndUUIDConfirmedByRealQEMU() async throws {
         let fm = FileManager.default
         guard let engine = ["/opt/homebrew/bin/qemu-system-aarch64", "/usr/local/bin/qemu-system-aarch64", "/usr/bin/qemu-system-aarch64"].first(where: { fm.isExecutableFile(atPath: $0) }) else {
             if ProcessInfo.processInfo.environment["OPENGUEST_REQUIRE_QEMU_TEST"] == "1" { XCTFail("QEMU is required in CI"); return }
@@ -23,16 +23,17 @@ final class WindowsIdentityIntegrationTests: XCTestCase {
         let plan = try LaunchPlan.windowsVM(qemu: engine, firmware: "/not-used.fd", variables: "/not-used-vars.fd", disk: disk.path,
             tpmSocket: "/tmp/og-id/tpm.sock", iso: nil, driversISO: nil, proISO: nil, installing: false,
             resources: GuestResources(memoryMiB: 4096, cores: 4), displaySocket: "/tmp/og-id/display.sock", network: true,
-            qmpSocket: "/tmp/og-id/qmp.sock", identity: identity)
+            qmpSocket: "/tmp/og-id/qmp.sock", identity: identity, graphics: .virtio, resolution: .qhd)
         var hardware = [String]()
         for (i, flag) in plan.arguments.enumerated() where i + 1 < plan.arguments.count {
             let value = plan.arguments[i + 1]
             if ["-uuid", "-smbios", "-netdev"].contains(flag) ||
-               (flag == "-device" && (value.hasPrefix("nvme,") || value.hasPrefix("virtio-net-pci,"))) ||
+               (flag == "-device" && (value.hasPrefix("nvme,") || value.hasPrefix("virtio-net-pci,") || value.hasPrefix("virtio-gpu-pci,"))) ||
                (flag == "-blockdev" && value.contains("\"node-name\":\"systemdisk\"")) {
                 hardware += [flag, value]
             }
         }
+        XCTAssertTrue(hardware.contains("virtio-gpu-pci,id=display0,xres=2560,yres=1440"))
         let output = root.appendingPathComponent("qemu.log")
         fm.createFile(atPath: output.path, contents: nil)
         let log = try FileHandle(forWritingTo: output)

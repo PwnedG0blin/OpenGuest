@@ -1,3 +1,9 @@
+# Pixelkoje 0.3.16: paste Mac text into Android and optional Windows graphics
+
+The Android player now offers “Text einfügen …” and Command+V on the guest display. Explicitly opening the dialog reads plain text from the Mac clipboard. Review/edit it, then confirm to transfer UTF-8 text with scrcpy 4.0 SET_CLIPBOARD and its paste flag. The player adds no Enter, trims trailing line breaks and requires explicit approval of internal line breaks. Input is limited to 64 KiB; text is never written to logs or settings. This is a one-way user action, not automatic clipboard synchronization. The destination Android field must be focused; individual apps can block paste. Transport errors keep the dialog open; successful sending does not confirm acceptance by an Android app.
+
+Windows graphics can be explicitly changed while the VM is off. Existing VMs retain ramfb basic graphics by default. Install the ARM64 display driver from the guest-tools CD inside Windows before choosing Virtio-GPU. The preferred 16:9 mode (1280×720, 1920×1080 or 2560×1440) is a monitor hint; modes/scaling depend on the installed guest driver. If the screen stays black, shut the VM down and return to basic graphics. This option provides 2D display, not 3D acceleration. Settings are remembered per data folder. Tests check launch arguments and real QEMU device acceptance under TCG; Windows guest-driver behavior requires verification on the target Mac.
+
 # Pixelkoje 0.3.15: trackpad scrolling and display controls
 
 The native player now handles AppKit scroll-wheel events, including precise two-finger motion and macOS momentum. AppKit already applies the natural-scroll preference; the player does not invert it again. Android receives scrcpy 4.0 fractional vertical/horizontal scroll messages at the guest coordinate. Windows accumulates small vertical deltas into bounded RFB wheel steps and sends every press/release pair together while preserving held buttons. QEMU's current VNC/USB-tablet path has no horizontal wheel support; Windows scrolling remains wheel-based rather than pixel scrolling. No global input monitor or Accessibility permission is used.
@@ -50,7 +56,7 @@ The app, executable, player windows and installer are now named Pixelkoje. Exist
 
 Windows startup fix in **0.3.6**: TPM stays enabled with persistent state, but its optional physical-presence interface (PPI) is disabled. This avoids QEMU #4587's `HV_BAD_ARGUMENT` during device initialization with HVF on Apple Silicon. This does not disable Secure Boot checks, bypass Windows requirements or erase VM data. The installed UEFI firmware must still support the intended Windows configuration. Source: https://gitlab.com/qemu-project/qemu/-/work_items/4587 . CI now initializes a real swtpm + QEMU TPM under TCG and, where the runner provides it, HVF. It does not test a complete Windows installation.
 
-Current test build: **0.3.15**. Opening the app shows the main window only; guests require an explicit Start action. Starting Android or Windows opens its own resizable player window. The Android page can also open Google's account chooser in the normal external Mac browser; this does not sign the Android guest in automatically.
+Current test build: **0.3.16**. Opening the app shows the main window only; guests require an explicit Start action. Starting Android or Windows opens its own resizable player window. The Android page can also open Google's account chooser in the normal external Mac browser; this does not sign the Android guest in automatically.
 
 # Pixelkoje
 

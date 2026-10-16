@@ -59,7 +59,7 @@ private struct GuestPlayerView: View {
     }
 
     private func beginPaste() {
-        guard active, kind == "windows", !model.windowsPasteBusy else { return }
+        guard active, !model.windowsPasteBusy else { return }
         pasteDraft = NSPasteboard.general.string(forType: .string) ?? ""
         pastePresented = true
     }
@@ -87,7 +87,7 @@ private struct GuestPlayerView: View {
                                   sourceSize: model.playerSize,
                                   pointer: { model.pointer(x: $0, y: $1, mask: $2) },
                                   key: { model.keyboard(code: $0, text: $1, down: $2) },
-                                  paste: kind == "windows" ? { beginPaste() } : nil,
+                                  paste: { beginPaste() },
                                   scroll: { model.scroll(x: $0, y: $1, horizontal: $2, vertical: $3, mask: $4) },
                                   resetScroll: { model.resetScroll() }, zoomPercent: fitsWindow ? nil : safeZoom)
                 }
@@ -105,6 +105,11 @@ private struct GuestPlayerView: View {
                 }
             }.frame(maxWidth: .infinity, maxHeight: .infinity)
             VStack(alignment: .leading, spacing: 8) {
+                if kind == "android" {
+                    Button("Text einfügen …", action: beginPaste).disabled(!active || model.playerSize == .zero)
+                        .help("Text vom Mac nach Android übertragen. Auch mit ⌘V im Gastbild.")
+                    if !model.androidPasteStatus.isEmpty { Text(model.androidPasteStatus).font(.caption) }
+                }
                 HStack {
                     Toggle("An Fenster anpassen", isOn: $fitsWindow).toggleStyle(.checkbox)
                     Spacer(minLength: 4)
@@ -176,7 +181,8 @@ private struct GuestPlayerView: View {
         .frame(minWidth: 360, minHeight: 480)
         .onAppear { zoomPercent = safeZoom }
         .sheet(isPresented: $pastePresented, onDismiss: { pasteDraft = "" }) {
-            WindowsPasteSheet(model: model, text: $pasteDraft)
+            if kind == "android" { AndroidPasteSheet(model: model, text: $pasteDraft) }
+            else { WindowsPasteSheet(model: model, text: $pasteDraft) }
         }
         .sheet(isPresented: $androidDisplayPresented) { AndroidDisplaySheet(model: model) }
     }

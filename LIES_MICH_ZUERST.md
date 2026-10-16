@@ -1,3 +1,11 @@
+# Neu in Pixelkoje 0.3.16: Mac-Text in Android einfügen
+
+Am Mac Text mit ⌘C kopieren. In Android das gewünschte Eingabefeld antippen. Im Android-Player „Text einfügen …“ anklicken oder im Gastbild ⌘V drücken. Die Vorschau prüfen und „In Android einfügen“ bestätigen. Umlaute und Unicode werden übertragen. Kein zusätzliches Enter; Zeilenumbrüche innerhalb des Texts müssen ausdrücklich erlaubt werden. Maximal 64 KiB Text. Kein automatischer Abgleich und keine Speicherung des Textes in Protokollen oder Einstellungen. Manche Apps erlauben kein Einfügen.
+
+Für Windows gibt es nun die optionale Virtio-GPU unter „Windows-Grafik und Auflösung“. Zuerst bei noch aktiver Basisgrafik die ARM64-Gasttreiber von der eingelegten Treiber-CD in Windows installieren. „Treiber-CD in Windows suchen“ öffnet den Explorer; unter „Dieser PC“ die CD und deren Installer öffnen. Windows danach vollständig herunterfahren, Virtio-GPU sowie einen bevorzugten Modus wählen und das vorhandene Windows starten. Die verfügbaren Auflösungen und die Skalierung in Windows hängen vom Gasttreiber ab. Bei schwarzem Bild ausgeschaltet wieder Basisgrafik wählen. Diese Version ergänzt keine 3D-Beschleunigung. Ein vollständiger Treibertest auf deinem Ziel-Mac steht noch aus.
+
+Zum Aktualisieren beide Gastsysteme herunterfahren und Pixelkoje schließen. Dann die App ersetzen und den bisherigen Datenordner auf Extern weiterverwenden.
+
 # Neu in Pixelkoje 0.3.15: Trackpad, Auflösung und Skalierung
 
 Mit zwei Fingern über dem Gastbild hoch/runter scrollen. Die macOS-Scrollrichtung und der macOS-Nachlauf werden übernommen. Android unterstützt außerdem seitliches Scrollen. Windows nutzt mit dem aktuellen VNC-/USB-Tablet-Pfad Mausradschritte; kleine Trackpad-Bewegungen werden dafür gesammelt. Seitliches Windows-Scrollen und native Windows-Pixelgesten sind damit noch nicht verfügbar. Beim Scrollen wird kein zusätzlicher Klick ausgelöst.
