@@ -52,10 +52,12 @@ final class PlayerIntegrationTests: XCTestCase {
         XCTAssertTrue(fm.fileExists(atPath: socket.path), (try? String(contentsOf: output)) ?? "QEMU socket absent")
         let client = RFBClient()
         var received = false
+        var handshakeCompleted = false
         client.onFrame = { image in
             XCTAssertGreaterThan(image.size.width, 0)
             XCTAssertGreaterThan(image.size.height, 0)
             received = true
+            handshakeCompleted = client.initialized
             client.stop()
         }
         let timeout = Task {
@@ -65,7 +67,8 @@ final class PlayerIntegrationTests: XCTestCase {
         defer { timeout.cancel(); client.stop() }
         do { try await client.run(socket: socket.path) }
         catch { if !received { XCTFail("Real QEMU player failed: \(error)") } }
-        XCTAssertTrue(client.initialized, "RFB handshake must complete")
+        XCTAssertTrue(handshakeCompleted, "RFB handshake must complete before delivering a frame")
+        XCTAssertFalse(client.initialized, "A disconnected client must no longer report ready")
         XCTAssertTrue(received, "A real QEMU framebuffer must arrive without a guest OS")
         let boot = try await QMPClient.inspect(socket: qmp.path)
         XCTAssertTrue(boot.dvdConnected, "The app must confirm the actual inserted optical drive")
