@@ -1,0 +1,52 @@
+name: Fehler melden
+description: Einen nachvollziehbaren Fehler in Pixelkoje melden.
+title: "[Fehler] "
+body:
+  - type: markdown
+    attributes:
+      value: "Danke für den Bericht. Bitte keine Passwörter, E-Mail-Adressen oder vollständigen Gerätekennungen veröffentlichen. Für mögliche Sicherheitslücken zuerst SECURITY.md lesen."
+  - type: input
+    id: version
+    attributes:
+      label: Pixelkoje-Version
+      placeholder: "Zum Beispiel 0.3.19"
+    validations:
+      required: true
+  - type: input
+    id: host
+    attributes:
+      label: Mac und macOS
+      placeholder: "Mac-Chip, RAM, macOS-Version und gegebenenfalls Buildnummer"
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Betroffener Bereich
+      options:
+        - Android
+        - Windows
+        - Einrichtung oder Speicherort
+        - Mac-Oberfläche
+        - Anderer Bereich
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Schritte zum Reproduzieren
+      description: "Was wurde ausgewählt oder ausgeführt? Bei Gästen auch Android-/Windows-Version und verwendetes Profil nennen."
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Erwartetes und tatsächliches Verhalten
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Bereinigter Diagnoseauszug
+      description: "Optional aus Gesamtprotokoll exportieren. Private Inhalte vor dem Einfügen entfernen."
+      render: text

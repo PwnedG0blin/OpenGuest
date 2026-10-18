@@ -1,0 +1,21 @@
+name: Verbesserung vorschlagen
+description: Ein konkretes Problem und eine mögliche Verbesserung beschreiben.
+title: "[Vorschlag] "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Welches Problem möchtest du lösen?
+      description: "Bitte auch angeben, ob Android, Windows oder die Mac-App betroffen ist."
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Gewünschtes Verhalten
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Bisherige Lösung oder Alternativen

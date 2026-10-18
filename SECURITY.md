@@ -1,13 +1,31 @@
-# Stability and security status
+# Sicherheit und Datenhaltung
 
-OpenGuest 0.1 is a source prototype. Native ARM64 compilation and all 13 unit tests passed in GitHub Actions. Guest integration tests, a security audit and extended stability tests remain open. No crash-free or isolation guarantee is made.
+**Pixelkoje · öffentliche Testversion** · Entwickelt von **PwnedG0blin**
 
-Guest state is persistent: Android user data, Windows disk, UEFI variables and TPM state are not reset between sessions. Prefer normal guest shutdown. Forced termination and host/guest crashes can still lose recent changes. The app does not supply automatic backups or recover game cloud saves itself.
+Diese Seite beschreibt die derzeitige Umsetzung und ihre Grenzen. Automatisierte Builds und Tests sind kein unabhängiges Sicherheitsaudit und keine Garantie gegen Abstürze oder Datenverlust.
 
-Processes run as the current user. No privileged helper, root request, host directory sharing, telemetry or public VNC listener is implemented. APKs are installed into the selected guest. Google credentials are entered only in the guest. Optional Windows local-account credentials are temporarily present in private setup media and cleared from normal app settings; setup encoding is reversible and is not encryption. A crash may leave private temporary setup files until manually removed.
+## Gastdaten und Prozesse
 
-The streaming server is downloaded separately from the exact upstream release, checked against upstream SHA-256 metadata and checked again before use. This does not replace a dependency audit. Keep the protocol/server version paired and review later upstream fixes before distributing a public binary.
+Android-Nutzerdaten sowie Windows-Datenträger, UEFI-Variablen und TPM-Zustand bleiben zwischen Sitzungen gespeichert. Die App setzt diese Daten beim normalen Start nicht zurück. Reguläres Herunterfahren reduziert das Risiko ungespeicherter Änderungen; erzwungenes Beenden oder ein Host-/Gastabsturz kann Daten verlieren. Automatische vollständige Gast-Backups sind nicht enthalten.
 
-Before claiming a stable release, complete the Mac acceptance tests, validate suitable Windows firmware, review guest parser/process boundaries, test state retention across interruptions, and sign/notarize the public macOS app. Never disable Gatekeeper to make a release installable.
+Die Prozesse laufen mit den Rechten des angemeldeten Mac-Benutzers. Ein privilegierter Hilfsdienst, automatische Host-Ordnerfreigaben, Telemetrie und ein öffentlicher VNC-Listener sind nicht implementiert. Der Windows-Player verwendet eine lokale Verbindung. APKs werden im ausdrücklich ausgewählten Gast installiert.
 
-The source archive has no live support or reporting endpoint. When a public repository is created, configure private vulnerability reporting there before accepting sensitive reports.
+## Konten, Zwischenablage und Einrichtung
+
+Google-Zugangsdaten werden im Android-Gast eingegeben. Ein im Mac-Browser geöffnetes Google-Konto überträgt keine Gastanmeldung.
+
+Auf Wunsch gespeicherte Windows-Einrichtungsdaten liegen im macOS-Schlüsselbund; Kennwörter werden nicht in normalen App-Einstellungen oder Diagnoseprotokollen gespeichert. Für eine Installation können sie außerdem vorübergehend in privaten Einrichtungsmedien enthalten sein. Deren Codierung ist umkehrbar und keine Verschlüsselung. Normales Sitzungsende entfernt das temporäre Medium; nach einem Absturz können Dateien zurückbleiben.
+
+Die Mac-Zwischenablage wird beim ausdrücklichen Öffnen der Einfügefunktion beziehungsweise bei ⌘V gelesen. Textübertragungen werden nicht protokolliert oder dauerhaft gespeichert. Die Vorschau erfordert eine Bestätigung, innere Zeilenumbrüche eine zusätzliche Freigabe.
+
+## Downloads und Verteilung
+
+Der scrcpy-Server wird getrennt aus der festgelegten offiziellen Version bezogen, anhand der veröffentlichten SHA-256-Metadaten geprüft und vor Nutzung erneut geprüft. Das ersetzt keine Prüfung sämtlicher Abhängigkeiten. Änderungen am Server und am Protokoll müssen zusammenpassen.
+
+Die Test-App ist ad-hoc signiert und noch nicht mit Apple Developer ID signiert oder notarisiert. [SIGNIERUNG.md](SIGNIERUNG.md) beschreibt den vorgesehenen Verteilungsweg. Gatekeeper und SIP nicht systemweit deaktivieren.
+
+## Ein Problem melden
+
+Allgemeine Fehler über die [Issues](https://github.com/PwnedG0blin/OpenGuest/issues/new/choose) melden. Namen, E-Mail-Adressen, Gerätekennungen, Schlüssel und Zugangsdaten vorher aus Protokollen und Anhängen entfernen.
+
+Für eine mögliche Sicherheitslücke keine ausnutzbaren Details oder privaten Daten öffentlich posten. Falls GitHub für dieses Repository **Report a vulnerability** anbietet, diesen privaten Meldeweg verwenden. Andernfalls zunächst ohne sensible Details nach einem geeigneten privaten Meldeweg fragen. Ein eingerichteter privater Kanal oder eine feste Reaktionsfrist wird derzeit nicht zugesagt.
