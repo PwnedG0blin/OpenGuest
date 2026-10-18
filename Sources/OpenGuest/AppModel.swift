@@ -464,6 +464,12 @@ final class AppModel: ObservableObject {
     @Published private(set) var streamFPS = 0.0
     @Published private(set) var androidDroppedFrames = 0
     @Published private(set) var androidReconnectBusy = false
+    @Published var androidScrollSpeed = GuestScrollSpeed.percent(UserDefaults.standard.object(forKey: "Pixelkoje.scrollSpeed.android") as? Double ?? 50) {
+        didSet { UserDefaults.standard.set(GuestScrollSpeed.percent(androidScrollSpeed), forKey: "Pixelkoje.scrollSpeed.android"); resetScroll() }
+    }
+    @Published var windowsScrollSpeed = GuestScrollSpeed.percent(UserDefaults.standard.object(forKey: "Pixelkoje.scrollSpeed.windows") as? Double ?? 50) {
+        didSet { UserDefaults.standard.set(GuestScrollSpeed.percent(windowsScrollSpeed), forKey: "Pixelkoje.scrollSpeed.windows"); resetScroll() }
+    }
     @Published var androidVulkanEnabled = UserDefaults.standard.object(forKey: "Pixelkoje.androidVulkanEnabled") as? Bool ?? true {
         didSet { UserDefaults.standard.set(androidVulkanEnabled, forKey: "Pixelkoje.androidVulkanEnabled"); settings.coldBoot = true }
     }
@@ -1070,8 +1076,11 @@ final class AppModel: ObservableObject {
     }
 
     func scroll(x: Int, y: Int, horizontal: Double, vertical: Double, mask: UInt8) {
-        if activeGuest == "windows", !windowsPasteBusy { windowsPlayer?.scroll(x: x, y: y, vertical: vertical, mask: mask) }
-        else if activeGuest == "android" { androidStream?.scroll(x: x, y: y, horizontal: horizontal, vertical: vertical, mask: mask) }
+        let speed = activeGuest == "windows" ? windowsScrollSpeed : androidScrollSpeed
+        let h = GuestScrollSpeed.scale(horizontal, percent: speed)
+        let v = GuestScrollSpeed.scale(vertical, percent: speed)
+        if activeGuest == "windows", !windowsPasteBusy { windowsPlayer?.scroll(x: x, y: y, vertical: v, mask: mask) }
+        else if activeGuest == "android" { androidStream?.scroll(x: x, y: y, horizontal: h, vertical: v, mask: mask) }
     }
     func resetScroll() { windowsPlayer?.resetScroll() }
 

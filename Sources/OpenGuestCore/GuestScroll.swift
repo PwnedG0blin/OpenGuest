@@ -32,3 +32,14 @@ public struct WindowsWheelScroll: Sendable {
         return steps
     }
 }
+
+/// Persisted per guest; 50 percent slows the former trackpad behavior by half.
+public enum GuestScrollSpeed {
+    public static func percent(_ value: Double) -> Double {
+        value.isFinite ? max(10, min(200, value)) : 50
+    }
+    public static func scale(_ delta: Double, percent value: Double) -> Double {
+        guard delta.isFinite else { return 0 }
+        return max(-16, min(16, delta * percent(value) / 100))
+    }
+}

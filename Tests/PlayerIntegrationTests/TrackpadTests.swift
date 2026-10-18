@@ -59,6 +59,21 @@ final class TrackpadTests: XCTestCase {
         XCTAssertEqual(points.count, 2, "A gesture begun in the black margin must not scroll the guest")
     }
     @MainActor
+    func testPrecisionModeIgnoresMomentumButPreservesFingerAndMouseWheelInput() {
+        let view = GuestSurface(frame: NSRect(x: 0, y: 0, width: 400, height: 400))
+        var received = [Double]()
+        view.configure(image: nil, video: nil, size: CGSize(width: 400, height: 400),
+                       pointer: { _,_,_ in }, key: { _,_,_ in },
+                       scroll: { _,_,_,v,_ in received.append(v) }, allowsScrollMomentum: false)
+        let delta = GuestScrollDelta(deltaX: 0, deltaY: 20, precise: true)
+        view.scrollInput(at: CGPoint(x: 100, y: 100), delta: delta, phase: .began, momentum: [])
+        view.scrollInput(at: CGPoint(x: 100, y: 100), delta: delta, phase: [], momentum: .began)
+        view.scrollInput(at: CGPoint(x: 100, y: 100), delta: delta, phase: [], momentum: .changed)
+        XCTAssertEqual(received, [0.5])
+        view.scrollInput(at: CGPoint(x: 100, y: 100), delta: delta, phase: [], momentum: [])
+        XCTAssertEqual(received, [0.5, 0.5])
+    }
+    @MainActor
     func testWindowsWheelSendsPairedPressReleaseAndPreservesHeldButton() async throws {
         let fm = FileManager.default
         let root = URL(fileURLWithPath: "/tmp/og-wheel-\(UUID().uuidString.prefix(8))")

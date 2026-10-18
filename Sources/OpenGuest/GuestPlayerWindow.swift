@@ -70,6 +70,7 @@ private struct GuestPlayerView: View {
     @State private var pastePresented = false
     @State private var pasteDraft = ""
     @AppStorage private var fitsWindow: Bool
+    @AppStorage private var scrollMomentum: Bool
     @AppStorage private var zoomPercent: Double
     @State private var androidDisplayPresented = false
     private var safeZoom: Double { zoomPercent.isFinite ? max(25, min(300, zoomPercent)) : 100 }
@@ -78,6 +79,7 @@ private struct GuestPlayerView: View {
         self.model = model; self.kind = kind
         _fitsWindow = AppStorage(wrappedValue: true, "Pixelkoje.playerFit.\(kind)")
         _zoomPercent = AppStorage(wrappedValue: 100, "Pixelkoje.playerZoom.\(kind)")
+        _scrollMomentum = AppStorage(wrappedValue: false, "Pixelkoje.scrollMomentum.\(kind)")
     }
 
     private func beginPaste() {
@@ -111,7 +113,8 @@ private struct GuestPlayerView: View {
                                   key: { model.keyboard(code: $0, text: $1, down: $2) },
                                   paste: { beginPaste() },
                                   scroll: { model.scroll(x: $0, y: $1, horizontal: $2, vertical: $3, mask: $4) },
-                                  resetScroll: { model.resetScroll() }, zoomPercent: fitsWindow ? nil : safeZoom)
+                                  resetScroll: { model.resetScroll() }, zoomPercent: fitsWindow ? nil : safeZoom,
+                                  allowsScrollMomentum: scrollMomentum)
                 }
                 if !active || model.playerSize == .zero {
                     VStack(spacing: 12) {
@@ -157,6 +160,23 @@ private struct GuestPlayerView: View {
                         Button("100 %") { zoomPercent = 100 }
                     }
                 }
+                HStack {
+                    Text("Scrolltempo").font(.caption)
+                    Slider(value: Binding(get: {
+                        kind == "android" ? model.androidScrollSpeed : model.windowsScrollSpeed
+                    }, set: { value in
+                        if kind == "android" { model.androidScrollSpeed = value }
+                        else { model.windowsScrollSpeed = value }
+                    }), in: 10...200, step: 5)
+                    Text("\(Int(kind == "android" ? model.androidScrollSpeed : model.windowsScrollSpeed)) %")
+                        .font(.caption.monospacedDigit()).frame(width: 44, alignment: .trailing)
+                    Button("100 %") {
+                        if kind == "android" { model.androidScrollSpeed = 100 }
+                        else { model.windowsScrollSpeed = 100 }
+                    }.controlSize(.small)
+                }.help("Trackpad und Mausrad · 50 % = halbes bisheriges Tempo. Pro Gastsystem gespeichert; wirkt sofort.")
+                Toggle("Trackpad-Nachlauf", isOn: $scrollMomentum).toggleStyle(.checkbox)
+                    .help("Aus: präzise stoppen, sobald die Finger loslassen. Ein: mit Schwung weiterscrollen. Pro Gastsystem gespeichert.")
                 Text(fitsWindow
                     ? "Zwei Finger: im Gast scrollen. Bild passt sich der Fenstergröße an."
                     : "100 % = ein Gast-Bildpixel pro Mac-Bildpixel. Bild über Scrollleisten verschieben; zwei Finger scrollen im Gast.")
