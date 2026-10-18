@@ -26,7 +26,7 @@ final class AppModel: ObservableObject {
     @Published var androidAutoUpdateBeforeStart = false
     let busy = false
     let storageReady = true
-    let storage: GuestStorage? = try! JSONDecoder().decode(GuestStorage.self, from: Data(#"{"root":"/Volumes/Extern/OpenGuest","id":"preview"}"#.utf8))
+    let storage: GuestStorage? = try! JSONDecoder().decode(GuestStorage.self, from: Data(#"{"root":"/Volumes/Extern/OpenGuest","id":"preview","mediaSources":[]}"#.utf8))
     let setupReady: Set<SetupComponent> = [.android, .streaming]
     let canManageAndroid = true
     let selectedAndroidSystem: AndroidSystem? = .android16
