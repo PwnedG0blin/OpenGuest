@@ -1,3 +1,7 @@
+Entwickelt von **PwnedG0blin** · Copyright (c) 2026 PwnedG0blin.
+
+Projektentwicklung und Lizenzen: [AUTHORS.md](AUTHORS.md) · [LICENSE](LICENSE).
+
 # Neu in Pixelkoje 0.3.19: S26-Ultra-Displayprofil und Telefonfenster
 
 Unter Android-Auflösung das Profil „Galaxy S26 Ultra · 1440 × 3120 · 500 dpi“ wählen und „Jetzt in Android anwenden“ anklicken. 500 dpi sind eine anpassbare Skalierungsvorgabe. „Bild einpassen“ setzt die Darstellung auf die verfügbare Bildfläche zurück. „Telefonfenster“ passt das Mac-Fenster an das Seitenverhältnis des Streams und die verfügbare Monitorhöhe an; frei vergrößern/verkleinern bleibt möglich. Im Vollbild wird nur Einpassen aktiviert. Ein von einem Spiel selbst erzeugter schwarzer Rand wird nicht automatisch abgeschnitten. Apps und Daten bleiben erhalten.

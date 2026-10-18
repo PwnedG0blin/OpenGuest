@@ -1,3 +1,7 @@
+Entwickelt von **PwnedG0blin** · Copyright (c) 2026 PwnedG0blin.
+
+Projektentwicklung und Lizenzen: [AUTHORS.md](AUTHORS.md) · [LICENSE](LICENSE).
+
 # Pixelkoje 0.3.19: S26 Ultra display preset and portrait player window
 
 Android display controls offer a 1440×3120 portrait preset with adjustable 500 dpi logical scaling. Samsung lists this resolution and roughly 500 physical ppi; our 500 dpi is an app preset, not a claim about Samsung's default Android logical density. This changes display settings only; it does not install Samsung firmware. The player adds explicit Fit and Phone window actions. The latter uses the current stream aspect ratio and available screen, re-measures wrapped controls, and enables fit. In full screen it enables fit without leaving full screen. AppKit immediately updates the video layer frame after geometry changes; no black pixels inside a game are cropped.
