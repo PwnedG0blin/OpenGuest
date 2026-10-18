@@ -28,7 +28,10 @@ public enum AndroidMaintenance {
             throw StorageMigration.failure("Bereinigung abgebrochen: Verknüpfung oder fremder Pfad: \(url.path)")
         }
     }
-    public static func plan(storage: GuestStorage, keeping name: String) throws -> AndroidCleanupPlan {
+    /// An explicit home directory keeps fixture tests independent of installed AVDs.
+    /// App callers retain the current user's home and all external-reference checks.
+    public static func plan(storage: GuestStorage, keeping name: String,
+                            homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser) throws -> AndroidCleanupPlan {
         try storage.validate()
         let fm = FileManager.default
         guard !name.isEmpty, !name.contains("/"), !name.contains("\\"), name != ".", name != ".." else {
@@ -81,7 +84,7 @@ public enum AndroidMaintenance {
             try checked(images, root: root)
             let retainedPlatform = image.standardizedFileURL.pathComponents.dropFirst(images.standardizedFileURL.pathComponents.count).first
             var sharedPlatforms: Set<String> = []
-            let otherRoot = fm.homeDirectoryForCurrentUser.appendingPathComponent(".android/avd")
+            let otherRoot = homeDirectory.appendingPathComponent(".android/avd")
             if fm.fileExists(atPath: otherRoot.path), otherRoot.resolvingSymlinksInPath() != storage.avd.resolvingSymlinksInPath() {
                 for entry in try fm.contentsOfDirectory(at: otherRoot, includingPropertiesForKeys: nil) where entry.pathExtension == "ini" {
                     let values = RuntimeDiscovery.parseINI(try String(contentsOf: entry, encoding: .utf8))
@@ -117,8 +120,9 @@ public enum AndroidMaintenance {
         }
         return AndroidCleanupPlan(keeping: name, paths: paths.sorted())
     }
-    public static func cleanup(storage: GuestStorage, expected: AndroidCleanupPlan) throws {
-        let actual = try plan(storage: storage, keeping: expected.keeping)
+    public static func cleanup(storage: GuestStorage, expected: AndroidCleanupPlan,
+                               homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser) throws {
+        let actual = try plan(storage: storage, keeping: expected.keeping, homeDirectory: homeDirectory)
         guard actual == expected else { throw StorageMigration.failure("Die Bereinigungsliste hat sich geändert. Bitte erneut prüfen.") }
         for path in actual.paths {
             try storage.validate()
