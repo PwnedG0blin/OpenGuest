@@ -69,7 +69,7 @@ struct ContentView: View {
                 Image(systemName: "square.stack.3d.up.fill").font(.title).foregroundStyle(.teal)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Pixelkoje").font(.headline)
-                    Text("DEVELOPMENT 0.3.18").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
+                    Text("DEVELOPMENT " + (Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Unbekannt")).font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
                 }
             }
             ForEach(WorkspaceTab.allCases) { tab in
@@ -429,6 +429,7 @@ struct ContentView: View {
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
+            GitHubUpdatesView()
             Text("Pixelkoje enthält keine Telemetrie. Android, QEMU und das Gastbetriebssystem haben eigene Netzwerk- und Datenschutzeinstellungen. Protokolle und Einstellungen liegen lokal auf diesem Mac.")
                 .font(.caption).foregroundStyle(.secondary)
         }
