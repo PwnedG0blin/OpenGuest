@@ -45,7 +45,7 @@ struct GitHubUpdatesView: View {
                     .foregroundStyle(.secondary)
             case .available(let release):
                 VStack(alignment: .leading, spacing: 8) {
-                    Label("Neue Version gefunden: \(release.name?.isEmpty == false ? release.name! : release.tagName)", systemImage: "arrow.down.circle")
+                    Label("Neue Version gefunden: \(release.name.flatMap { $0.isEmpty ? nil : $0 } ?? release.tagName)", systemImage: "arrow.down.circle")
                         .font(.headline)
                     if let notes = release.body, !notes.isEmpty {
                         Text(notes).lineLimit(6).textSelection(.enabled)
@@ -72,7 +72,7 @@ struct GitHubUpdatesView: View {
         }
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.quaternary.opacity(0.3), in: RoundedRectangle(cornerRadius: 12))
+        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 12))
         .task {
             if automaticChecks { await checker.checkIfDue(includePrereleases: includePrereleases) }
         }
