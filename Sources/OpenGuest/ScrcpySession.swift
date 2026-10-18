@@ -36,6 +36,7 @@ final class ScrcpySession {
     var onFPS: ((Double) -> Void)?
     private(set) var width = 0
     private(set) var height = 0
+    private var touchSwipe = AndroidTouchScroll()
     private var touchDown = false
 
     func start(adb: String, serial: String, profile: AndroidPerformance, fps: Int) async throws {
@@ -150,11 +151,18 @@ final class ScrcpySession {
     func setSize(_ size: CGSize) { width = Int(size.width); height = Int(size.height) }
     func pointer(x: Int, y: Int, mask: UInt8) {
         guard width > 0, height > 0 else { return }
+        for data in touchSwipe.end() { control?.send(data) }
         let pressed = mask & 1 != 0
         if !pressed && !touchDown { return }
         let action: UInt8 = pressed ? (touchDown ? 2 : 0) : 1
         touchDown = pressed
         control?.send(ScrcpyWire.touch(x: x, y: y, width: width, height: height, action: action))
+    }
+    func swipe(x: Int, y: Int, horizontal: Double, vertical: Double, phase: GuestTouchScrollPhase) {
+        guard !touchDown else { return }
+        for data in touchSwipe.packets(x: x, y: y, horizontal: horizontal, vertical: vertical, width: width, height: height, phase: phase) {
+            control?.send(data)
+        }
     }
     func key(_ code: UInt32, down: Bool) { control?.send(ScrcpyWire.key(code, down: down)) }
     func scroll(x: Int, y: Int, horizontal: Double, vertical: Double, mask: UInt8) {
@@ -175,6 +183,7 @@ final class ScrcpySession {
 
     func stop() async {
         streamTask?.cancel(); deliveryTask?.cancel(); statisticsTask?.cancel()
+        for data in touchSwipe.end() { control?.send(data) }
         video?.close(); control?.close()
         // Wait for the old delivery task before a new session can reuse the display layer.
         await deliveryTask?.value

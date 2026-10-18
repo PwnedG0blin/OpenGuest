@@ -15,11 +15,12 @@ struct PlayerSurface: NSViewRepresentable {
     var resetScroll: (() -> Void)? = nil
     var zoomPercent: Double? = nil
     var allowsScrollMomentum = true
+    var touchScroll: ((Int, Int, Double, Double, GuestTouchScrollPhase) -> Void)? = nil
 
     func makeNSView(context: Context) -> GuestViewport { GuestViewport() }
     func updateNSView(_ view: GuestViewport, context: Context) {
         view.configure(image: image, video: videoLayer, size: sourceSize, pointer: pointer, key: key,
-                       paste: paste, scroll: scroll, resetScroll: resetScroll, zoomPercent: zoomPercent, allowsScrollMomentum: allowsScrollMomentum)
+                       paste: paste, scroll: scroll, resetScroll: resetScroll, zoomPercent: zoomPercent, allowsScrollMomentum: allowsScrollMomentum, touchScroll: touchScroll)
     }
     static func dismantleNSView(_ nsView: GuestViewport, coordinator: ()) { nsView.surface.detach() }
 }
@@ -40,10 +41,11 @@ final class GuestViewport: NSScrollView {
     func configure(image: NSImage?, video: AVSampleBufferDisplayLayer?, size: CGSize,
                    pointer: @escaping (Int, Int, UInt8) -> Void, key: @escaping (UInt16, String, Bool) -> Void,
                    paste: (() -> Void)?, scroll: ((Int, Int, Double, Double, UInt8) -> Void)?,
-                   resetScroll: (() -> Void)?, zoomPercent: Double?, allowsScrollMomentum: Bool = true) {
+                   resetScroll: (() -> Void)?, zoomPercent: Double?, allowsScrollMomentum: Bool = true,
+                   touchScroll: ((Int, Int, Double, Double, GuestTouchScrollPhase) -> Void)? = nil) {
         sourceSize = size; self.zoomPercent = zoomPercent
         surface.configure(image: image, video: video, size: size, pointer: pointer, key: key,
-                          paste: paste, scroll: scroll, resetScroll: resetScroll, allowsScrollMomentum: allowsScrollMomentum)
+                          paste: paste, scroll: scroll, resetScroll: resetScroll, allowsScrollMomentum: allowsScrollMomentum, touchScroll: touchScroll)
         updateGeometry()
     }
     override func layout() { super.layout(); updateGeometry() }
@@ -81,6 +83,8 @@ final class GuestSurface: NSView {
     private var scrollAnchor: (Int, Int)?
     private var scrollGesture = false
     private var allowsScrollMomentum = true
+    private var touchScrollAction: ((Int, Int, Double, Double, GuestTouchScrollPhase) -> Void)?
+    private var touchScrollActive = false
     private var pressedButtons: UInt8 = 0
     private var lastPointer: (Int, Int)?
     private let imageLayer = CALayer()
@@ -107,9 +111,11 @@ final class GuestSurface: NSView {
     func configure(image: NSImage?, video: AVSampleBufferDisplayLayer?, size: CGSize,
                    pointer: @escaping (Int, Int, UInt8) -> Void, key: @escaping (UInt16, String, Bool) -> Void,
                    paste: (() -> Void)? = nil,
-                   scroll: ((Int, Int, Double, Double, UInt8) -> Void)? = nil, resetScroll: (() -> Void)? = nil, allowsScrollMomentum: Bool = true) {
-        if sourceSize != size || self.allowsScrollMomentum != allowsScrollMomentum { resetScrolling() }
+                   scroll: ((Int, Int, Double, Double, UInt8) -> Void)? = nil, resetScroll: (() -> Void)? = nil, allowsScrollMomentum: Bool = true,
+                   touchScroll: ((Int, Int, Double, Double, GuestTouchScrollPhase) -> Void)? = nil) {
+        if sourceSize != size || self.allowsScrollMomentum != allowsScrollMomentum || (touchScrollAction == nil) != (touchScroll == nil) { resetScrolling() }
         self.allowsScrollMomentum = allowsScrollMomentum
+        self.touchScrollAction = touchScroll
         sourceSize = size; self.pointer = pointer; self.key = key; pasteAction = paste
         scrollAction = scroll; resetScrollAction = resetScroll
         if self.video !== video {
@@ -142,7 +148,10 @@ final class GuestSurface: NSView {
         if pressedButtons != 0, let p = lastPointer { pointer?(p.0, p.1, 0) }
         pressedButtons = 0; lastPointer = nil
     }
-    private func resetScrolling() { scrollAnchor = nil; scrollGesture = false; resetScrollAction?() }
+    private func resetScrolling() {
+        if touchScrollActive { touchScrollAction?(0, 0, 0, 0, .cancelled) }
+        touchScrollActive = false; scrollAnchor = nil; scrollGesture = false; resetScrollAction?()
+    }
     private func releaseKeys() {
         for (code, text) in held { key?(code, text, false) }
         held.removeAll()
@@ -179,8 +188,16 @@ final class GuestSurface: NSView {
         let point = gestured ? scrollAnchor : sourcePoint(at: location, clamped: false)
         if let point {
             if delta.horizontal != 0 || delta.vertical != 0 {
-                scrollAction(point.0, point.1, delta.horizontal, delta.vertical, pressedButtons)
+                if let touchScrollAction {
+                    if pressedButtons == 0 {
+                        if !touchScrollActive { touchScrollAction(point.0, point.1, 0, 0, .began); touchScrollActive = true }
+                        touchScrollAction(point.0, point.1, delta.horizontal, delta.vertical, .changed)
+                    }
+                } else { scrollAction(point.0, point.1, delta.horizontal, delta.vertical, pressedButtons) }
             }
+        }
+        if touchScrollActive && (phase.contains(.ended) || momentum.contains(.ended) || !gestured) {
+            touchScrollAction?(0, 0, 0, 0, .ended); touchScrollActive = false
         }
         if momentum.contains(.ended) { resetScrolling() }
     }

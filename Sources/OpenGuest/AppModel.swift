@@ -1082,6 +1082,12 @@ final class AppModel: ObservableObject {
         if activeGuest == "windows", !windowsPasteBusy { windowsPlayer?.scroll(x: x, y: y, vertical: v, mask: mask) }
         else if activeGuest == "android" { androidStream?.scroll(x: x, y: y, horizontal: h, vertical: v, mask: mask) }
     }
+    func swipeAndroid(x: Int, y: Int, horizontal: Double, vertical: Double, phase: GuestTouchScrollPhase) {
+        guard activeGuest == "android" else { return }
+        androidStream?.swipe(x: x, y: y,
+                             horizontal: GuestScrollSpeed.scale(horizontal, percent: androidScrollSpeed),
+                             vertical: GuestScrollSpeed.scale(vertical, percent: androidScrollSpeed), phase: phase)
+    }
     func resetScroll() { windowsPlayer?.resetScroll() }
 
     func openWindowsDisplaySettings() {

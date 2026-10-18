@@ -94,4 +94,6 @@ Die Stream-Warteschlange ist nach Bildanzahl, Datenmenge und Zeitspanne begrenzt
 
 Der bewährte Modus „Mac-GPU bevorzugen“ bleibt Standard. Optional lässt sich Vulkan für einen OpenGL-ES-Kompatibilitätstest ausschalten. Dies ist kein neuer BlueStacks- oder MuMu-Renderer und garantiert keine konstante Spielbildrate. Hohe Android-Auflösungen, Spiele, Encoder und Gastlast können weiterhin die Bildrate begrenzen.
 
-Trackpad im Player: Scrolltempo für Android und Windows getrennt von 10 bis 200 Prozent einstellen (Vorgabe 50 Prozent). Trackpad-Nachlauf kann separat ein- oder ausgeschaltet werden; ausgeschaltet stoppt das Scrollen ohne Schwung. Änderungen wirken sofort und werden gespeichert. Die natürliche Scrollrichtung folgt macOS.
+Trackpad im Player: Scrolltempo für Android und Windows getrennt von 10 bis 200 Prozent einstellen (Vorgabe 50 Prozent). Trackpad-Nachlauf kann separat ein- oder ausgeschaltet werden; ausgeschaltet werden die Nachlaufereignisse des Macs nicht weitergegeben. Änderungen wirken sofort und werden gespeichert. Die natürliche Scrollrichtung folgt macOS.
+
+Android bietet zusätzlich „Wischen wie am Handy“: Zwei Trackpad-Finger erzeugen Touch-Down/Move/Up im Gast. Bei Fokusverlust, Moduswechsel oder Abbruch wird die Berührung beendet. Ausschalten verwendet wieder Scrollrad-Ereignisse. Android-Apps können eigene Gesten und eigenen Nachlauf verwenden.

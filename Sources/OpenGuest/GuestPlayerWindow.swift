@@ -70,6 +70,7 @@ private struct GuestPlayerView: View {
     @State private var pastePresented = false
     @State private var pasteDraft = ""
     @AppStorage private var fitsWindow: Bool
+    @AppStorage private var androidTouchScroll: Bool
     @AppStorage private var scrollMomentum: Bool
     @AppStorage private var zoomPercent: Double
     @State private var androidDisplayPresented = false
@@ -80,6 +81,7 @@ private struct GuestPlayerView: View {
         _fitsWindow = AppStorage(wrappedValue: true, "Pixelkoje.playerFit.\(kind)")
         _zoomPercent = AppStorage(wrappedValue: 100, "Pixelkoje.playerZoom.\(kind)")
         _scrollMomentum = AppStorage(wrappedValue: false, "Pixelkoje.scrollMomentum.\(kind)")
+        _androidTouchScroll = AppStorage(wrappedValue: true, "Pixelkoje.androidTouchScroll")
     }
 
     private func beginPaste() {
@@ -114,7 +116,10 @@ private struct GuestPlayerView: View {
                                   paste: { beginPaste() },
                                   scroll: { model.scroll(x: $0, y: $1, horizontal: $2, vertical: $3, mask: $4) },
                                   resetScroll: { model.resetScroll() }, zoomPercent: fitsWindow ? nil : safeZoom,
-                                  allowsScrollMomentum: scrollMomentum)
+                                  allowsScrollMomentum: scrollMomentum,
+                                  touchScroll: kind == "android" && androidTouchScroll ? { x,y,h,v,phase in
+                                      model.swipeAndroid(x: x, y: y, horizontal: h, vertical: v, phase: phase)
+                                  } : nil)
                 }
                 if !active || model.playerSize == .zero {
                     VStack(spacing: 12) {
@@ -175,8 +180,12 @@ private struct GuestPlayerView: View {
                         else { model.windowsScrollSpeed = 100 }
                     }.controlSize(.small)
                 }.help("Trackpad und Mausrad · 50 % = halbes bisheriges Tempo. Pro Gastsystem gespeichert; wirkt sofort.")
+                if kind == "android" {
+                    Toggle("Wischen wie am Handy", isOn: $androidTouchScroll).toggleStyle(.checkbox)
+                        .help("Zwei Finger auf dem Trackpad ziehen als ein Finger in Android. Aus: Scrollrad-Ereignisse. Die Scrollrichtung folgt macOS; Apps können eigene Wischgesten erkennen.")
+                }
                 Toggle("Trackpad-Nachlauf", isOn: $scrollMomentum).toggleStyle(.checkbox)
-                    .help("Aus: präzise stoppen, sobald die Finger loslassen. Ein: mit Schwung weiterscrollen. Pro Gastsystem gespeichert.")
+                    .help("Aus: keinen Mac-Nachlauf übertragen. Ein: Mac-Schwung weitergeben. Android-Apps können nach einer Wischgeste zusätzlich eigenen Nachlauf erzeugen. Pro Gastsystem gespeichert.")
                 Text(fitsWindow
                     ? "Zwei Finger: im Gast scrollen. Bild passt sich der Fenstergröße an."
                     : "100 % = ein Gast-Bildpixel pro Mac-Bildpixel. Bild über Scrollleisten verschieben; zwei Finger scrollen im Gast.")

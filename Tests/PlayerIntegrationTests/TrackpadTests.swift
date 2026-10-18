@@ -74,6 +74,21 @@ final class TrackpadTests: XCTestCase {
         XCTAssertEqual(received, [0.5, 0.5])
     }
     @MainActor
+    func testPhoneSwipeModeRoutesGestureWithoutWheelAndReleasesOnFocusLoss() {
+        let view = GuestSurface(frame: NSRect(x: 0, y: 0, width: 400, height: 400))
+        var phases = [GuestTouchScrollPhase]()
+        var wheelCalls = 0
+        view.configure(image: nil, video: nil, size: CGSize(width: 400, height: 400),
+                       pointer: { _,_,_ in }, key: { _,_,_ in }, scroll: { _,_,_,_,_ in wheelCalls += 1 },
+                       allowsScrollMomentum: false, touchScroll: { _,_,_,_,phase in phases.append(phase) })
+        let delta = GuestScrollDelta(deltaX: 0, deltaY: 20, precise: true)
+        view.scrollInput(at: CGPoint(x: 100, y: 100), delta: delta, phase: .began, momentum: [])
+        view.scrollInput(at: CGPoint(x: 100, y: 100), delta: delta, phase: .changed, momentum: [])
+        _ = view.resignFirstResponder()
+        XCTAssertEqual(phases, [.began, .changed, .changed, .cancelled])
+        XCTAssertEqual(wheelCalls, 0)
+    }
+    @MainActor
     func testWindowsWheelSendsPairedPressReleaseAndPreservesHeldButton() async throws {
         let fm = FileManager.default
         let root = URL(fileURLWithPath: "/tmp/og-wheel-\(UUID().uuidString.prefix(8))")
