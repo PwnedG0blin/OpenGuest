@@ -34,6 +34,17 @@ Google-Synchronisierung und Cloud-Spielstände hängen von der jeweiligen App un
 
 Die [Schritt-für-Schritt-Anleitung](LIES_MICH_ZUERST.md) beschreibt Android, Windows, Treiber, Updates und den Umzug auf eine externe SSD.
 
+## GitHub-API und Versionsprüfung
+
+Unter **Einrichtung → Pixelkoje-Updates über GitHub** prüft Pixelkoje auf Wunsch öffentliche [GitHub Releases](https://github.com/PwnedG0blin/OpenGuest/releases). Die native macOS-App liest ausschließlich die offizielle REST-API für Releases (ohne API-Schlüssel oder GitHub-Anmeldung), vergleicht die veröffentlichte Version mit der lokal installierten App und zeigt Versionshinweise sowie einen Link zur offiziellen Veröffentlichung an.
+
+- Die manuelle Prüfung ist jederzeit möglich. Automatische Prüfungen sind **standardmäßig aus** und lassen sich einschalten (höchstens eine Anforderung pro 24 Stunden).
+- Vorabversionen sind optional; Entwürfe, ungültige Versionsnummern und externe Links werden nicht als Updates angeboten.
+- Releases sind derzeit **noch nicht veröffentlicht**. Die separat verfügbaren [GitHub-Actions-Test-Builds](https://github.com/PwnedG0blin/OpenGuest/actions/workflows/macos.yml) sind keine Releases und werden deshalb nicht als neue Version gemeldet.
+- Es erfolgt kein automatischer Download, keine Installation und keine Übermittlung von Diagnoseprotokollen oder persönlichen Daten. Beim Abruf der öffentlichen GitHub-API fallen technisch notwendige Netzwerkdaten bei GitHub an; [GitHubs Datenschutzbestimmungen](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement) gelten.
+
+Die GitHub-API-Integration wurde unabhängig vom GitHub Developer Program entwickelt. Eine Aufnahme ins Programm und das Profil-Badge entscheidet ausschließlich GitHub; sie sind nicht durch diese Funktion garantiert.
+
 ## Entwicklungsstand
 
 Pixelkoje ist eine **öffentliche Testversion**. Die Mac-App, Protokolle und Eingabewege werden automatisiert geprüft; vollständige Installationen, Spielekompatibilität und dauerhaft stabile Bildraten müssen zusätzlich auf echten Zielsystemen getestet werden.
