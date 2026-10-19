@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import StratovoCore
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -11,10 +12,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         if model?.running == true {
             let alert = NSAlert()
-            alert.messageText = "Ein Gastprozess läuft noch"
-            alert.informativeText = "Fahre das Gastsystem zuerst herunter, damit seine Daten sauber gespeichert werden. Danach kannst du Stratovo schließen."
-            alert.addButton(withTitle: "Gast herunterfahren")
-            alert.addButton(withTitle: "Zurück")
+            alert.messageText = L10n.text("Ein Gastprozess läuft noch")
+            alert.informativeText = L10n.text("Fahre das Gastsystem zuerst herunter, damit seine Daten sauber gespeichert werden. Danach kannst du Stratovo schließen.")
+            alert.addButton(withTitle: L10n.text("Gast herunterfahren"))
+            alert.addButton(withTitle: L10n.text("Zurück"))
             if alert.runModal() == .alertFirstButtonReturn { model?.shutdownGuest() }
             return .terminateCancel
         }
@@ -28,10 +29,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 struct StratovoApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @StateObject private var model = AppModel()
+    @AppStorage(L10n.preferenceKey) private var interfaceLanguage = "system"
 
     var body: some Scene {
         WindowGroup {
             ContentView(model: model)
+                .environment(\.locale, Locale(identifier: L10n.resolve(preference: interfaceLanguage, preferredLanguages: Locale.preferredLanguages)))
+                .environment(\.layoutDirection, L10n.code == "ar" ? .rightToLeft : .leftToRight)
                 .task {
                     delegate.model = model
                     await model.open()
@@ -41,8 +45,8 @@ struct StratovoApp: App {
         .commands {
             CommandGroup(replacing: .newItem) { }
             CommandGroup(replacing: .help) {
-                Link("Android-Geräte anlegen", destination: URL(string: "https://developer.android.com/studio/run/managing-avds")!)
-                Link("Windows Arm64 herunterladen", destination: URL(string: "https://www.microsoft.com/de-de/software-download/windows11arm64")!)
+                Link(L10n.text("Android-Geräte anlegen"), destination: URL(string: "https://developer.android.com/studio/run/managing-avds")!)
+                Link(L10n.text("Windows Arm64 herunterladen"), destination: URL(string: "https://www.microsoft.com/de-de/software-download/windows11arm64")!)
             }
         }
     }

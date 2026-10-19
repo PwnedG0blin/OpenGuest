@@ -10,16 +10,22 @@ if ! xcrun --find swift >/dev/null 2>&1; then
     exit 1
 fi
 cd "$project_dir"
+python3 -m unittest discover -s Tests/GraphicsLabTests -q
+python3 -m unittest discover -s Tests/AndroidDataTests -q
 xcrun swift test
 xcrun swift build -c release --arch arm64
 binary_dir="$(xcrun swift build -c release --arch arm64 --show-bin-path)"
 app_path="$project_dir/dist/Stratovo.app"
 mkdir -p "$app_path/Contents/MacOS" "$app_path/Contents/Resources"
 cp "$binary_dir/Stratovo" "$app_path/Contents/MacOS/Stratovo"
+/usr/bin/ditto "$binary_dir/Stratovo_StratovoCore.bundle" "$app_path/Contents/Resources/Stratovo_StratovoCore.bundle"
 cp "$project_dir/Packaging/Info.plist" "$app_path/Contents/Info.plist"
 cp "$project_dir/LICENSE" "$project_dir/AUTHORS.md" "$project_dir/THIRD_PARTY_NOTICES.md" "$project_dir/SIGNIERUNG.md" "$app_path/Contents/Resources/"
 cp "$project_dir/Android_Werkzeuge_einrichten.command" "$project_dir/Android_einrichten.command" "$project_dir/Android_System_verwalten.command" "$project_dir/Android_Streaming_einrichten.command" "$project_dir/Windows_Treiber_einrichten.command" "$app_path/Contents/Resources/"
 cp "$project_dir/LIES_MICH_ZUERST.md" "$app_path/Contents/Resources/"
+cp "$project_dir/Android_Daten_uebernehmen.py" "$app_path/Contents/Resources/"
+cp "$project_dir/Packaging/install-update.sh" "$app_path/Contents/Resources/"
+/usr/bin/ditto "$project_dir/Packaging/GraphicsLab" "$app_path/Contents/Resources/GraphicsLab"
 # Local development signature only. It is not Developer ID signing or notarization.
 /usr/bin/codesign --force --sign - "$app_path"
 /usr/bin/codesign --verify --strict "$app_path"

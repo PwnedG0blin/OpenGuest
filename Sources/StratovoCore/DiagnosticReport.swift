@@ -92,7 +92,13 @@ public enum DiagnosticReport {
         for (title, file) in [
             ("App-Fehler und Verlauf", storage.logs.appendingPathComponent("openguest-events.log")),
             ("Android-Videostream", storage.runtime.appendingPathComponent("scrcpy-4.0/server-last.log")),
-            ("Windows · TPM", storage.windows.appendingPathComponent("tpm-last.log"))
+            ("Windows · TPM", storage.windows.appendingPathComponent("tpm-last.log")),
+            ("Grafiklabor · konkreter Baufehler", storage.url.appendingPathComponent("GraphicsLab/Logs/Letzter-Fehler.log")),
+            ("Grafiklabor · Metal-Vorprüfung", storage.url.appendingPathComponent("GraphicsLab/Logs/Metal-Pruefung.log")),
+            ("Grafiklabor · C++-Vorprüfung", storage.url.appendingPathComponent("GraphicsLab/Logs/CXX-Pruefung.log")),
+            ("Grafiklabor · ANGLE-Bau", storage.url.appendingPathComponent("GraphicsLab/Logs/ANGLE-Build.log")),
+            ("Grafiklabor · Vorbereitung", storage.url.appendingPathComponent("GraphicsLab/Build.log")),
+            ("Grafiklabor · Teststart", storage.url.appendingPathComponent("GraphicsLab/Test-Start.log"))
         ] {
             section(title, regularFile(file, storage: storage) ? ((try? readBounded(file)) ?? "Nicht lesbar.") : "")
         }

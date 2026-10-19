@@ -15,23 +15,23 @@ struct AndroidPasteSheet: View {
     }
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Label("Text in Android einfügen", systemImage: "doc.on.clipboard").font(.title2.bold()).foregroundStyle(.teal)
-            Text("Zuerst das gewünschte Eingabefeld in Android antippen. Bestätigter Text wird in die Android-Zwischenablage übertragen und eingefügt.")
+            Label(L10n.text("Text in Android einfügen"), systemImage: "doc.on.clipboard").font(.title2.bold()).foregroundStyle(.teal)
+            Text(L10n.text("Zuerst das gewünschte Eingabefeld in Android antippen. Bestätigter Text wird in die Android-Zwischenablage übertragen und eingefügt."))
                 .font(.subheadline).foregroundStyle(.secondary)
             TextEditor(text: $text).font(.body).frame(height: 160).padding(6)
                 .background(.teal.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
                 .overlay(RoundedRectangle(cornerRadius: 8).stroke(.teal.opacity(0.35)))
-            Toggle("Zeilenumbrüche innerhalb des Textes erlauben", isOn: $allowLineBreaks)
-            Text(issue ?? "Bereit · Unicode wird unterstützt. Am Ende wird kein Enter gesendet.")
+            Toggle(L10n.text("Zeilenumbrüche innerhalb des Textes erlauben"), isOn: $allowLineBreaks)
+            Text(issue ?? L10n.text("Bereit · Unicode wird unterstützt. Am Ende wird kein Enter gesendet."))
                 .font(.caption).foregroundStyle(issue == nil ? Color.teal : Color.orange)
                 .fixedSize(horizontal: false, vertical: true)
-            Text("Erst mit deiner Bestätigung wird der Text an Android übertragen. Die Android-Zwischenablage enthält ihn anschließend wie beim normalen Kopieren.")
+            Text(L10n.text("Erst mit deiner Bestätigung wird der Text an Android übertragen. Die Android-Zwischenablage enthält ihn anschließend wie beim normalen Kopieren."))
                 .font(.caption).foregroundStyle(.secondary)
             HStack {
-                Button("Abbrechen") { dismiss() }.keyboardShortcut(.cancelAction).disabled(sending)
+                Button(L10n.text("Abbrechen")) { dismiss() }.keyboardShortcut(.cancelAction).disabled(sending)
                 Spacer()
                 if sending { ProgressView().controlSize(.small) }
-                Button("In Android einfügen") {
+                Button(L10n.text("In Android einfügen")) {
                     guard let input else { return }
                     sending = true
                     Task {

@@ -5,9 +5,11 @@ import StratovoCore
 @MainActor
 final class SetupInstaller: ObservableObject {
     @Published private(set) var running = false
-    @Published private(set) var status = "Komponenten auswählen und auf dem gewählten Datenträger einrichten."
+    @Published private(set) var status = L10n.text("Komponenten auswählen und auf dem gewählten Datenträger einrichten.")
     @Published private(set) var output = ""
     @Published private(set) var licensePrompt = false
+    @Published private(set) var installingAndroid: AndroidSystem?
+    static let android17DataProfile = "Pixelkoje_Android17_mit_Daten"
     private var input: FileHandle?
     private var responseOffset: UInt64 = 0
     private var outputOffset: UInt64 = 0
@@ -32,10 +34,21 @@ final class SetupInstaller: ObservableObject {
     }
 
     func install(_ selected: Set<SetupComponent>, storage: GuestStorage, existingISO: String,
-                 existingDrivers: String, microsoftLink: String, ready: Set<SetupComponent>, androidChannel: Int = 0, preferredAndroidProfile: String = "") async throws -> (iso: String?, drivers: String?) {
-        guard !running else { throw StorageMigration.failure("Einrichtung läuft bereits.") }
+                 existingDrivers: String, microsoftLink: String, ready: Set<SetupComponent>, androidChannel: Int = 0, preferredAndroidProfile: String = "", androidDataSource: String? = nil, qemuImg: String? = nil) async throws -> (iso: String?, drivers: String?, androidProfile: String?) {
+        guard !running else { throw StorageMigration.failure(L10n.text("Einrichtung läuft bereits.")) }
         try storage.validate()
-        let pending = selected.subtracting(ready)
+        var pending = selected.subtracting(ready)
+        let copyData = selected.contains(.android17) && androidDataSource != nil
+        if copyData {
+            guard let qemuImg, FileManager.default.isExecutableFile(atPath: qemuImg) else {
+                throw StorageMigration.failure(L10n.text("Für die geprüfte Android-Datenkopie fehlt qemu-img. Bitte die vorhandene QEMU-Installation unter Windows prüfen oder Android 17 ohne Datenübernahme einrichten."))
+            }
+            let target = storage.avd.appendingPathComponent(Self.android17DataProfile + ".avd")
+            guard !FileManager.default.fileExists(atPath: target.path) else {
+                throw StorageMigration.failure(L10n.text("Die Android-17-Datenkopie existiert bereits. Bitte im Hauptfenster auswählen. Es wird nichts überschrieben."))
+            }
+            pending.insert(.android17)
+        }
         // Reject invalid links before starting any downloads.
         let canImportISO = !existingISO.isEmpty && FileManager.default.isReadableFile(atPath: existingISO)
         let isoURL = pending.contains(.windowsISO) && !canImportISO ? try SetupDownloads.windowsISOURL(microsoftLink) : nil
@@ -44,20 +57,21 @@ final class SetupInstaller: ObservableObject {
             let directory = storage.url.appendingPathComponent(relative)
             let root = storage.url.resolvingSymlinksInPath().path + "/"
             guard directory.resolvingSymlinksInPath().path.hasPrefix(root) else {
-                throw StorageMigration.failure("Arbeitsordner verweist außerhalb des gewählten Datenträgers: \(directory.path)")
+                throw StorageMigration.failure(L10n.message("Arbeitsordner verweist außerhalb des gewählten Datenträgers: \(directory.path)"))
             }
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         }
         running = true
-        defer { running = false; licensePrompt = false; input = nil }
-        var iso: String?, drivers: String?
+        installingAndroid = selected.contains(.android17) ? .android17 : selected.contains(.android) ? .android16 : nil
+        defer { running = false; licensePrompt = false; input = nil; installingAndroid = nil }
+        var iso: String?, drivers: String?, androidProfile: String?
         for item in SetupComponent.allCases where selected.contains(item) {
             try storage.validate()
             status = item.title
-            if ready.contains(item) { status = "\(item.title): vorhanden, kein erneuter Download."; continue }
+            if !pending.contains(item) { status = "\(item.title): vorhanden, kein erneuter Download."; continue }
             let minimum: Int64 = (item == .android || item == .android17) ? 80 : item == .windowsISO ? 12 : 1
             guard let free = storage.freeBytes, free >= minimum * 1_073_741_824 else {
-                throw StorageMigration.failure("Für \(item.title) werden mindestens \(minimum) GB auf \(storage.root) benötigt.")
+                throw StorageMigration.failure(L10n.message("Für \(item.title) werden mindestens \(minimum) GB auf \(storage.root) benötigt."))
             }
             if item == .android || item == .android17 {
                 try await run(CommandSpec(executable: "/bin/bash", arguments: [try Self.bundledScript("Android_Werkzeuge_einrichten.command").path]), storage: storage)
@@ -72,14 +86,14 @@ final class SetupInstaller: ObservableObject {
             }
             if let script = item.script {
                 let args = [try Self.bundledScript(script).path] + ((item == .android || item == .android17)
-                    ? [item == .android ? "16" : "17", "install", String(androidChannel), preferredAndroidProfile] : [])
+                    ? [item == .android ? "16" : "17", item == .android17 && copyData ? "download" : "install", String(androidChannel), preferredAndroidProfile] : [])
                 try await run(CommandSpec(executable: "/bin/bash", arguments: args), storage: storage)
             } else if let isoURL {
                 let media = storage.url.appendingPathComponent("Installationsmedien")
                 try FileManager.default.createDirectory(at: media, withIntermediateDirectories: true)
                 let destination = media.appendingPathComponent("Windows11_ARM64_Microsoft.iso")
                 guard !FileManager.default.fileExists(atPath: destination.path) else {
-                    throw StorageMigration.failure("Windows11_ARM64_Microsoft.iso existiert bereits. Bitte diese Datei im Windows-Bereich auswählen; sie wird nicht überschrieben.")
+                    throw StorageMigration.failure(L10n.text("Windows11_ARM64_Microsoft.iso existiert bereits. Bitte diese Datei im Windows-Bereich auswählen; sie wird nicht überschrieben."))
                 }
                 let temporary = media.appendingPathComponent("windows-\(UUID().uuidString).part")
                 defer { try? FileManager.default.removeItem(at: temporary) }
@@ -93,27 +107,34 @@ final class SetupInstaller: ObservableObject {
                 try FileManager.default.moveItem(at: temporary, to: destination)
                 iso = destination.path
             }
+            if item == .android17, copyData, let androidDataSource, let qemuImg {
+                status = L10n.text("Android-16-Daten kopieren und prüfen …")
+                try await run(CommandSpec(executable: "/usr/bin/python3", arguments: [
+                    try Self.bundledScript("Android_Daten_uebernehmen.py").path,
+                    "--source", androidDataSource, "--qemu-img", qemuImg]), storage: storage)
+                androidProfile = Self.android17DataProfile
+            }
             if item == .windowsDrivers {
                 let destination = storage.url.appendingPathComponent("Installationsmedien/utm-guest-tools.iso")
                 try Self.validateISO(destination)
                 drivers = destination.path
             }
         }
-        status = "Einrichtung abgeschlossen. Vorhandene Komponenten wurden wiederverwendet."
-        return (iso, drivers)
+        status = L10n.text("Einrichtung abgeschlossen. Vorhandene Komponenten wurden wiederverwendet.")
+        return (iso, drivers, androidProfile)
     }
 
     func manageAndroid(_ system: AndroidSystem, mode: String, channel: Int, storage: GuestStorage) async throws {
         guard !running, ["check", "update"].contains(mode), (0...3).contains(channel) else {
-            throw StorageMigration.failure("Android-Verwaltung ist gerade nicht verfügbar.")
+            throw StorageMigration.failure(L10n.text("Android-Verwaltung ist gerade nicht verfügbar."))
         }
         running = true
         defer { running = false }
-        status = mode == "check" ? "Android-Updates prüfen …" : "Android-Systemabbild aktualisieren …"
+        status = mode == "check" ? L10n.text("Android-Updates prüfen …") : "Android-Systemabbild aktualisieren …"
         try await run(CommandSpec(executable: "/bin/bash", arguments: [try Self.bundledScript("Android_System_verwalten.command").path,
             String(system.rawValue), mode, String(channel)]), storage: storage)
-        status = mode == "check" ? "Updateprüfung abgeschlossen. Verfügbare Pakete stehen im Protokoll; es wurde nichts installiert."
-            : "Systemabbild aktualisiert. Nächster Start erfolgt als Kaltstart; Apps und Konten bleiben im Profil."
+        status = mode == "check" ? L10n.text("Updateprüfung abgeschlossen. Verfügbare Pakete stehen im Protokoll; es wurde nichts installiert.")
+            : L10n.text("Systemabbild aktualisiert. Nächster Start erfolgt als Kaltstart; Apps und Konten bleiben im Profil.")
     }
 
     static func validateISO(_ url: URL) throws {
@@ -122,7 +143,7 @@ final class SetupInstaller: ObservableObject {
         try reader.seek(toOffset: 32769)
         let magic = String(decoding: try reader.read(upToCount: 5) ?? Data(), as: UTF8.self)
         guard ["CD001", "BEA01", "NSR02", "NSR03"].contains(magic) else {
-            throw StorageMigration.failure("Die heruntergeladene Datei ist kein erkanntes ISO-Abbild.")
+            throw StorageMigration.failure(L10n.text("Die heruntergeladene Datei ist kein erkanntes ISO-Abbild."))
         }
     }
 
@@ -132,12 +153,12 @@ final class SetupInstaller: ObservableObject {
         let target = media.appendingPathComponent(name)
         try Self.validateISO(source)
         try FileManager.default.createDirectory(at: media, withIntermediateDirectories: true)
-        status = "Vorhandene ISO auf den gewählten Datenträger übernehmen …"
+        status = L10n.text("Vorhandene ISO auf den gewählten Datenträger übernehmen …")
         try await Task.detached(priority: .userInitiated) {
             let fm = FileManager.default
             if fm.fileExists(atPath: target.path) {
                 guard fm.contentsEqual(atPath: source.path, andPath: target.path) else {
-                    throw StorageMigration.failure("Am Ziel existiert eine andere ISO mit gleichem Namen. Sie wird nicht überschrieben.")
+                    throw StorageMigration.failure(L10n.text("Am Ziel existiert eine andere ISO mit gleichem Namen. Sie wird nicht überschrieben."))
                 }
                 return
             }
@@ -145,12 +166,12 @@ final class SetupInstaller: ObservableObject {
             defer { try? fm.removeItem(at: partial) }
             try fm.copyItem(at: source, to: partial)
             guard fm.contentsEqual(atPath: source.path, andPath: partial.path) else {
-                throw StorageMigration.failure("ISO-Kopierprüfung fehlgeschlagen. Original bleibt erhalten.")
+                throw StorageMigration.failure(L10n.text("ISO-Kopierprüfung fehlgeschlagen. Original bleibt erhalten."))
             }
             try storage.validate()
             try fm.moveItem(at: partial, to: target)
         }.value
-        output = "ISO übernommen. Die ursprüngliche Datei wurde nicht gelöscht.\n\(target.path)"
+        output = L10n.message("ISO übernommen. Die ursprüngliche Datei wurde nicht gelöscht.\n\(target.path)")
         return target.path
     }
 
@@ -188,7 +209,7 @@ final class SetupInstaller: ObservableObject {
         child.waitUntilExit()
         readOutput(log)
         guard child.terminationStatus == 0 else {
-            status = "Einrichtung fehlgeschlagen. Details stehen im Downloadprotokoll."
+            status = L10n.text("Einrichtung fehlgeschlagen. Details stehen im Downloadprotokoll.")
             throw GuestError.commandFailed(child.terminationStatus, String(output.suffix(2500)))
         }
         try storage.validate()

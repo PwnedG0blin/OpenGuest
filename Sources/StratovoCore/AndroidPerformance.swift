@@ -4,16 +4,16 @@ public enum AndroidPerformance: String, CaseIterable, Hashable {
     case smooth, balanced, native
     public var title: String {
         switch self {
-        case .smooth: return "Flüssig · empfohlen"
+        case .smooth: return L10n.text("Flüssig · empfohlen")
         case .balanced: return "Ausgewogen"
-        case .native: return "Originalauflösung"
+        case .native: return L10n.text("Originalauflösung")
         }
     }
     public var guestMaxSize: Int { self == .smooth ? 1600 : (self == .balanced ? 2000 : 0) }
     public var streamMaxSize: Int { self == .smooth ? 1280 : (self == .balanced ? 1600 : 1920) }
     public var bitRate: Int { self == .smooth ? 8_000_000 : (self == .balanced ? 10_000_000 : 12_000_000) }
     public func streamOptions(fps: Int) -> [String] {
-        ["max_size=\(streamMaxSize)", "max_fps=\(fps == 30 ? 30 : 60)", "video_bit_rate=\(bitRate)"]
+        ["max_size=\(streamMaxSize)", "max_fps=\(AndroidFrameRate.limit(fps))", "video_bit_rate=\(bitRate)"]
     }
 }
 

@@ -40,7 +40,7 @@ final class ScrcpySession {
     private var touchDown = false
 
     func start(adb: String, serial: String, profile: AndroidPerformance, fps: Int) async throws {
-        guard let storage = GuestStorage.load() else { throw failure("Speicherort fehlt.") }
+        guard let storage = GuestStorage.load() else { throw failure(L10n.text("Speicherort fehlt.")) }
         try storage.validate()
         self.adb = adb; self.serial = serial
         let jar = Self.runtime.appendingPathComponent("scrcpy-server-v4.0")
@@ -49,7 +49,7 @@ final class ScrcpySession {
         let bytes = try Data(contentsOf: jar, options: [.mappedIfSafe])
         let digest = SHA256.hash(data: bytes).map { String(format: "%02x", $0) }.joined()
         guard manifest.version == ScrcpyWire.version, digest == manifest.sha256 else {
-            throw failure("Streaming-Datei stimmt nicht mit dem geprüften Download überein. Android_Streaming_einrichten.command erneut ausführen.")
+            throw failure(L10n.text("Streaming-Datei stimmt nicht mit dem geprüften Download überein. Android_Streaming_einrichten.command erneut ausführen."))
         }
         let scid = String(format: "%08x", UInt32.random(in: 1...0x7fff_ffff))
         remote = "/data/local/tmp/openguest-scrcpy-\(scid).jar"
@@ -62,7 +62,7 @@ final class ScrcpySession {
         self.port = port
         try Task.checkCancellation()
         let log = Self.runtime.appendingPathComponent("server-last.log")
-        guard FileManager.default.createFile(atPath: log.path, contents: nil) else { throw failure("Stream-Protokoll nicht schreibbar.") }
+        guard FileManager.default.createFile(atPath: log.path, contents: nil) else { throw failure(L10n.text("Stream-Protokoll nicht schreibbar.")) }
         let handle = try FileHandle(forWritingTo: log)
         serverOutput = handle
         let child = Process()
@@ -111,7 +111,7 @@ final class ScrcpySession {
             if server?.isRunning != true { break }
             try await Task.sleep(nanoseconds: 100_000_000)
         }
-        guard let socket else { throw failure("Stream-Server antwortet nicht. Das Server-Protokoll enthält die Ursache.") }
+        guard let socket else { throw failure(L10n.text("Stream-Server antwortet nicht. Das Server-Protokoll enthält die Ursache.")) }
         control = LocalStream(port: port)
         onStatus?("H.264-Stream verbunden · Mac-Videodecoder")
         while !Task.isCancelled {
@@ -127,6 +127,7 @@ final class ScrcpySession {
                 queue.append(data: data, pts: pts, configuration: config, keyframe: rawHeader[0] & 0x20 != 0)
                 if queue.droppedFrames != previousDrops { onQueueDrops?(queue.droppedFrames) }
                 deliverQueuedFrames()
+                await Task.yield()
             }
         }
     }
@@ -176,7 +177,7 @@ final class ScrcpySession {
     func text(_ text: String) { control?.send(ScrcpyWire.text(text)) }
     func paste(_ input: AndroidClipboardText) async throws {
         guard let control, server?.isRunning == true, width > 0, height > 0 else {
-            throw failure("Android-Eingabeverbindung noch nicht bereit.")
+            throw failure(L10n.text("Android-Eingabeverbindung noch nicht bereit."))
         }
         try await control.sendChecked(ScrcpyWire.paste(input))
     }
@@ -221,7 +222,7 @@ final class ScrcpySession {
 @MainActor
 final class LocalStream {
     private let connection: NWConnection
-    private var buffer = Data()
+    private var buffer = StreamByteBuffer()
     init(port: Int) {
         connection = NWConnection(host: "127.0.0.1", port: NWEndpoint.Port(rawValue: UInt16(port))!, using: .tcp)
         connection.start(queue: DispatchQueue(label: "OpenGuest.Android.stream"))
@@ -254,7 +255,7 @@ final class LocalStream {
             }
             buffer.append(data)
         }
-        let result = Data(buffer.prefix(count)); buffer = Data(buffer.dropFirst(count))
+        guard let result = buffer.read(count) else { throw GuestError.invalidResources }
         return result
     }
 }

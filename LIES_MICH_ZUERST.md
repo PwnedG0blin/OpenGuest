@@ -1,3 +1,7 @@
+# Stratovo 1.0 Beta 1 – zuerst im Dashboard beginnen
+
+Beim ersten Start SSD oder Datenordner auswählen. Kein bestimmter Laufwerksname ist nötig. Danach im Dashboard Android oder Windows einrichten. Details und Speicherbedarf: docs/RELEASE_1.0_BETA1.md.
+
 # Stratovo einrichten
 
 **Anleitung zur Testversion 0.3.19** · macOS 14 oder neuer · Apple Silicon

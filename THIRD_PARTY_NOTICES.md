@@ -25,3 +25,11 @@ Using a Google Play SDK image does not certify Stratovo as a Google-approved con
 Not bundled. Official ISO: https://getutm.app/downloads/utm-guest-tools-latest.iso
 Documentation: https://docs.getutm.app/guest-support/windows/
 Includes independently licensed guest drivers and utilities; their original licenses remain applicable. Download occurs only on user action to the selected data volume. No claim of UTM affiliation or complete SPICE support.
+
+## Experimental Windows graphics lab
+
+The optional graphics lab downloads and builds upstream sources pinned in `Packaging/GraphicsLab/sources.json`: UTM's QEMU, virglrenderer, libepoxy, DXMT and WebKit/ANGLE forks, LLVM, and the Windows VirtIO 3D drivers. Their original licenses and notices apply. Built runtimes and driver binaries are not included in this app release. Building or redistributing those components does not change their upstream licensing obligations.
+
+The small `pkgconf-2.3.0.tar.xz` source archive is included to bootstrap pkg-config when needed. Its original `COPYING` file is retained inside that unmodified archive. Source: https://distfiles.ariadne.space/pkgconf/pkgconf-2.3.0.tar.xz
+
+These components are developed by their respective upstream authors. Stratovo is an independent integration and is not affiliated with or endorsed by UTM, Microsoft, Google or Apple.

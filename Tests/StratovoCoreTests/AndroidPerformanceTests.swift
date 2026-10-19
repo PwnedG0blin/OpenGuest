@@ -33,8 +33,8 @@ final class AndroidPerformanceTests: XCTestCase {
     func testStreamProfilesAndFPSCannotEscapeSupportedBounds() {
         XCTAssertEqual(AndroidPerformance.smooth.streamOptions(fps: 60), ["max_size=1280", "max_fps=60", "video_bit_rate=8000000"])
         XCTAssertTrue(AndroidPerformance.balanced.streamOptions(fps: 30).contains("max_fps=30"))
-        for value in [-1, 0, 120, 999] {
-            XCTAssertTrue(AndroidPerformance.native.streamOptions(fps: value).contains("max_fps=60"))
+        for (value, limit) in [(-1,1), (0,1), (45,45), (90,90), (120,90), (999,90)] {
+            XCTAssertTrue(AndroidPerformance.native.streamOptions(fps: value).contains("max_fps=\(limit)"))
         }
     }
 }

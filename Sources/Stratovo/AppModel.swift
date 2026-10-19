@@ -39,12 +39,24 @@ final class AppModel: ObservableObject {
     @Published var androidProfile = AndroidPerformance(rawValue: UserDefaults.standard.string(forKey: "Pixelkoje.androidProfile") ?? "smooth") ?? .smooth {
         didSet { UserDefaults.standard.set(androidProfile.rawValue, forKey: "Pixelkoje.androidProfile") }
     }
-    @Published var androidTargetFPS = UserDefaults.standard.integer(forKey: "Pixelkoje.androidFPS") == 30 ? 30 : 60 {
-        didSet { UserDefaults.standard.set(androidTargetFPS, forKey: "Pixelkoje.androidFPS") }
+    private let frameRateDefaults: UserDefaults
+    @Published private var storedAndroidTargetFPS: Int
+    // Keep validation outside a @Published didSet: assigning the wrapped
+    // property from its own observer re-enters the setter through Combine.
+    var androidTargetFPS: Int {
+        get { storedAndroidTargetFPS }
+        set {
+            let value = AndroidFrameRate.limit(newValue)
+            guard value != storedAndroidTargetFPS else { return }
+            storedAndroidTargetFPS = value
+            frameRateDefaults.set(value, forKey: "Pixelkoje.androidFPS")
+        }
     }
-    @Published private(set) var androidRendererStatus = "Grafikrenderer wird beim Android-Start geprüft"
+    @Published private(set) var androidGuestRefreshHz = 60
+
+    @Published private(set) var androidRendererStatus = L10n.text("Grafikrenderer wird beim Android-Start geprüft")
     @Published private(set) var androidSoftwareRendering = false
-    @Published private(set) var androidDisplayStatus = "Leistungsprofil wird nach dem Android-Start angewendet"
+    @Published private(set) var androidDisplayStatus = L10n.text("Leistungsprofil wird nach dem Android-Start angewendet")
     @Published var androidCustomDisplay = UserDefaults.standard.bool(forKey: "Pixelkoje.androidCustomDisplay") {
         didSet { UserDefaults.standard.set(androidCustomDisplay, forKey: "Pixelkoje.androidCustomDisplay") }
     }
@@ -62,7 +74,7 @@ final class AppModel: ObservableObject {
         guard canEditAndroidDisplay else { return }
         androidDisplayWidth = "1440"; androidDisplayHeight = "3120"; androidDisplayDensity = "500"
         androidCustomDisplay = true
-        androidDisplayStatus = "S26-Ultra-Displayprofil gewählt · 1440 × 3120 · 500 dpi. Jetzt anwenden oder Android neu starten."
+        androidDisplayStatus = L10n.text("S26-Ultra-Displayprofil gewählt · 1440 × 3120 · 500 dpi. Jetzt anwenden oder Android neu starten.")
         UserDefaults.standard.set(true, forKey: "Pixelkoje.playerFit.android")
     }
     private func requestedAndroidDisplay() throws -> AndroidCustomDisplay? {
@@ -70,7 +82,7 @@ final class AppModel: ObservableObject {
         guard let w = Int(androidDisplayWidth.trimmingCharacters(in: .whitespacesAndNewlines)),
               let h = Int(androidDisplayHeight.trimmingCharacters(in: .whitespacesAndNewlines)),
               let dpi = Int(androidDisplayDensity.trimmingCharacters(in: .whitespacesAndNewlines)) else {
-            throw GuestError.commandFailed(1, "Bitte Breite, Höhe und Dichte als ganze Zahlen eingeben.")
+            throw GuestError.commandFailed(1, L10n.text("Bitte Breite, Höhe und Dichte als ganze Zahlen eingeben."))
         }
         return try AndroidCustomDisplay(width: w, height: h, density: dpi)
     }
@@ -89,7 +101,7 @@ final class AppModel: ObservableObject {
         guard canEditAndroidDisplay else { return }
         androidCustomDisplay = false; androidProfile = .native
         if canApplyAndroidDisplay { await applyAndroidDisplayNow() }
-        else { androidDisplayStatus = "Originalauflösung wird beim nächsten Android-Start wiederhergestellt." }
+        else { androidDisplayStatus = L10n.text("Originalauflösung wird beim nächsten Android-Start wiederhergestellt.") }
     }
     @Published private(set) var decoderFPS = 0.0
     @Published private(set) var decoderRecoveries = 0
@@ -97,19 +109,23 @@ final class AppModel: ObservableObject {
     @Published private(set) var devices: [AndroidDevice] = []
     @Published private(set) var sdk: String?
     @Published private(set) var qemu: String?
+    let graphicsLab = WindowsGraphicsLabController()
+    @Published var windowsLabSelected = false
+    func setGraphicsLabBusy(_ active: Bool) { busy = active }
+    func recordGraphicsLabEvent(_ text: String) { recordDiagnostic("Experimentelles Grafiklabor", text) }
     @Published private(set) var firmware: String?
     @Published private(set) var swtpm: String?
     @Published private(set) var qemuImg: String?
     @Published private(set) var variablesTemplate: String?
-    @Published private(set) var androidAcceleration = "Noch nicht geprüft"
-    @Published private(set) var windowsAcceleration = "Noch nicht geprüft"
+    @Published private(set) var androidAcceleration = L10n.text("Noch nicht geprüft")
+    @Published private(set) var windowsAcceleration = L10n.text("Noch nicht geprüft")
     @Published private(set) var windowsISOReady = false
-    @Published private(set) var windowsISODetail = "Noch keine Installations-DVD ausgewählt"
-    @Published private(set) var windowsBootMediaStatus = "DVD-Verbindung wird nach dem Start direkt bei QEMU geprüft"
+    @Published private(set) var windowsISODetail = L10n.text("Noch keine Installations-DVD ausgewählt")
+    @Published private(set) var windowsBootMediaStatus = L10n.text("DVD-Verbindung wird nach dem Start direkt bei QEMU geprüft")
     @Published private(set) var windowsIdentity: WindowsMachineIdentity?
-    @Published private(set) var windowsIdentityStatus = "Gerätekennung noch nicht geprüft"
+    @Published private(set) var windowsIdentityStatus = L10n.text("Gerätekennung noch nicht geprüft")
     @Published private(set) var windowsIdentityCanRestore = false
-    @Published private(set) var windowsISOHashStatus = "Originalität der ISO noch nicht geprüft"
+    @Published private(set) var windowsISOHashStatus = L10n.text("Originalität der ISO noch nicht geprüft")
     @Published private(set) var windowsISOHashDigest = ""
     private var hashedISOPath = ""
     @Published var windowsGraphics: WindowsGraphics = .basic { didSet { saveWindowsDisplayChoice() } }
@@ -133,7 +149,7 @@ final class AppModel: ObservableObject {
     func repairAndroidConnection() async {
         guard canRepairAndroidConnection, let adb, let storage else { return }
         busy = true
-        androidRepairStatus = "Android-Verbindung wird repariert …"
+        androidRepairStatus = L10n.text("Android-Verbindung wird repariert …")
         defer { busy = false }
         do {
             try storage.validate()
@@ -142,32 +158,32 @@ final class AppModel: ObservableObject {
                 guard result.status == 0 else { throw GuestError.commandFailed(result.status, result.output) }
             }
             settings.coldBoot = true
-            androidRepairStatus = "ADB neu gestartet · Kaltstart aktiviert. Jetzt Android starten."
-            recordDiagnostic("Android · Verbindung repariert", "ADB-Dienst auf ausdrücklichen Wunsch neu gestartet; Kaltstart aktiviert. Keine Gastdaten gelöscht.")
+            androidRepairStatus = L10n.text("ADB neu gestartet · Kaltstart aktiviert. Jetzt Android starten.")
+            recordDiagnostic(L10n.text("Android · Verbindung repariert"), L10n.text("ADB-Dienst auf ausdrücklichen Wunsch neu gestartet; Kaltstart aktiviert. Keine Gastdaten gelöscht."))
         } catch {
             androidRepairStatus = "Reparatur fehlgeschlagen: " + error.localizedDescription
-            recordDiagnostic("Android · Verbindungsreparatur", androidRepairStatus)
+            recordDiagnostic(L10n.text("Android · Verbindungsreparatur"), androidRepairStatus)
         }
     }
     @discardableResult
     func pasteAndroidText(_ input: AndroidClipboardText) async -> Bool {
         guard running, activeGuest == "android", androidBooted, !busy, let stream = androidStream else {
-            androidPasteStatus = "Android-Eingabeverbindung noch nicht bereit."; return false
+            androidPasteStatus = L10n.text("Android-Eingabeverbindung noch nicht bereit."); return false
         }
         do {
             try await stream.paste(input)
-            androidPasteStatus = "Text an Android gesendet. Das Eingabefeld muss im Gast aktiv sein."
+            androidPasteStatus = L10n.text("Text an Android gesendet. Das Eingabefeld muss im Gast aktiv sein.")
             return true
         } catch {
             // Clipboard contents and errors containing payload are never logged.
-            androidPasteStatus = "Text konnte nicht übertragen werden. Android-Verbindung prüfen und erneut versuchen."
+            androidPasteStatus = L10n.text("Text konnte nicht übertragen werden. Android-Verbindung prüfen und erneut versuchen.")
             return false
         }
     }
     func openWindowsDriverDisc() {
         guard running, activeGuest == "windows", !windowsPasteBusy,
               windowsPlayer?.sendKeySequence(WindowsKeyboard.explorer) == true else { return }
-        playerStatus = "Windows-Explorer angefordert · Unter Dieser PC die eingelegte Treiber-CD öffnen."
+        playerStatus = L10n.text("Windows-Explorer angefordert · Unter Dieser PC die eingelegte Treiber-CD öffnen.")
     }
 
     func refreshWindowsIdentity() {
@@ -203,7 +219,7 @@ final class AppModel: ObservableObject {
         let path = settings.iso
         hashedISOPath = path
         windowsISOHashDigest = ""
-        windowsISOHashStatus = "SHA-256 wird berechnet. Die vorhandene ISO wird nur gelesen …"
+        windowsISOHashStatus = L10n.text("SHA-256 wird berechnet. Die vorhandene ISO wird nur gelesen …")
         defer { busy = false }
         do {
             let result = try await Task.detached(priority: .utility) { try WindowsISOHash.calculate(path: path) }.value
@@ -211,9 +227,9 @@ final class AppModel: ObservableObject {
             windowsISOHashDigest = result.sha256
             let checkedAt = DateFormatter.localizedString(from: Date(), dateStyle: .short, timeStyle: .short)
             let detail = result.matchesMicrosoftGerman26H2
-                ? "Original bestätigt: Microsoft Windows 11 26H2 · ARM64 · Deutsch. SHA-256 stimmt überein."
-                : "Kein Treffer für Microsoft Windows 11 26H2 ARM64 Deutsch. Andere Version/Sprache oder eine veränderte Datei möglich. Das allein beweist keine Beschädigung."
-            windowsISOHashStatus = "Prüfergebnis vom \(checkedAt): " + detail
+                ? L10n.text("Original bestätigt: Microsoft Windows 11 26H2 · ARM64 · Deutsch. SHA-256 stimmt überein.")
+                : L10n.text("Kein Treffer für Microsoft Windows 11 26H2 ARM64 Deutsch. Andere Version/Sprache oder eine veränderte Datei möglich. Das allein beweist keine Beschädigung.")
+            windowsISOHashStatus = L10n.message("Prüfergebnis vom \(checkedAt): ") + detail
             recordDiagnostic("Windows · ISO-Prüfsumme", windowsISOHashStatus + " SHA-256: " + result.sha256)
         } catch {
             windowsISOHashStatus = "Prüfsumme nicht ermittelt: " + error.localizedDescription
@@ -229,7 +245,7 @@ final class AppModel: ObservableObject {
         if hashedISOPath != settings.iso {
             hashedISOPath = settings.iso
             windowsISOHashDigest = ""
-            windowsISOHashStatus = "Originalität der ISO noch nicht geprüft"
+            windowsISOHashStatus = L10n.text("Originalität der ISO noch nicht geprüft")
         }
         do {
             let info = try WindowsISOInfo.check(path: settings.iso)
@@ -237,13 +253,13 @@ final class AppModel: ObservableObject {
             windowsISODetail = "ISO-Datei lesbar · " + ByteCountFormatter.string(fromByteCount: info.bytes, countStyle: .file)
         } catch {
             windowsISOReady = false
-            windowsISODetail = settings.iso.isEmpty ? "Keine DVD-ISO ausgewählt" : error.localizedDescription
+            windowsISODetail = settings.iso.isEmpty ? L10n.text("Keine DVD-ISO ausgewählt") : error.localizedDescription
         }
     }
     func chooseWindowsISO() {
         guard !running, !busy else { return }
         let panel = NSOpenPanel()
-        panel.title = "Windows-ARM64-ISO als Installations-DVD auswählen"
+        panel.title = L10n.text("Windows-ARM64-ISO als Installations-DVD auswählen")
         panel.prompt = "Als DVD verwenden"
         panel.canChooseFiles = true; panel.canChooseDirectories = false; panel.allowsMultipleSelection = false
         panel.allowedContentTypes = [UTType(filenameExtension: "iso") ?? .data]
@@ -256,7 +272,7 @@ final class AppModel: ObservableObject {
         }
     }
 
-    @Published private(set) var windowsFolderStatus = "Windows-Ordner noch nicht geprüft."
+    @Published private(set) var windowsFolderStatus = L10n.text("Windows-Ordner noch nicht geprüft.")
     @Published var windowsDiskSize = "80" {
         didSet {
             if let storage, let value = try? WindowsDisk.capacityGiB(windowsDiskSize) {
@@ -265,7 +281,7 @@ final class AppModel: ObservableObject {
         }
     }
     @Published private(set) var windowsDiskBytes: Int64?
-    @Published private(set) var windowsDiskStatus = "Größe für die virtuelle Windows-Festplatte wählen."
+    @Published private(set) var windowsDiskStatus = L10n.text("Größe für die virtuelle Windows-Festplatte wählen.")
     var windowsCapacityGiB: Int? { try? WindowsDisk.capacityGiB(windowsDiskSize) }
     var windowsCapacityIssue: String? {
         do {
@@ -284,8 +300,8 @@ final class AppModel: ObservableObject {
                 try WindowsDiskImage.prepare(qemuImg: qemuImg, storage: storage, capacityGiB: value)
             }.value
             windowsDiskBytes = bytes
-            windowsDiskStatus = "Virtuelle Festplatte: \(value) GB. Zusätzlichen Speicher nach einer Vergrößerung in Windows zuordnen."
-            recordDiagnostic("Windows · Festplatte", "Größe angewendet: \(value) GB")
+            windowsDiskStatus = L10n.message("Virtuelle Festplatte: \(value) GB. Zusätzlichen Speicher nach einer Vergrößerung in Windows zuordnen.")
+            recordDiagnostic("Windows · Festplatte", L10n.message("Größe angewendet: \(value) GB"))
         } catch { windowsDiskStatus = error.localizedDescription; errorMessage = error.localizedDescription }
     }
     func prepareWindowsFolder() {
@@ -293,7 +309,7 @@ final class AppModel: ObservableObject {
         do {
             try storage.prepareWindowsFolder()
             windowsFolderStatus = "Windows-Ordner vorhanden und beschreibbar."
-            recordDiagnostic("Windows · Datenordner", "Angelegt / geprüft: \(storage.windows.path)")
+            recordDiagnostic("Windows · Datenordner", L10n.message("Angelegt / geprüft: \(storage.windows.path)"))
         } catch { windowsFolderStatus = error.localizedDescription; errorMessage = error.localizedDescription }
     }
     func revealWindowsFolder() {
@@ -307,12 +323,12 @@ final class AppModel: ObservableObject {
     @Published private(set) var androidBooted = false
     @Published private(set) var apkBusy = false
     @Published private(set) var apkStatus = ""
-    @Published private(set) var sessionName = "Kein Gast gestartet"
-    @Published private(set) var log = "Stratovo 0.3.20 · Entwicklungsprototyp\nSystem prüfen, dann einen Gast auswählen."
+    @Published private(set) var sessionName = L10n.text("Kein Gast gestartet")
+    @Published private(set) var log = L10n.text("Stratovo 1.0 Beta 1\nSystem prüfen, dann einen Gast auswählen.")
     @Published private(set) var lastCommand = ""
     @Published var errorMessage: String? {
         didSet {
-            if let message = errorMessage, message != oldValue { recordDiagnostic("Fehler", message) }
+            if let message = errorMessage, message != oldValue { recordDiagnostic(L10n.text("Fehler"), message) }
         }
     }
     @Published private(set) var diagnosticBusy = false
@@ -327,11 +343,11 @@ final class AppModel: ObservableObject {
     }
     func exportDiagnostics() async {
         guard !diagnosticBusy, let storage, storageReady else {
-            if !storageReady { errorMessage = "Für den Diagnoseexport bitte den gewählten Datenträger anschließen." }
+            if !storageReady { errorMessage = L10n.text("Für den Diagnoseexport bitte den gewählten Datenträger anschließen.") }
             return
         }
         diagnosticBusy = true
-        diagnosticStatus = "Android- und Windows-Protokolle werden zusammengeführt …"
+        diagnosticStatus = L10n.text("Android- und Windows-Protokolle werden zusammengeführt …")
         defer { diagnosticBusy = false }
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Entwicklung"
         let snapshot = """
@@ -384,12 +400,12 @@ final class AppModel: ObservableObject {
     @Published private(set) var storage = GuestStorage.load()
     @Published var showStorageSetup = GuestStorage.load() == nil
     @Published var proposedStoragePath = ""
-    @Published private(set) var storageStatus = "Wähle einen Datenordner, bevor Android oder Windows eingerichtet wird."
+    @Published private(set) var storageStatus = L10n.text("Wähle einen Datenordner, bevor Android oder Windows eingerichtet wird.")
     @Published private(set) var backupPaths: [String] = []
     @Published var storageTested = false
     var storageReady: Bool { guard let storage else { return false }; return (try? storage.validate()) != nil }
     var storageFree: String {
-        guard let bytes = storage?.freeBytes, storageReady else { return "Speicherort nicht erreichbar" }
+        guard let bytes = storage?.freeBytes, storageReady else { return L10n.text("Speicherort nicht erreichbar") }
         return ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file) + " frei"
     }
     @Published var localPassword = ""
@@ -397,13 +413,13 @@ final class AppModel: ObservableObject {
     @Published var rememberWindowsCredential = UserDefaults.standard.object(forKey: "Pixelkoje.rememberWindowsCredential") as? Bool ?? true {
         didSet { UserDefaults.standard.set(rememberWindowsCredential, forKey: "Pixelkoje.rememberWindowsCredential") }
     }
-    @Published private(set) var credentialStatus = "Schlüsselbund noch nicht geprüft. Vorhandene Kontodaten können geladen werden."
+    @Published private(set) var credentialStatus = L10n.text("Schlüsselbund noch nicht geprüft. Vorhandene Kontodaten können geladen werden.")
     private func persistWindowsCredential(_ account: WindowsEdition.LocalAccount, storage: GuestStorage) async throws {
         let credential = WindowsSetupKeychain.Credential(name: account.name, password: account.password)
         do {
             try await Task.detached { try WindowsSetupKeychain.save(credential, storageID: storage.id) }.value
-            credentialStatus = "Benutzername und Kennwort im macOS-Schlüsselbund gespeichert und durch erneutes Lesen geprüft."
-            recordDiagnostic("Windows · Schlüsselbund", "Speichern und Leseprüfung erfolgreich")
+            credentialStatus = L10n.text("Benutzername und Kennwort im macOS-Schlüsselbund gespeichert und durch erneutes Lesen geprüft.")
+            recordDiagnostic(L10n.text("Windows · Schlüsselbund"), L10n.text("Speichern und Leseprüfung erfolgreich"))
         } catch {
             credentialStatus = error.localizedDescription
             throw error
@@ -419,10 +435,10 @@ final class AppModel: ObservableObject {
                 settings.localWindowsUser = credential.name
                 localPassword = credential.password
                 localPasswordConfirmation = credential.password
-                credentialStatus = "Benutzername und Kennwort aus dem macOS-Schlüsselbund wiederhergestellt."
-            } else { credentialStatus = "Für diesen Datenordner sind noch keine Kontodaten im Schlüsselbund gespeichert." }
+                credentialStatus = L10n.text("Benutzername und Kennwort aus dem macOS-Schlüsselbund wiederhergestellt.")
+            } else { credentialStatus = L10n.text("Für diesen Datenordner sind noch keine Kontodaten im Schlüsselbund gespeichert.") }
         } catch { credentialStatus = error.localizedDescription }
-        recordDiagnostic("Windows · Schlüsselbund", credentialStatus)
+        recordDiagnostic(L10n.text("Windows · Schlüsselbund"), credentialStatus)
     }
     var localAccountIssue: String? {
         do {
@@ -434,7 +450,7 @@ final class AppModel: ObservableObject {
     func saveWindowsCredential() async {
         guard !busy, !running, let storage, storageReady else { return }
         do {
-            recordDiagnostic("Windows · Schlüsselbund speichern", "Benutzername-Länge \(settings.localWindowsUser.count), Kennwortlänge \(localPassword.count), Wiederholungslänge \(localPasswordConfirmation.count), Übereinstimmung \(localPassword == localPasswordConfirmation)")
+            recordDiagnostic(L10n.text("Windows · Schlüsselbund speichern"), "Benutzername-Länge \(settings.localWindowsUser.count), Kennwortlänge \(localPassword.count), Wiederholungslänge \(localPasswordConfirmation.count), Übereinstimmung \(localPassword == localPasswordConfirmation)")
             let account = try WindowsEdition.validateSetupAccount(name: settings.localWindowsUser,
                 password: localPassword, confirmation: localPasswordConfirmation)
             busy = true
@@ -447,19 +463,20 @@ final class AppModel: ObservableObject {
         busy = true
         defer { busy = false }
         do {
-            recordDiagnostic("Windows · Schlüsselbund", "Laden angefordert")
+            recordDiagnostic(L10n.text("Windows · Schlüsselbund"), L10n.text("Laden angefordert"))
             if let credential = try await Task.detached(operation: { try WindowsSetupKeychain.load(storageID: storage.id) }).value {
                 settings.localWindowsUser = credential.name
                 localPassword = credential.password
                 localPasswordConfirmation = credential.password
-                credentialStatus = "Kontodaten aus dem macOS-Schlüsselbund geladen."
-            } else { credentialStatus = "Für diesen Datenordner sind noch keine Kontodaten gespeichert." }
-            recordDiagnostic("Windows · Schlüsselbund", credentialStatus)
+                credentialStatus = L10n.text("Kontodaten aus dem macOS-Schlüsselbund geladen.")
+            } else { credentialStatus = L10n.text("Für diesen Datenordner sind noch keine Kontodaten gespeichert.") }
+            recordDiagnostic(L10n.text("Windows · Schlüsselbund"), credentialStatus)
         } catch { credentialStatus = error.localizedDescription; errorMessage = error.localizedDescription }
     }
-    @Published private(set) var playerImage: NSImage?
+    let windowsFrames = WindowsFrameStore()
+    var playerImage: NSImage? { windowsFrames.image }
     @Published private(set) var playerSize = CGSize.zero
-    @Published private(set) var playerStatus = "Player noch nicht gestartet"
+    @Published private(set) var playerStatus = L10n.text("Player noch nicht gestartet")
     @Published private(set) var activeGuest = ""
     @Published private(set) var streamFPS = 0.0
     @Published private(set) var androidDroppedFrames = 0
@@ -473,8 +490,8 @@ final class AppModel: ObservableObject {
     @Published var androidVulkanEnabled = UserDefaults.standard.object(forKey: "Pixelkoje.androidVulkanEnabled") as? Bool ?? true {
         didSet { UserDefaults.standard.set(androidVulkanEnabled, forKey: "Pixelkoje.androidVulkanEnabled"); settings.coldBoot = true }
     }
-    @Published private(set) var windowsFrameCount = 0
-    @Published private(set) var googleServicesStatus = "Google-Dienste werden nach dem Android-Start geprüft."
+    private(set) var windowsFrameCount = 0
+    @Published private(set) var googleServicesStatus = L10n.text("Google-Dienste werden nach dem Android-Start geprüft.")
     let h264Player = H264Player()
     let installer = SetupInstaller()
     private let playerWindows = GuestPlayerWindows()
@@ -511,12 +528,18 @@ final class AppModel: ObservableObject {
         return ready
     }
 
-    func installComponents(_ selection: Set<SetupComponent>, microsoftLink: String) async {
+    func installComponents(_ selection: Set<SetupComponent>, microsoftLink: String, androidDataSource: String? = nil) async {
         guard !busy, !running, let storage, !selection.isEmpty else { return }
         busy = true
+        errorMessage = nil
+        var completed = false
+        var copiedProfile: String?
         do {
+            if selection.contains(.android) || selection.contains(.android17) { try await requireAndroidStopped() }
             let result = try await installer.install(selection, storage: storage, existingISO: settings.iso,
-                existingDrivers: settings.driversISO, microsoftLink: microsoftLink, ready: setupReady, androidChannel: androidSDKChannel, preferredAndroidProfile: settings.selectedAVD)
+                existingDrivers: settings.driversISO, microsoftLink: microsoftLink, ready: setupReady, androidChannel: androidSDKChannel, preferredAndroidProfile: settings.selectedAVD,
+                androidDataSource: androidDataSource, qemuImg: qemuImg)
+            copiedProfile = result.androidProfile
             if let iso = result.iso { settings.iso = iso }
             if let drivers = result.drivers { settings.driversISO = drivers }
             // Pick up a driver ISO left by a previous interrupted setup as well.
@@ -524,10 +547,16 @@ final class AppModel: ObservableObject {
             if settings.driversISO.isEmpty, (try? SetupInstaller.validateISO(drivers)) != nil {
                 settings.driversISO = drivers.path
             }
+            completed = true
         } catch { errorMessage = error.localizedDescription }
         busy = false
         await refresh()
-        if selection.contains(.android17), let device = devices.first(where: { androidSystem(for: $0.name) == .android17 }) {
+        guard completed else { return }
+        androidCleanupPlan = nil
+        if let copiedProfile, devices.contains(where: { $0.name == copiedProfile }) {
+            settings.selectedAVD = copiedProfile
+            settings.coldBoot = true
+        } else if selection.contains(.android17), let device = devices.first(where: { androidSystem(for: $0.name) == .android17 }) {
             settings.selectedAVD = device.name
             settings.coldBoot = true
         } else if selection.contains(.android), let device = devices.first(where: { androidSystem(for: $0.name) == .android16 }) {
@@ -545,7 +574,7 @@ final class AppModel: ObservableObject {
     @Published var androidAutoUpdateBeforeStart = UserDefaults.standard.bool(forKey: "Pixelkoje.androidAutoUpdateBeforeStart") {
         didSet { UserDefaults.standard.set(androidAutoUpdateBeforeStart, forKey: "Pixelkoje.androidAutoUpdateBeforeStart") }
     }
-    @Published private(set) var androidMaintenanceStatus = "Android 16 ist das Standardsystem. Android 17 wird separat eingerichtet."
+    @Published private(set) var androidMaintenanceStatus = L10n.text("Android 16 ist das Standardsystem. Android 17 wird separat eingerichtet.")
     @Published private(set) var androidCleanupPlan: AndroidCleanupPlan?
 
     func androidSystem(for name: String) -> AndroidSystem? {
@@ -553,6 +582,27 @@ final class AppModel: ObservableObject {
         return AndroidSystem.detect(RuntimeDiscovery.avdConfig(name: name, environment: storage.environment))
     }
     var selectedAndroidSystem: AndroidSystem? { androidSystem(for: settings.selectedAVD) }
+    var android16DataSource: String? {
+        let source = selectedAndroidSystem == .android16 ? settings.selectedAVD
+            : devices.first(where: { $0.supported && androidSystem(for: $0.name) == .android16 })?.name
+        guard let source, let storage else { return nil }
+        let profile = storage.avd.appendingPathComponent(source + ".avd")
+        return ["userdata-qemu.img", "userdata-qemu.img.qcow2"].contains {
+            FileManager.default.isReadableFile(atPath: profile.appendingPathComponent($0).path)
+        } ? source : nil
+    }
+    var hasAndroid17DataCopy: Bool {
+        devices.contains { $0.name == SetupInstaller.android17DataProfile && androidSystem(for: $0.name) == .android17 }
+    }
+    func selectAndroidSystem(_ system: AndroidSystem) {
+        guard canManageAndroid else { return }
+        let dataCopy = devices.first { $0.name == SetupInstaller.android17DataProfile && androidSystem(for: $0.name) == system }
+        guard let device = dataCopy ?? devices.first(where: { $0.supported && androidSystem(for: $0.name) == system }) else { return }
+        settings.selectedAVD = device.name
+        settings.coldBoot = true
+        androidCleanupPlan = nil
+        androidMaintenanceStatus = L10n.message("Android \(system.rawValue) ausgewählt. Mit „Android starten“ öffnen.")
+    }
     var canManageAndroid: Bool { storageReady && !running && !busy && !installer.running }
 
     func manageAndroidUpdates(install: Bool) async {
@@ -563,7 +613,7 @@ final class AppModel: ObservableObject {
             try await installer.manageAndroid(system, mode: install ? "update" : "check", channel: androidSDKChannel, storage: storage)
             if install { settings.coldBoot = true; androidCleanupPlan = nil }
             androidMaintenanceStatus = installer.status
-            recordDiagnostic("Android · Updates", "Android \(system.rawValue), Kanal \(androidSDKChannel), \(install ? "Abbild aktualisiert" : "Updateprüfung")")
+            recordDiagnostic("Android · Updates", L10n.message("Android \(system.rawValue), Kanal \(androidSDKChannel), \(install ? "Abbild aktualisiert" : "Updateprüfung")"))
         } catch {
             androidMaintenanceStatus = error.localizedDescription
             errorMessage = error.localizedDescription
@@ -575,7 +625,7 @@ final class AppModel: ObservableObject {
     private func requireAndroidStopped() async throws {
         let result = try await Self.capture(CommandSpec(executable: "/usr/bin/pgrep", arguments: ["-f", "/emulator/qemu/|sdk/emulator/emulator"]))
         guard result.status == 1 else {
-            throw StorageMigration.failure("Bitte auch separat gestartete Android-Emulatoren vollständig beenden.")
+            throw StorageMigration.failure(L10n.text("Bitte auch separat gestartete Android-Emulatoren vollständig beenden."))
         }
     }
     func previewAndroidCleanup() async {
@@ -587,7 +637,7 @@ final class AppModel: ObservableObject {
             try await requireAndroidStopped()
             let plan = try await Task.detached { try AndroidMaintenance.plan(storage: storage, keeping: name) }.value
             androidCleanupPlan = plan
-            androidMaintenanceStatus = plan.paths.isEmpty ? "Keine alten Android-Daten gefunden." : "\(plan.paths.count) Einträge zur endgültigen Entfernung. Android 16 bleibt erhalten."
+            androidMaintenanceStatus = plan.paths.isEmpty ? "Keine alten Android-Daten gefunden." : L10n.message("\(plan.paths.count) Einträge zur endgültigen Entfernung. Android 16 bleibt erhalten.")
         } catch { androidMaintenanceStatus = error.localizedDescription; errorMessage = error.localizedDescription }
         busy = false
     }
@@ -600,7 +650,7 @@ final class AppModel: ObservableObject {
             androidCleanupPlan = nil
             settings.coldBoot = true
             androidMaintenanceStatus = "Alte Android-Profile, andere Systemabbilder und erkannte alte Android-Sicherungen entfernt. Android 16 bleibt erhalten."
-            recordDiagnostic("Android · Bereinigung", "\(plan.paths.count) Einträge entfernt; Profil \(plan.keeping) erhalten")
+            recordDiagnostic("Android · Bereinigung", L10n.message("\(plan.paths.count) Einträge entfernt; Profil \(plan.keeping) erhalten"))
         } catch { androidMaintenanceStatus = error.localizedDescription; errorMessage = error.localizedDescription; androidCleanupPlan = nil }
         busy = false
         await refresh()
@@ -611,6 +661,10 @@ final class AppModel: ObservableObject {
     private var logURL: URL?
     private var sessionCommand = ""
     private var timer: Timer?
+    private var logReadTask: Task<Void, Never>?
+    private var lastLogSize: UInt64?
+    private var rendererInspected = false
+    private var guestActivity: NSObjectProtocol?
     private var bootTask: Task<Void, Never>?
     private var androidPort: Int?
     private var windowsSession: WindowsSession?
@@ -619,6 +673,8 @@ final class AppModel: ObservableObject {
     private var windowsPlayer: RFBClient?
     private var displayTask: Task<Void, Never>?
     private var qmpSocket: String?
+    private var windowsDisplaySocket: String?
+    @Published private(set) var windowsReconnectBusy = false
     private var windowsBootProbe: Task<Void, Never>?
     private var windowsPasteTask: Task<Void, Never>?
     private var stopRequested = false
@@ -660,7 +716,10 @@ final class AppModel: ObservableObject {
     }
     var resources: GuestResources { GuestResources(memoryMiB: settings.memoryGB * 1024, cores: settings.cores) }
 
-    init() {
+    init(frameRateDefaults: UserDefaults = .standard, applyPerformanceDefaults: Bool = true) {
+        self.frameRateDefaults = frameRateDefaults
+        self.storedAndroidTargetFPS = AndroidFrameRate.limit(frameRateDefaults.object(forKey: "Pixelkoje.androidFPS") as? Int ?? 60)
+        guard applyPerformanceDefaults else { return }
         if !UserDefaults.standard.bool(forKey: "Pixelkoje.performanceDefaultsApplied") {
             if settings.gpu == "auto" { settings.gpu = "host"; settings.save() }
             UserDefaults.standard.set(true, forKey: "Pixelkoje.performanceDefaultsApplied")
@@ -690,7 +749,7 @@ final class AppModel: ObservableObject {
         guard let storage else { showStorageSetup = true; return }
         do { try storage.validate() } catch { errorMessage = error.localizedDescription; return }
         busy = true
-        defer { busy = false; systemCheckLog = log; recordDiagnostic("Systemprüfung", log) }
+        defer { busy = false; systemCheckLog = log; recordDiagnostic(L10n.text("Systemprüfung"), log) }
         refreshWindowsISO()
         refreshWindowsIdentity()
         loadWindowsDisplayChoice()
@@ -708,15 +767,15 @@ final class AppModel: ObservableObject {
             do {
                 windowsDiskBytes = try await Task.detached { try WindowsDiskImage.info(qemuImg: qemuImg, disk: image) }.value
                 windowsDiskStatus = "Vorhandene Festplatte: \((windowsDiskBytes ?? 0) / 1_073_741_824) GB."
-            } catch { windowsDiskStatus = "Festplattengröße nicht prüfbar: \(error.localizedDescription)" }
-        } else { windowsDiskStatus = "Noch keine Windows-Festplatte angelegt. Sie wird mit der gewählten Größe erstellt." }
+            } catch { windowsDiskStatus = L10n.message("Festplattengröße nicht prüfbar: \(error.localizedDescription)") }
+        } else { windowsDiskStatus = L10n.text("Noch keine Windows-Festplatte angelegt. Sie wird mit der gewählten Größe erstellt.") }
         let saved = UserDefaults.standard.integer(forKey: "OpenGuest.windowsDiskGiB.\(storage.id)")
         let currentGiB = windowsDiskBytes.map { Int(($0 + 1_073_741_823) / 1_073_741_824) }
         windowsDiskSize = String(max(saved == 0 ? (currentGiB ?? 80) : saved, currentGiB ?? 0))
         firmware = qemu.flatMap { RuntimeDiscovery.firmware(qemu: $0, preferred: settings.firmware) }
         variablesTemplate = firmware.flatMap { RuntimeDiscovery.variablesTemplate(firmware: $0) }
-        androidAcceleration = sdk == nil ? "Android Emulator fehlt" : "Prüfung läuft …"
-        windowsAcceleration = qemu == nil ? "QEMU fehlt" : "Prüfung läuft …"
+        androidAcceleration = sdk == nil ? "Android Emulator fehlt" : L10n.text("Prüfung läuft …")
+        windowsAcceleration = qemu == nil ? "QEMU fehlt" : L10n.text("Prüfung läuft …")
         log = "Mac: \(supportedHost ? "Apple Silicon (nativ)" : "Architektur nicht unterstützt / Rosetta") · \(totalMemoryGB) GB RAM · \(hostCores) Kerne\nHypervisor: \(hypervisorAvailable ? "verfügbar" : "nicht verfügbar")\n"
 
         if let sdk {
@@ -725,7 +784,7 @@ final class AppModel: ObservableObject {
             do {
                 let result = try await Self.capture(CommandSpec(executable: engine, arguments: ["-accel-check"], environment: environment))
                 androidReady = result.status == 0
-                androidAcceleration = androidReady ? "Hardwarebeschleunigung verfügbar" : "Beschleunigung nicht nutzbar"
+                androidAcceleration = androidReady ? L10n.text("Hardwarebeschleunigung verfügbar") : L10n.text("Beschleunigung nicht nutzbar")
                 log += "\nAndroid: \(result.output)\n"
                 let list = try await Self.capture(CommandSpec(executable: engine, arguments: ["-list-avds"], environment: environment))
                 guard list.status == 0 else { throw GuestError.commandFailed(list.status, list.output) }
@@ -737,10 +796,10 @@ final class AppModel: ObservableObject {
                     settings.selectedAVD = devices.first(where: { $0.supported && androidSystem(for: $0.name) == .android16 })?.name
                         ?? devices.first(where: { $0.supported && $0.googlePlay })?.name ?? devices.first(where: \.supported)?.name ?? devices.first?.name ?? ""
                 }
-                if devices.isEmpty { log += "Kein AVD gefunden. In Android Studio ein arm64-v8a-Gerät erstellen.\n" }
+                if devices.isEmpty { log += L10n.text("Kein AVD gefunden. In Android Studio ein arm64-v8a-Gerät erstellen.\n") }
             } catch {
                 androidReady = false
-                androidAcceleration = "Android-Prüfung fehlgeschlagen"
+                androidAcceleration = L10n.text("Android-Prüfung fehlgeschlagen")
                 log += "\n\(error.localizedDescription)\n"
             }
         }
@@ -753,11 +812,11 @@ final class AppModel: ObservableObject {
                 let hasCocoa = display.output.contains("-vnc")
                 let hasTPM = RuntimeDiscovery.hasDevice("tpm-tis-device", in: hardware.output)
                 windowsReady = acceleration.status == 0 && display.status == 0 && hardware.status == 0 && hasHVF && hasCocoa && hasTPM && swtpm != nil && qemuImg != nil && variablesTemplate != nil
-                windowsAcceleration = windowsReady ? "HVF, VNC, TPM und UEFI-Dateien gefunden · Secure Boot nicht geprüft" : "QEMU, swtpm oder passende UEFI-Dateien fehlen"
+                windowsAcceleration = windowsReady ? L10n.text("HVF, VNC, TPM und UEFI-Dateien gefunden · Secure Boot nicht geprüft") : L10n.text("QEMU, swtpm oder passende UEFI-Dateien fehlen")
                 log += "\nQEMU-Beschleuniger:\n\(acceleration.output)\nQEMU-Geräte:\n\(hardware.output)\n"
-                if firmware == nil { log += "ARM64-UEFI-Firmware fehlt. Bitte eine edk2-aarch64-code.fd auswählen.\n" }
-                if swtpm == nil { log += "swtpm fehlt. Für Windows wird ein dauerhaftes TPM 2.0 benötigt.\n" }
-                if !hasTPM { log += "QEMU-Build enthält kein ARM-TPM (tpm-tis-device).\n" }
+                if firmware == nil { log += L10n.text("ARM64-UEFI-Firmware fehlt. Bitte eine edk2-aarch64-code.fd auswählen.\n") }
+                if swtpm == nil { log += L10n.text("swtpm fehlt. Für Windows wird ein dauerhaftes TPM 2.0 benötigt.\n") }
+                if !hasTPM { log += L10n.text("QEMU-Build enthält kein ARM-TPM (tpm-tis-device).\n") }
                 var missing: [String] = []
                 if !hasHVF { missing.append("HVF") }
                 if !hasCocoa { missing.append("VNC") }
@@ -767,9 +826,9 @@ final class AppModel: ObservableObject {
                 if firmware == nil { missing.append("ARM64-UEFI") }
                 if variablesTemplate == nil { missing.append("passende UEFI-Variablen") }
                 if !missing.isEmpty { windowsAcceleration = "Fehlt: " + missing.joined(separator: ", ") }
-                if variablesTemplate == nil { log += "edk2-arm-vars.fd fehlt neben der gewählten Firmware.\n" }
+                if variablesTemplate == nil { log += L10n.text("edk2-arm-vars.fd fehlt neben der gewählten Firmware.\n") }
             } catch {
-                windowsAcceleration = "QEMU-Prüfung fehlgeschlagen"
+                windowsAcceleration = L10n.text("QEMU-Prüfung fehlgeschlagen")
                 log += "\n\(error.localizedDescription)\n"
             }
         }
@@ -794,13 +853,15 @@ final class AppModel: ObservableObject {
         do {
             try checkStorageSpace(minimumGB: 16)
             let port = try AndroidPorts.available()
+            let refreshChanged = try AndroidFrameRate.prepareAVD(root: storage.avd, name: device.name, fps: androidTargetFPS)
+            androidGuestRefreshHz = AndroidFrameRate.displayHz(for: androidTargetFPS)
             let base = try LaunchPlan.android(sdk: sdk, device: device, resources: resources,
-                                              coldBoot: settings.coldBoot, gpu: settings.gpu, port: port, vulkan: androidVulkanEnabled)
+                                              coldBoot: settings.coldBoot || refreshChanged, gpu: settings.gpu, port: port, vulkan: androidVulkanEnabled)
             let spec = CommandSpec(executable: base.executable, arguments: base.arguments, environment: storage.environment)
             try start(spec, title: "Android · \(device.name)")
             activeGuest = "android"
-            androidRendererStatus = "Grafikrenderer wird geprüft"; androidSoftwareRendering = false
-            androidDisplayStatus = "Leistungsprofil wird angewendet, sobald Android bereit ist"
+            androidRendererStatus = L10n.text("Grafikrenderer wird geprüft"); androidSoftwareRendering = false
+            androidDisplayStatus = L10n.text("Leistungsprofil wird angewendet, sobald Android bereit ist")
             streamFPS = 0; decoderFPS = 0; decoderRecoveries = 0
             recordDiagnostic("Android · Leistung", "Profil \(androidProfile.rawValue), Ziel \(androidTargetFPS) FPS, GPU angefordert \(settings.gpu), Vulkan \(androidVulkanEnabled ? "erlaubt" : "aus"), begrenzte Stream-Warteschlange")
             playerStatus = "Android startet …"
@@ -839,7 +900,7 @@ final class AppModel: ObservableObject {
             guard FileManager.default.isReadableFile(atPath: firmware) else { throw GuestError.missingFile(firmware) }
             if installing { _ = try WindowsISOInfo.check(path: settings.iso) }
             if !settings.driversISO.isEmpty, settings.driversISO == settings.iso {
-                throw StorageMigration.failure("Windows-ISO und Treiber-ISO sind identisch. Bitte die Treiber-Auswahl entfernen oder eine separate ARM64-Treiber-ISO wählen.")
+                throw StorageMigration.failure(L10n.text("Windows-ISO und Treiber-ISO sind identisch. Bitte die Treiber-Auswahl entfernen oder eine separate ARM64-Treiber-ISO wählen."))
             }
             if !settings.driversISO.isEmpty, !FileManager.default.isReadableFile(atPath: settings.driversISO) {
                 throw GuestError.missingFile(settings.driversISO)
@@ -864,10 +925,11 @@ final class AppModel: ObservableObject {
             // Consume the DVD choice after a successful process launch, retaining its path.
             settings.installWindows = false
             recordDiagnostic("Windows · Startmedium", installing
-                ? "Einmaliger DVD-Start; nächster Start von der gespeicherten Festplatte."
+                ? L10n.text("Einmaliger DVD-Start; nächster Start von der gespeicherten Festplatte.")
                 : "Start von der gespeicherten Festplatte; keine Installations-DVD eingebunden.")
             activeGuest = "windows"
             showPlayer(kind: "windows")
+            windowsDisplaySocket = files.displaySocket
             qmpSocket = files.qmpSocket
             connectWindowsPlayer(socket: files.displaySocket)
             inspectWindowsBoot(socket: files.qmpSocket, installing: installing)
@@ -880,7 +942,7 @@ final class AppModel: ObservableObject {
 
     private func watchAndroidBoot(port: Int) {
         bootTask?.cancel()
-        guard let adb else { apkStatus = "Für APK-Installation bitte Android SDK Platform-Tools installieren."; return }
+        guard let adb else { apkStatus = L10n.text("Für APK-Installation bitte Android SDK Platform-Tools installieren."); return }
         bootTask = Task { [weak self] in
             for _ in 0..<180 {
                 guard !Task.isCancelled, let self, self.running, self.androidPort == port else { return }
@@ -891,14 +953,14 @@ final class AppModel: ObservableObject {
                     self.androidBooted = true
                     await self.applyAndroidDisplay(port: port)
                     guard !Task.isCancelled, self.running, self.androidPort == port else { return }
-                    self.apkStatus = "Android bereit · APKs können installiert werden"
+                    self.apkStatus = L10n.text("Android bereit · APKs können installiert werden")
                     await self.connectAndroidPlayer(port: port)
                     await self.checkGoogleServices(port: port)
                     return
                 }
                 try? await Task.sleep(nanoseconds: 2_000_000_000)
             }
-            self?.apkStatus = "Android noch nicht bereit. Gastfenster prüfen; danach Android erneut starten."
+            self?.apkStatus = L10n.text("Android noch nicht bereit. Gastfenster prüfen; danach Android erneut starten.")
         }
     }
 
@@ -908,7 +970,7 @@ final class AppModel: ObservableObject {
         do {
             let size = try await Self.capture(CommandSpec(executable: adb, arguments: ["-s", serial, "shell", "wm", "size"]))
             let density = try await Self.capture(CommandSpec(executable: adb, arguments: ["-s", serial, "shell", "wm", "density"]))
-            guard size.status == 0, density.status == 0 else { throw GuestError.commandFailed(1, "Bildschirmwerte nicht lesbar") }
+            guard size.status == 0, density.status == 0 else { throw GuestError.commandFailed(1, L10n.text("Bildschirmwerte nicht lesbar")) }
             let plan = try AndroidDisplayPlan(sizeOutput: size.output, densityOutput: density.output, profile: androidProfile,
                                              custom: requestedAndroidDisplay())
             do {
@@ -929,7 +991,7 @@ final class AppModel: ObservableObject {
                 }
                 throw error
             }
-        } catch { androidDisplayStatus = "Auflösung nicht angepasst; bisherige Werte bleiben soweit möglich erhalten: \(error.localizedDescription)" }
+        } catch { androidDisplayStatus = L10n.message("Auflösung nicht angepasst; bisherige Werte bleiben soweit möglich erhalten: \(error.localizedDescription)") }
         recordDiagnostic("Android · Bildschirm", androidDisplayStatus)
     }
 
@@ -970,17 +1032,17 @@ final class AppModel: ObservableObject {
         guard canReconnectAndroidDisplay, let port = androidPort else { return }
         androidReconnectBusy = true
         defer { androidReconnectBusy = false }
-        playerStatus = "Android-Anzeige wird neu verbunden …"
+        playerStatus = L10n.text("Android-Anzeige wird neu verbunden …")
         if let stream = androidStream { await stream.stop() }
         guard running, androidPort == port else { return }
         androidStream = nil
         await connectAndroidPlayer(port: port)
-        recordDiagnostic("Android · Anzeige", "Stream auf Benutzerwunsch neu verbunden; Gast nicht neu gestartet")
+        recordDiagnostic("Android · Anzeige", L10n.text("Stream auf Benutzerwunsch neu verbunden; Gast nicht neu gestartet"))
     }
 
     private func inspectWindowsBoot(socket: String, installing: Bool) {
         windowsBootProbe?.cancel()
-        windowsBootMediaStatus = installing ? "Installations-DVD wird mit QEMU verbunden …" : "Start von gespeicherter Windows-Festplatte angefordert"
+        windowsBootMediaStatus = installing ? L10n.text("Installations-DVD wird mit QEMU verbunden …") : "Start von gespeicherter Windows-Festplatte angefordert"
         windowsBootProbe = Task { [weak self] in
             let deadline = ProcessInfo.processInfo.systemUptime + 10
             while !FileManager.default.fileExists(atPath: socket), ProcessInfo.processInfo.systemUptime < deadline {
@@ -1012,7 +1074,30 @@ final class AppModel: ObservableObject {
                 guard !Task.isCancelled else { return }
                 self.windowsIdentityStatus = "VM-UUID nicht bei QEMU bestätigt: " + error.localizedDescription
             }
-            self.recordDiagnostic("Windows · Gerätekennung geprüft", self.windowsIdentityStatus)
+            self.recordDiagnostic(L10n.text("Windows · Gerätekennung geprüft"), self.windowsIdentityStatus)
+        }
+    }
+
+    var canReconnectWindowsDisplay: Bool {
+        running && activeGuest == "windows" && !busy && !windowsReconnectBusy && !windowsPasteBusy
+    }
+    func reconnectWindowsDisplay() async {
+        guard canReconnectWindowsDisplay, let socket = windowsDisplaySocket else { return }
+        windowsReconnectBusy = true
+        defer { windowsReconnectBusy = false }
+        let previous = displayTask
+        previous?.cancel(); windowsPlayer?.stop()
+        await previous?.value
+        guard running, activeGuest == "windows", windowsDisplaySocket == socket else { return }
+        displayTask = nil; windowsPlayer = nil
+        connectWindowsPlayer(socket: socket)
+        recordDiagnostic("Windows · Anzeige", L10n.text("Bildverbindung neu angefordert; Windows läuft weiter"))
+    }
+    func openWindowsFirmwareMenu() {
+        guard running, activeGuest == "windows", !windowsPasteBusy else { return }
+        let escape = [WindowsKeyboard.Event(symbol: 0xff1b, down: true), WindowsKeyboard.Event(symbol: 0xff1b, down: false)]
+        if windowsPlayer?.sendKeySequence(escape) == true {
+            playerStatus = L10n.text("Escape an den Gast gesendet · UEFI-Startmenü ist nur während des Firmwarestarts verfügbar")
         }
     }
 
@@ -1024,14 +1109,15 @@ final class AppModel: ObservableObject {
             while ProcessInfo.processInfo.systemUptime < deadline {
                 guard let self, self.running, !Task.isCancelled else { return }
                 if !FileManager.default.fileExists(atPath: socket) {
-                    try? await Task.sleep(nanoseconds: 100_000_000)
+                    try? await Task.sleep(nanoseconds: 50_000_000)
                     continue
                 }
                 let client = RFBClient()
                 self.windowsPlayer = client
                 client.onFrame = { [weak self] image in
                     guard let self else { return }
-                    self.playerImage = image; self.playerSize = image.size
+                    self.windowsFrames.publish(image)
+                    if self.playerSize != image.size { self.playerSize = image.size }
                     self.windowsFrameCount += 1
                     if self.windowsFrameCount == 1 {
                         self.recordDiagnostic("Windows · Anzeige", "Erstes Bild empfangen: \(Int(image.size.width)) × \(Int(image.size.height))")
@@ -1064,7 +1150,7 @@ final class AppModel: ObservableObject {
                 }
                 try? await Task.sleep(nanoseconds: 200_000_000)
             }
-            self?.playerStatus = "Windows-Bildschirm nicht erreichbar. DVD-/Startstatus und Gesamtprotokoll prüfen."
+            self?.playerStatus = L10n.text("Windows-Bildschirm nicht erreichbar. DVD-/Startstatus und Gesamtprotokoll prüfen.")
             if let self { self.recordDiagnostic("Windows · Anzeige", self.playerStatus) }
         }
     }
@@ -1093,7 +1179,7 @@ final class AppModel: ObservableObject {
     func openWindowsDisplaySettings() {
         guard running, activeGuest == "windows", !windowsPasteBusy,
               windowsPlayer?.sendKeySequence(WindowsKeyboard.settings) == true else { return }
-        playerStatus = "Windows + I gesendet · Unter System → Anzeige Auflösung und Windows-Skalierung wählen."
+        playerStatus = L10n.text("Windows + I gesendet · Unter System → Anzeige Auflösung und Windows-Skalierung wählen.")
     }
 
     func keyboard(code: UInt16, text: String, down: Bool) {
@@ -1117,7 +1203,7 @@ final class AppModel: ObservableObject {
     func pasteWindowsText(_ input: WindowsTextInput) {
         guard running, activeGuest == "windows", !windowsPasteBusy, let socket = qmpSocket else { return }
         windowsPasteBusy = true
-        windowsPasteStatus = "Text wird eingefügt: 0 / \(input.count) Zeichen …"
+        windowsPasteStatus = L10n.message("Text wird eingefügt: 0 / \(input.count) Zeichen …")
         windowsPasteTask = Task { [weak self] in
             guard let self else { return }
             var completed = 0
@@ -1125,13 +1211,13 @@ final class AppModel: ObservableObject {
             do {
                 try await QMPClient.typeText(input, socket: socket) { count in
                     completed = count
-                    self.windowsPasteStatus = "Text wird eingefügt: \(count) / \(input.count) Zeichen …"
+                    self.windowsPasteStatus = L10n.message("Text wird eingefügt: \(count) / \(input.count) Zeichen …")
                 }
-                self.windowsPasteStatus = "\(input.count) Zeichen an Windows übertragen. Bei einem Befehl jetzt Enter im Windows-Fenster drücken."
+                self.windowsPasteStatus = L10n.message("\(input.count) Zeichen an Windows übertragen. Bei einem Befehl jetzt Enter im Windows-Fenster drücken.")
             } catch {
                 self.windowsPasteStatus = Task.isCancelled
-                    ? "Einfügen abgebrochen. Bereits übertragener Text bleibt im Windows-Feld stehen."
-                    : "Einfügen unterbrochen (\(completed) / \(input.count) Zeichen bestätigt). \(error.localizedDescription)"
+                    ? L10n.text("Einfügen abgebrochen. Bereits übertragener Text bleibt im Windows-Feld stehen.")
+                    : L10n.message("Einfügen unterbrochen (\(completed) / \(input.count) Zeichen bestätigt). \(error.localizedDescription)")
             }
         }
     }
@@ -1149,7 +1235,7 @@ final class AppModel: ObservableObject {
             let store = names.contains("package:com.android.vending")
             let games = names.contains("package:com.google.android.play.games")
             googleServicesStatus = "Play-Dienste: \(services ? "vorhanden" : "fehlen") · Play Store: \(store ? "vorhanden" : "fehlt") · Play Spiele: \(games ? "installiert" : "im Store verfügbar")"
-        } catch { googleServicesStatus = "Google-Dienste konnten nicht geprüft werden." }
+        } catch { googleServicesStatus = L10n.text("Google-Dienste konnten nicht geprüft werden.") }
     }
 
     func openPlayGames() { androidIntent(["-a", "android.intent.action.VIEW", "-d", "market://details?id=com.google.android.play.games"]) }
@@ -1179,14 +1265,14 @@ final class AppModel: ObservableObject {
     }
 
     func chooseAndInstallAPK() {
-        guard canInstallAPK, let path = chooseFile(title: "APK installieren · einzelne .apk-Datei auswählen") else { return }
+        guard canInstallAPK, let path = chooseFile(title: L10n.text("APK installieren · einzelne .apk-Datei auswählen")) else { return }
         Task { await installAPK(path) }
     }
 
     private func installAPK(_ path: String) async {
         guard canInstallAPK, let port = androidPort, let adb else { return }
         apkBusy = true
-        apkStatus = "APK wird installiert …"
+        apkStatus = L10n.text("APK wird installiert …")
         defer { apkBusy = false }
         do {
             let spec = try LaunchPlan.installAPK(adb: adb, port: port, apk: path)
@@ -1203,7 +1289,7 @@ final class AppModel: ObservableObject {
         // Use the normal browser and its existing profile; no embedded web view or private session.
         let url = URL(string: "https://accounts.google.com/AccountChooser?continue=https%3A%2F%2Fmyaccount.google.com%2F")!
         if !NSWorkspace.shared.open(url) {
-            errorMessage = "Der Mac-Standardbrowser konnte nicht geöffnet werden. Bitte einen Standardbrowser in macOS festlegen."
+            errorMessage = L10n.text("Der Mac-Standardbrowser konnte nicht geöffnet werden. Bitte einen Standardbrowser in macOS festlegen.")
         }
     }
 
@@ -1222,7 +1308,7 @@ final class AppModel: ObservableObject {
     private func start(_ spec: CommandSpec, title: String) throws {
         guard process == nil else { return }
         guard FileManager.default.isExecutableFile(atPath: spec.executable) else { throw GuestError.missingFile(spec.executable) }
-        guard let storage else { throw StorageMigration.failure("Bitte zuerst einen Speicherort wählen.") }
+        guard let storage else { throw StorageMigration.failure(L10n.text("Bitte zuerst einen Speicherort wählen.")) }
         try storage.validate()
         let directory = storage.logs
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -1252,40 +1338,50 @@ final class AppModel: ObservableObject {
         lastCommand = spec.display
         sessionCommand = spec.display
         running = true
-        recordDiagnostic("Gaststart", "\(title) · \(url.lastPathComponent)")
+        if let guestActivity { ProcessInfo.processInfo.endActivity(guestActivity) }
+        guestActivity = ProcessInfo.processInfo.beginActivity(options: .userInitiatedAllowingIdleSystemSleep, reason: L10n.text("Stratovo · interaktive Gastsitzung"))
+        lastLogSize = nil; rendererInspected = false
+        recordDiagnostic(L10n.text("Gaststart"), "\(title) · \(url.lastPathComponent)")
         stopRequested = false
-        playerImage = nil
+        windowsFrames.publish(nil)
         playerSize = .zero
         streamFPS = 0
         log = "Prozess gestartet. Der Gast ist erst bereit, wenn sein Startbildschirm sichtbar ist.\n\n\(sessionCommand)\n"
-        timer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in self?.readLog() }
         }
     }
 
     private func readLog() {
-        guard let logURL, let reader = try? FileHandle(forReadingFrom: logURL) else { return }
-        defer { try? reader.close() }
-        let size = (try? reader.seekToEnd()) ?? 0
-        try? reader.seek(toOffset: size > 60_000 ? size - 60_000 : 0)
-        let data = (try? reader.read(upToCount: 60_000)) ?? Data()
-        let text = String(decoding: data, as: UTF8.self)
-        log = "\(sessionCommand)\n\n" + text
-        if activeGuest == "android" {
-            // Renderer selection is near the beginning even when the live log is long.
-            try? reader.seek(toOffset: 0)
-            let head = (try? reader.read(upToCount: 96_000)) ?? Data()
-            let renderer = AndroidRenderer.inspect(String(decoding: head, as: UTF8.self) + text)
-            if renderer.kind != .unknown, renderer.summary != androidRendererStatus {
-                androidRendererStatus = renderer.summary
-                androidSoftwareRendering = renderer.kind == .software
-                recordDiagnostic("Android · Grafik", renderer.summary)
+        guard logReadTask == nil, let url = logURL else { return }
+        let previous = lastLogSize
+        let inspectRenderer = activeGuest == "android" && !rendererInspected
+        logReadTask = Task { [weak self] in
+            let snapshot = await Task.detached(priority: .utility) {
+                try? SessionLogReader.read(url: url, previousSize: previous, includeHeader: inspectRenderer)
+            }.value
+            guard let self else { return }
+            defer { self.logReadTask = nil }
+            guard self.logURL == url, let snapshot else { return }
+            self.lastLogSize = snapshot.size
+            let text = self.sessionCommand + "\n\n" + snapshot.tail
+            if self.log != text { self.log = text }
+            if inspectRenderer {
+                let renderer = AndroidRenderer.inspect(snapshot.header + snapshot.tail)
+                if renderer.kind != .unknown {
+                    self.rendererInspected = true
+                    if renderer.summary != self.androidRendererStatus {
+                        self.androidRendererStatus = renderer.summary
+                        self.androidSoftwareRendering = renderer.kind == .software
+                        self.recordDiagnostic("Android · Grafik", renderer.summary)
+                    }
+                }
             }
         }
     }
 
     private func didExit(code: Int32) async {
-        recordDiagnostic("Gast beendet", "\(sessionName) · Exit-Code \(code) · Beenden angefordert: \(stopRequested)")
+        recordDiagnostic(L10n.text("Gast beendet"), "\(sessionName) · Exit-Code \(code) · Beenden angefordert: \(stopRequested)")
         busy = true
         defer { busy = false }
         bootTask?.cancel()
@@ -1303,19 +1399,24 @@ final class AppModel: ObservableObject {
         androidBooted = false
         timer?.invalidate()
         timer = nil
+        await logReadTask?.value
         readLog()
+        await logReadTask?.value
         log += "\n\nProzess beendet · Exit-Code \(code)\n"
         if let logURL { log += "Protokoll: \(logURL.path)\n" }
         try? output?.close()
         output = nil
         process = nil
         running = false
+        if let guestActivity { ProcessInfo.processInfo.endActivity(guestActivity) }
+        guestActivity = nil
         if let windowsSession { await windowsSession.stop() }
         windowsSession = nil
         qmpSocket = nil
+        windowsDisplaySocket = nil
         activeGuest = ""
-        playerStatus = "Gast beendet · Daten bleiben gespeichert"
-        sessionName = "Kein Gast gestartet"
+        playerStatus = L10n.text("Gast beendet · Daten bleiben gespeichert")
+        sessionName = L10n.text("Kein Gast gestartet")
         if code != 0 && !stopRequested { errorMessage = "Der Gastprozess wurde mit Code \(code) beendet. Details stehen im Protokoll." }
     }
 
@@ -1324,7 +1425,7 @@ final class AppModel: ObservableObject {
         guard let process, process.isRunning else { return }
         stopRequested = true
         process.terminate()
-        log += "\nBeenden angefordert. Warte auf den Gastprozess …\n"
+        log += L10n.text("\nBeenden angefordert. Warte auf den Gastprozess …\n")
     }
 
     func revealLogs() {
@@ -1338,7 +1439,7 @@ final class AppModel: ObservableObject {
         let development = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
             .deletingLastPathComponent().appendingPathComponent(name)
         guard let script = [bundled, development].compactMap({ $0 }).first(where: { FileManager.default.isReadableFile(atPath: $0.path) }) else {
-            errorMessage = "Einrichtungsskript fehlt im App-Paket."
+            errorMessage = L10n.text("Einrichtungsskript fehlt im App-Paket.")
             return
         }
         NSWorkspace.shared.open([script], withApplicationAt: URL(fileURLWithPath: "/System/Applications/Utilities/Terminal.app"),
@@ -1347,13 +1448,13 @@ final class AppModel: ObservableObject {
 
     func chooseStorageFolder() {
         let panel = NSOpenPanel()
-        panel.title = "Speicherort für Android, Windows und Downloads"
+        panel.title = L10n.text("Speicherort für Android, Windows und Downloads")
         panel.prompt = "Diesen Ort verwenden"
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
         panel.canCreateDirectories = true
         panel.allowsMultipleSelection = false
-        panel.directoryURL = URL(fileURLWithPath: FileManager.default.fileExists(atPath: "/Volumes/Extern") ? "/Volumes/Extern" : NSHomeDirectory())
+        panel.directoryURL = URL(fileURLWithPath: "/Volumes", isDirectory: true)
         if panel.runModal() == .OK, let parent = panel.url {
             proposedStoragePath = (["Stratovo", "Pixelkoje", "OpenGuest"].contains(parent.lastPathComponent) ? parent : parent.appendingPathComponent("Stratovo")).path
         }
@@ -1366,7 +1467,7 @@ final class AppModel: ObservableObject {
         let media = [settings.iso, settings.driversISO].filter { $0.hasPrefix(downloads) && $0.lowercased().hasSuffix(".iso") }
         busy = true
         errorMessage = nil
-        storageStatus = "Prüfe laufende Programme …"
+        storageStatus = L10n.text("Prüfe laufende Programme …")
         Task {
             do {
                 try await assertNoStorageWriters()
@@ -1383,7 +1484,7 @@ final class AppModel: ObservableObject {
                 settings.selectedAVD = ""
                 storageTested = false
                 updateBackupPaths()
-                storageStatus = "Speicherort eingerichtet. Vorhandene Daten sind kopiert und per SHA-256 geprüft. Interne Sicherungen bleiben bis zur Bereinigung erhalten."
+                storageStatus = L10n.text("Speicherort eingerichtet. Vorhandene Daten sind kopiert und per SHA-256 geprüft. Interne Sicherungen bleiben bis zur Bereinigung erhalten.")
                 showStorageSetup = false
             } catch { errorMessage = error.localizedDescription; storageStatus = error.localizedDescription }
             busy = false
@@ -1398,10 +1499,10 @@ final class AppModel: ObservableObject {
     func confirmStorageCleanup() {
         guard storageTested, !busy, !running, !backupPaths.isEmpty else { return }
         let alert = NSAlert()
-        alert.messageText = "Geprüfte interne Sicherungen endgültig entfernen?"
-        alert.informativeText = backupPaths.joined(separator: "\n") + "\n\nDie aktiven Daten im gewählten Datenordner bleiben erhalten. Diese Kopien werden ohne Papierkorb entfernt und geben dadurch Speicherplatz frei."
+        alert.messageText = L10n.text("Geprüfte interne Sicherungen endgültig entfernen?")
+        alert.informativeText = backupPaths.joined(separator: "\n") + L10n.text("\n\nDie aktiven Daten im gewählten Datenordner bleiben erhalten. Diese Kopien werden ohne Papierkorb entfernt und geben dadurch Speicherplatz frei.")
         alert.addButton(withTitle: "Interne Sicherungen entfernen")
-        alert.addButton(withTitle: "Abbrechen")
+        alert.addButton(withTitle: L10n.text("Abbrechen"))
         if alert.runModal() == .alertFirstButtonReturn { cleanupInternalCopies() }
     }
 
@@ -1417,7 +1518,7 @@ final class AppModel: ObservableObject {
                     }
                 }.value
                 updateBackupPaths()
-                storageStatus = "Geprüfte interne Sicherungen entfernt. Die aktiven Daten bleiben im gewählten Speicherordner."
+                storageStatus = L10n.text("Geprüfte interne Sicherungen entfernt. Die aktiven Daten bleiben im gewählten Speicherordner.")
             } catch { errorMessage = error.localizedDescription; storageStatus = error.localizedDescription }
             busy = false
         }
@@ -1425,7 +1526,7 @@ final class AppModel: ObservableObject {
 
     private func assertNoStorageWriters() async throws {
         let result = try await Self.capture(CommandSpec(executable: "/bin/ps", arguments: ["-axo", "pid=,comm="]))
-        guard result.status == 0 else { throw StorageMigration.failure("Laufende Programme konnten nicht geprüft werden.") }
+        guard result.status == 0 else { throw StorageMigration.failure(L10n.text("Laufende Programme konnten nicht geprüft werden.")) }
         for line in result.output.components(separatedBy: .newlines) {
             let parts = line.trimmingCharacters(in: .whitespaces).split(maxSplits: 1, whereSeparator: { $0.isWhitespace })
             guard parts.count == 2, let pid = Int32(parts[0]), pid != getpid() else { continue }
@@ -1438,10 +1539,10 @@ final class AppModel: ObservableObject {
     }
 
     private func checkStorageSpace(minimumGB: Int64) throws {
-        guard let storage else { throw StorageMigration.failure("Speicherort fehlt.") }
+        guard let storage else { throw StorageMigration.failure(L10n.text("Speicherort fehlt.")) }
         try storage.validate()
         if let free = storage.freeBytes, free < minimumGB * 1_000_000_000 {
-            throw StorageMigration.failure("Am gewählten Speicherort \(storage.root) sind nur \(ByteCountFormatter.string(fromByteCount: free, countStyle: .file)) frei. Für diesen Start sind mindestens \(minimumGB) GB Reserve vorgesehen.")
+            throw StorageMigration.failure(L10n.message("Am gewählten Speicherort \(storage.root) sind nur \(ByteCountFormatter.string(fromByteCount: free, countStyle: .file)) frei. Für diesen Start sind mindestens \(minimumGB) GB Reserve vorgesehen."))
         }
     }
 
@@ -1454,7 +1555,7 @@ final class AppModel: ObservableObject {
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
         panel.allowsMultipleSelection = false
-        panel.prompt = "SDK auswählen"
+        panel.prompt = L10n.text("SDK auswählen")
         return panel.runModal() == .OK ? panel.url?.path : nil
     }
 

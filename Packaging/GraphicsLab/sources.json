@@ -1,0 +1,50 @@
+{
+  "qemu": {
+    "url": "https://github.com/utmapp/qemu.git",
+    "commit": "ae92cdc41fb0b0dab36c6ac724e1729ffc47ef18"
+  },
+  "virglrenderer": {
+    "url": "https://github.com/utmapp/virglrenderer.git",
+    "commit": "451505ad0aa449290f2c0672da6877d57ee770e5"
+  },
+  "dxmt": {
+    "url": "https://github.com/utmapp/dxmt.git",
+    "commit": "66e27f3759ff79e41a791ec40e2a70ef6d0c964c"
+  },
+  "libepoxy": {
+    "url": "https://github.com/utmapp/libepoxy.git",
+    "commit": "15d904dcb1d5a8d626ffe11e8f3339499d6f7b09"
+  },
+  "drivers": {
+    "release": "v0.4",
+    "assets": [
+      {
+        "name": "viogpu3d-arm64x-signed.zip",
+        "browser_download_url": "https://github.com/osy/kvm-guest-drivers-windows/releases/download/v0.4/viogpu3d-arm64x-signed.zip",
+        "digest": "sha256:512da8ef87eaf4f65282e2535bf1dc2b32b0b0f825508093532fbb1ab0b09116",
+        "size": 2126334
+      },
+      {
+        "name": "viogpu3d-x64-signed.zip",
+        "browser_download_url": "https://github.com/osy/kvm-guest-drivers-windows/releases/download/v0.4/viogpu3d-x64-signed.zip",
+        "digest": "sha256:36d86e665850f2c442e0dbebd045ff86cd2ea330283f353401ea8423fec549db",
+        "size": 1819795
+      }
+    ]
+  },
+  "angle": {
+    "url": "https://github.com/utmapp/WebKit.git",
+    "commit": "6a7f464047e2f6f2b65fe315aaad5d1ff3229cb7"
+  },
+  "llvm15": {
+    "url": "https://github.com/llvm/llvm-project/releases/download/llvmorg-15.0.7/clang%2Bllvm-15.0.7-arm64-apple-darwin22.0.tar.xz",
+    "size": 644285196,
+    "directory": "clang+llvm-15.0.7-arm64-apple-darwin22.0"
+  },
+  "pkgconf": {
+    "url": "https://distfiles.ariadne.space/pkgconf/pkgconf-2.3.0.tar.xz",
+    "size": 316160,
+    "digest": "sha256:3a9080ac51d03615e7c1910a0a2a8df08424892b5f13b0628a204d3fcce0ea8b",
+    "directory": "pkgconf-2.3.0"
+  }
+}

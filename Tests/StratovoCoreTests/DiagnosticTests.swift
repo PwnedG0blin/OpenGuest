@@ -23,6 +23,22 @@ final class DiagnosticTests: XCTestCase {
         XCTAssertFalse(result.contains("NEVER_INCLUDE"))
         XCTAssertTrue(url.path.hasPrefix(storage.logs.appendingPathComponent("Diagnose").path + "/"))
     }
+    func testGraphicsCompilerErrorsAreIncludedButConfigAndSecretsAreExcluded() throws {
+        let storage = try fixture(); defer { try? FileManager.default.removeItem(at: storage.url) }
+        let graphics = storage.url.appendingPathComponent("GraphicsLab")
+        try FileManager.default.createDirectory(at: graphics.appendingPathComponent("Logs"), withIntermediateDirectories: true)
+        try Data("ANGLE_BUILD_CONTEXT".utf8).write(to: graphics.appendingPathComponent("Build.log"))
+        try Data("shader.metal:42: error: ACTUAL_SHADER_ERROR\npassword=HIDDEN_GRAPHICS_PASSWORD".utf8)
+            .write(to: graphics.appendingPathComponent("Logs/Letzter-Fehler.log"))
+        try Data("METAL_PROBE_OUTPUT".utf8).write(to: graphics.appendingPathComponent("Logs/Metal-Pruefung.log"))
+        try Data("CXX_PROBE_OUTPUT".utf8).write(to: graphics.appendingPathComponent("Logs/CXX-Pruefung.log"))
+        try Data("NEVER_INCLUDE_GRAPHICS_CONFIG".utf8).write(to: graphics.appendingPathComponent("config.json"))
+        let file = try DiagnosticReport.export(storage: storage, snapshot: "", systemCheck: "", recentEvents: "")
+        let report = try String(contentsOf: file, encoding: .utf8)
+        for text in ["ANGLE_BUILD_CONTEXT", "ACTUAL_SHADER_ERROR", "METAL_PROBE_OUTPUT", "CXX_PROBE_OUTPUT"] { XCTAssertTrue(report.contains(text)) }
+        XCTAssertFalse(report.contains("HIDDEN_GRAPHICS_PASSWORD"))
+        XCTAssertFalse(report.contains("NEVER_INCLUDE_GRAPHICS_CONFIG"))
+    }
     func testRedactionRemovesKeysAddressesAndSecretsButKeepsValidationDetails() {
         let source = """
         /Users/privateperson/Library/Android/sdk
