@@ -22,7 +22,7 @@ class AppResourceTests(unittest.TestCase):
 
     def test_actual_build_command_uses_fixed_dependencies_and_options(self):
         with tempfile.TemporaryDirectory() as tmp:
-            root=Path(tmp)
+            root=Path(tmp).resolve()
             llvm=root/'Toolchains/llvm/bin';llvm.mkdir(parents=True)
             (llvm/'llvm-config').write_text('fixture')
             # Stop at the QEMU invocation after collecting actual generated commands.
