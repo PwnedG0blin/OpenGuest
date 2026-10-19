@@ -3,12 +3,18 @@
 "2 · Vorbereitetes Test-Windows öffnen" = "2 · Відкрити підготовлений тестовий Windows";
 "3D-Testkopie · experimentell" = "Тестова копія 3D · експериментальна";
 "Abbrechen" = "Скасувати";
+"Ablehnen" = "Відхилити";
 "Android einrichten" = "Налаштувати Android";
 "Android oder Windows einrichten" = "Налаштувати Android або Windows";
 "Android starten" = "Запустити Android";
+"Android {0} auswählen" = "Вибрати Android {0}";
+"Android {0} einrichten" = "Налаштувати Android {0}";
+"Android {0} laden und installieren" = "Завантажити й установити Android {0}";
+"Android {0} laden und installieren …" = "Завантажити й установити Android {0}…";
 "Android-Leistungsprofil" = "Профіль продуктивності Android";
 "Android-Verbindung reparieren" = "Відновити з’єднання Android";
 "Android-Version wählen" = "Вибрати версію Android";
+"Angezeigte Lizenz akzeptieren" = "Прийняти показану ліцензію";
 "Ansicht" = "Вигляд";
 "Anwenden" = "Застосувати";
 "App-Sprache" = "Мова застосунку";
@@ -30,6 +36,7 @@
 "Daten aus Android 16 übernehmen …" = "Скопіювати дані з Android 16…";
 "Daten und Speicherplatz" = "Дані та сховище";
 "Datenordner öffnen" = "Відкрити теку даних";
+"Dein Datenordner" = "Ваша тека даних";
 "Dein Mac" = "Ваш Mac";
 "Deine Systeme. Dein Speicherort." = "Ваші системи. Ваше сховище.";
 "Dev einschließen" = "Включити dev-версії";
@@ -69,6 +76,7 @@
 "Passwort" = "Пароль";
 "Passwort wiederholen" = "Повторити пароль";
 "Player öffnen" = "Відкрити програвач";
+"Protokoll anzeigen" = "Показати журнал";
 "Prozess beenden" = "Завершити процес";
 "SSD oder Datenordner selbst wählen" = "Виберіть SSD або теку даних";
 "SSD oder Ordner wählen …" = "Вибрати SSD або теку…";
@@ -76,6 +84,7 @@
 "Software (Fehlersuche)" = "Програмна (діагностика)";
 "Speicherbedarf je VM" = "Місце для кожної VM";
 "Speicherort auswählen …" = "Вибрати місце зберігання…";
+"Speicherort einrichten und Daten übernehmen" = "Налаштувати сховище й перенести дані";
 "Speicherort verwalten" = "Керувати сховищем";
 "Speicherort wählen" = "Вибрати сховище";
 "Speicherort wählen …" = "Вибрати сховище…";
@@ -95,11 +104,13 @@
 "Updates" = "Оновлення";
 "Updates über GitHub" = "Оновлення через GitHub";
 "Verfügbar" = "Доступно";
+"Verstanden" = "Зрозуміло";
 "Veröffentlichung und Downloads öffnen ↗" = "Відкрити випуск і завантаження ↗";
 "Virtuelles Gerät" = "Віртуальний пристрій";
 "Vollbild" = "На весь екран";
 "Vorabversionen berücksichtigen" = "Враховувати попередні версії";
 "Vorhandenes Windows starten" = "Запустити наявний Windows";
+"Vorher Android und Windows herunterfahren und Android Studio beenden." = "Спочатку завершіть роботу Android і Windows та закрийте Android Studio.";
 "Wie macOS" = "Як у macOS";
 "Willkommen bei Stratovo" = "Вітаємо у Stratovo";
 "Windows einrichten" = "Налаштувати Windows";
@@ -109,4 +120,6 @@
 "Windows-Ordner anlegen / prüfen" = "Створити / перевірити теку Windows";
 "Windows-Speicherort" = "Місце зберігання Windows";
 "Wird beim ersten Start abgefragt und gespeichert." = "Вибирається при першому запуску та зберігається.";
+"Wo sollen deine Systeme gespeichert werden?" = "Де зберігати ваші системи?";
+"Wähle ein Laufwerk oder einen Ordner. Stratovo erstellt dort einen eigenen Ordner „Stratovo“ für Android, Windows und die benötigten Dateien." = "Виберіть диск або теку. Stratovo створить там теку Stratovo для Android, Windows і потрібних файлів.";
 "Zurück" = "Назад";

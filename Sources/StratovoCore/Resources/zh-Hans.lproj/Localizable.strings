@@ -3,12 +3,18 @@
 "2 · Vorbereitetes Test-Windows öffnen" = "2 · 打开已准备的测试 Windows";
 "3D-Testkopie · experimentell" = "3D 测试副本 · 实验性";
 "Abbrechen" = "取消";
+"Ablehnen" = "拒绝";
 "Android einrichten" = "设置 Android";
 "Android oder Windows einrichten" = "设置 Android 或 Windows";
 "Android starten" = "启动 Android";
+"Android {0} auswählen" = "选择 Android {0}";
+"Android {0} einrichten" = "设置 Android {0}";
+"Android {0} laden und installieren" = "下载并安装 Android {0}";
+"Android {0} laden und installieren …" = "下载并安装 Android {0}…";
 "Android-Leistungsprofil" = "Android 性能配置";
 "Android-Verbindung reparieren" = "修复 Android 连接";
 "Android-Version wählen" = "选择 Android 版本";
+"Angezeigte Lizenz akzeptieren" = "接受所显示的许可";
 "Ansicht" = "视图";
 "Anwenden" = "应用";
 "App-Sprache" = "应用语言";
@@ -30,6 +36,7 @@
 "Daten aus Android 16 übernehmen …" = "从 Android 16 复制数据…";
 "Daten und Speicherplatz" = "数据与存储空间";
 "Datenordner öffnen" = "打开数据文件夹";
+"Dein Datenordner" = "你的数据文件夹";
 "Dein Mac" = "你的 Mac";
 "Deine Systeme. Dein Speicherort." = "你的系统，你的存储空间。";
 "Dev einschließen" = "包含 Dev";
@@ -69,6 +76,7 @@
 "Passwort" = "密码";
 "Passwort wiederholen" = "重复密码";
 "Player öffnen" = "打开播放器";
+"Protokoll anzeigen" = "显示日志";
 "Prozess beenden" = "结束进程";
 "SSD oder Datenordner selbst wählen" = "选择 SSD 或数据文件夹";
 "SSD oder Ordner wählen …" = "选择 SSD 或文件夹…";
@@ -76,6 +84,7 @@
 "Software (Fehlersuche)" = "软件渲染（故障排查）";
 "Speicherbedarf je VM" = "每个虚拟机的存储需求";
 "Speicherort auswählen …" = "选择存储位置…";
+"Speicherort einrichten und Daten übernehmen" = "设置存储并迁移数据";
 "Speicherort verwalten" = "管理存储空间";
 "Speicherort wählen" = "选择存储空间";
 "Speicherort wählen …" = "选择存储空间…";
@@ -95,11 +104,13 @@
 "Updates" = "更新";
 "Updates über GitHub" = "通过 GitHub 更新";
 "Verfügbar" = "可用";
+"Verstanden" = "明白了";
 "Veröffentlichung und Downloads öffnen ↗" = "打开版本与下载 ↗";
 "Virtuelles Gerät" = "虚拟设备";
 "Vollbild" = "全屏";
 "Vorabversionen berücksichtigen" = "包含预发布版本";
 "Vorhandenes Windows starten" = "启动现有 Windows";
+"Vorher Android und Windows herunterfahren und Android Studio beenden." = "请先关闭 Android、Windows 和 Android Studio。";
 "Wie macOS" = "跟随 macOS";
 "Willkommen bei Stratovo" = "欢迎使用 Stratovo";
 "Windows einrichten" = "设置 Windows";
@@ -109,4 +120,6 @@
 "Windows-Ordner anlegen / prüfen" = "创建／检查 Windows 文件夹";
 "Windows-Speicherort" = "Windows 存储位置";
 "Wird beim ersten Start abgefragt und gespeichert." = "首次启动时选择并保存。";
+"Wo sollen deine Systeme gespeichert werden?" = "将系统存储在哪里？";
+"Wähle ein Laufwerk oder einen Ordner. Stratovo erstellt dort einen eigenen Ordner „Stratovo“ für Android, Windows und die benötigten Dateien." = "选择磁盘或文件夹。Stratovo 将在其中创建 Stratovo 文件夹，用于保存 Android、Windows 及所需文件。";
 "Zurück" = "返回";

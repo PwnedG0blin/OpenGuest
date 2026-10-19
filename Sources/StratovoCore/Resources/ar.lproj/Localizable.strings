@@ -3,12 +3,18 @@
 "2 · Vorbereitetes Test-Windows öffnen" = "2 · فتح Windows التجريبي المُجهز";
 "3D-Testkopie · experimentell" = "نسخة اختبار 3D · تجريبية";
 "Abbrechen" = "إلغاء";
+"Ablehnen" = "رفض";
 "Android einrichten" = "إعداد Android";
 "Android oder Windows einrichten" = "إعداد Android أو Windows";
 "Android starten" = "تشغيل Android";
+"Android {0} auswählen" = "اختيار Android {0}";
+"Android {0} einrichten" = "إعداد Android {0}";
+"Android {0} laden und installieren" = "تنزيل Android {0} وتثبيته";
+"Android {0} laden und installieren …" = "تنزيل Android {0} وتثبيته…";
 "Android-Leistungsprofil" = "ملف أداء Android";
 "Android-Verbindung reparieren" = "إصلاح اتصال Android";
 "Android-Version wählen" = "اختيار إصدار Android";
+"Angezeigte Lizenz akzeptieren" = "قبول الترخيص المعروض";
 "Ansicht" = "العرض";
 "Anwenden" = "تطبيق";
 "App-Sprache" = "لغة التطبيق";
@@ -30,6 +36,7 @@
 "Daten aus Android 16 übernehmen …" = "نسخ البيانات من Android 16…";
 "Daten und Speicherplatz" = "البيانات والتخزين";
 "Datenordner öffnen" = "فتح مجلد البيانات";
+"Dein Datenordner" = "مجلد بياناتك";
 "Dein Mac" = "جهاز Mac الخاص بك";
 "Deine Systeme. Dein Speicherort." = "أنظمتك. مساحة تخزينك.";
 "Dev einschließen" = "تضمين dev";
@@ -69,6 +76,7 @@
 "Passwort" = "كلمة المرور";
 "Passwort wiederholen" = "تأكيد كلمة المرور";
 "Player öffnen" = "فتح المشغل";
+"Protokoll anzeigen" = "عرض السجل";
 "Prozess beenden" = "إنهاء العملية";
 "SSD oder Datenordner selbst wählen" = "اختر SSD أو مجلد البيانات";
 "SSD oder Ordner wählen …" = "اختيار SSD أو مجلد…";
@@ -76,6 +84,7 @@
 "Software (Fehlersuche)" = "برمجي (استكشاف الأخطاء)";
 "Speicherbedarf je VM" = "التخزين لكل VM";
 "Speicherort auswählen …" = "اختيار موقع التخزين…";
+"Speicherort einrichten und Daten übernehmen" = "إعداد التخزين ونقل البيانات";
 "Speicherort verwalten" = "إدارة التخزين";
 "Speicherort wählen" = "اختيار التخزين";
 "Speicherort wählen …" = "اختيار التخزين…";
@@ -95,11 +104,13 @@
 "Updates" = "التحديثات";
 "Updates über GitHub" = "التحديثات عبر GitHub";
 "Verfügbar" = "متاح";
+"Verstanden" = "فهمت";
 "Veröffentlichung und Downloads öffnen ↗" = "فتح الإصدار والتنزيلات ↗";
 "Virtuelles Gerät" = "جهاز افتراضي";
 "Vollbild" = "ملء الشاشة";
 "Vorabversionen berücksichtigen" = "تضمين الإصدارات التجريبية";
 "Vorhandenes Windows starten" = "تشغيل Windows الحالي";
+"Vorher Android und Windows herunterfahren und Android Studio beenden." = "أوقف Android وWindows وأغلق Android Studio أولًا.";
 "Wie macOS" = "مثل macOS";
 "Willkommen bei Stratovo" = "مرحبًا بك في Stratovo";
 "Windows einrichten" = "إعداد Windows";
@@ -109,4 +120,6 @@
 "Windows-Ordner anlegen / prüfen" = "إنشاء / فحص مجلد Windows";
 "Windows-Speicherort" = "موقع تخزين Windows";
 "Wird beim ersten Start abgefragt und gespeichert." = "يُختار عند التشغيل الأول ويُحفظ.";
+"Wo sollen deine Systeme gespeichert werden?" = "أين تريد تخزين أنظمتك؟";
+"Wähle ein Laufwerk oder einen Ordner. Stratovo erstellt dort einen eigenen Ordner „Stratovo“ für Android, Windows und die benötigten Dateien." = "اختر قرصًا أو مجلدًا. ينشئ Stratovo فيه مجلد Stratovo لـ Android وWindows والملفات المطلوبة.";
 "Zurück" = "رجوع";

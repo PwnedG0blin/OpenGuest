@@ -3,12 +3,18 @@
 "2 · Vorbereitetes Test-Windows öffnen" = "2 · Hazırlanan test Windows’u aç";
 "3D-Testkopie · experimentell" = "3D test kopyası · deneysel";
 "Abbrechen" = "İptal";
+"Ablehnen" = "Reddet";
 "Android einrichten" = "Android kur";
 "Android oder Windows einrichten" = "Android veya Windows kur";
 "Android starten" = "Android’i başlat";
+"Android {0} auswählen" = "Android {0} seç";
+"Android {0} einrichten" = "Android {0} kur";
+"Android {0} laden und installieren" = "Android {0} indir ve kur";
+"Android {0} laden und installieren …" = "Android {0} indir ve kur…";
 "Android-Leistungsprofil" = "Android performans profili";
 "Android-Verbindung reparieren" = "Android bağlantısını onar";
 "Android-Version wählen" = "Android sürümünü seç";
+"Angezeigte Lizenz akzeptieren" = "Gösterilen lisansı kabul et";
 "Ansicht" = "Görünüm";
 "Anwenden" = "Uygula";
 "App-Sprache" = "Uygulama dili";
@@ -30,6 +36,7 @@
 "Daten aus Android 16 übernehmen …" = "Android 16 verilerini kopyala…";
 "Daten und Speicherplatz" = "Veriler ve depolama";
 "Datenordner öffnen" = "Veri klasörünü aç";
+"Dein Datenordner" = "Veri klasörünüz";
 "Dein Mac" = "Mac’iniz";
 "Deine Systeme. Dein Speicherort." = "Sistemleriniz. Depolama alanınız.";
 "Dev einschließen" = "Dev’i dahil et";
@@ -69,6 +76,7 @@
 "Passwort" = "Parola";
 "Passwort wiederholen" = "Parolayı tekrarla";
 "Player öffnen" = "Oynatıcıyı aç";
+"Protokoll anzeigen" = "Günlüğü göster";
 "Prozess beenden" = "İşlemi sonlandır";
 "SSD oder Datenordner selbst wählen" = "SSD veya veri klasörü seçin";
 "SSD oder Ordner wählen …" = "SSD veya klasör seç…";
@@ -76,6 +84,7 @@
 "Software (Fehlersuche)" = "Yazılım (sorun giderme)";
 "Speicherbedarf je VM" = "VM başına depolama";
 "Speicherort auswählen …" = "Depolama konumu seç…";
+"Speicherort einrichten und Daten übernehmen" = "Depolamayı kur ve verileri aktar";
 "Speicherort verwalten" = "Depolamayı yönet";
 "Speicherort wählen" = "Depolama seç";
 "Speicherort wählen …" = "Depolama seç…";
@@ -95,11 +104,13 @@
 "Updates" = "Güncellemeler";
 "Updates über GitHub" = "GitHub üzerinden güncellemeler";
 "Verfügbar" = "Kullanılabilir";
+"Verstanden" = "Anladım";
 "Veröffentlichung und Downloads öffnen ↗" = "Sürümü ve indirmeleri aç ↗";
 "Virtuelles Gerät" = "Sanal cihaz";
 "Vollbild" = "Tam ekran";
 "Vorabversionen berücksichtigen" = "Ön sürümleri dahil et";
 "Vorhandenes Windows starten" = "Mevcut Windows’u başlat";
+"Vorher Android und Windows herunterfahren und Android Studio beenden." = "Önce Android ve Windows’u kapatın ve Android Studio’dan çıkın.";
 "Wie macOS" = "macOS ile aynı";
 "Willkommen bei Stratovo" = "Stratovo’ya hoş geldiniz";
 "Windows einrichten" = "Windows kur";
@@ -109,4 +120,6 @@
 "Windows-Ordner anlegen / prüfen" = "Windows klasörünü oluştur / denetle";
 "Windows-Speicherort" = "Windows depolama konumu";
 "Wird beim ersten Start abgefragt und gespeichert." = "İlk açılışta seçilir ve kaydedilir.";
+"Wo sollen deine Systeme gespeichert werden?" = "Sistemleriniz nerede saklansın?";
+"Wähle ein Laufwerk oder einen Ordner. Stratovo erstellt dort einen eigenen Ordner „Stratovo“ für Android, Windows und die benötigten Dateien." = "Bir sürücü veya klasör seçin. Stratovo burada Android, Windows ve gerekli dosyalar için bir Stratovo klasörü oluşturur.";
 "Zurück" = "Geri";

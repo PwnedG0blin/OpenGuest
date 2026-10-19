@@ -23,7 +23,9 @@ final class GuestPlayerWindows: NSObject, NSWindowDelegate {
             window.contentMinSize = NSSize(width: 360, height: 480)
             window.collectionBehavior.insert(.fullScreenPrimary)
             window.delegate = self
-            window.contentView = NSHostingView(rootView: GuestPlayerView(model: model, kind: kind))
+            window.contentView = NSHostingView(rootView: GuestPlayerView(model: model, kind: kind)
+                .environment(\.locale, Locale(identifier: L10n.code))
+                .environment(\.layoutDirection, L10n.code == "ar" ? .rightToLeft : .leftToRight))
             window.center()
             window.setFrameAutosaveName("OpenGuest.player.\(kind)")
             windows[kind] = window

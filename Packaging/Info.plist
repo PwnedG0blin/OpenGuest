@@ -26,5 +26,24 @@
 	<string>Copyright (c) 2026 PwnedG0blin and Stratovo contributors</string>
 	<key>StratovoReleaseVersion</key>
 	<string>1.0.0-beta.1</string>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>de</string>
+		<string>en</string>
+		<string>fr</string>
+		<string>es</string>
+		<string>it</string>
+		<string>pt</string>
+		<string>nl</string>
+		<string>pl</string>
+		<string>tr</string>
+		<string>uk</string>
+		<string>ar</string>
+		<string>zh-Hans</string>
+		<string>ja</string>
+		<string>ko</string>
+	</array>
 </dict>
 </plist>

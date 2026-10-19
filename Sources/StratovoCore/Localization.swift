@@ -23,10 +23,14 @@ public enum L10n {
         resolve(preference: UserDefaults.standard.string(forKey: preferenceKey) ?? "system",
                 preferredLanguages: Locale.preferredLanguages)
     }
+    private static let bundles: [String: Bundle] = Dictionary(uniqueKeysWithValues: languages.compactMap { language in
+        guard let path = Bundle.module.path(forResource: language.code, ofType: "lproj"), let bundle = Bundle(path: path) else { return nil }
+        return (language.code, bundle)
+    })
     public static func text(_ key: String, language: String? = nil) -> String {
         let code = language ?? self.code
         func lookup(_ code: String) -> String? {
-            guard let path = Bundle.module.path(forResource: code, ofType: "lproj"), let bundle = Bundle(path: path) else { return nil }
+            guard let bundle = bundles[code] else { return nil }
             let result = bundle.localizedString(forKey: key, value: "__STRATOVO_MISSING__", table: nil)
             return result == "__STRATOVO_MISSING__" ? nil : result
         }

@@ -3,12 +3,18 @@
 "2 · Vorbereitetes Test-Windows öffnen" = "2 · 準備済みテスト Windows を開く";
 "3D-Testkopie · experimentell" = "3D テストコピー · 実験的";
 "Abbrechen" = "キャンセル";
+"Ablehnen" = "同意しない";
 "Android einrichten" = "Android を設定";
 "Android oder Windows einrichten" = "Android または Windows を設定";
 "Android starten" = "Android を起動";
+"Android {0} auswählen" = "Android {0} を選択";
+"Android {0} einrichten" = "Android {0} を設定";
+"Android {0} laden und installieren" = "Android {0} をダウンロードしてインストール";
+"Android {0} laden und installieren …" = "Android {0} をダウンロードしてインストール…";
 "Android-Leistungsprofil" = "Android パフォーマンス設定";
 "Android-Verbindung reparieren" = "Android 接続を修復";
 "Android-Version wählen" = "Android バージョンを選択";
+"Angezeigte Lizenz akzeptieren" = "表示中のライセンスに同意";
 "Ansicht" = "表示";
 "Anwenden" = "適用";
 "App-Sprache" = "アプリの言語";
@@ -30,6 +36,7 @@
 "Daten aus Android 16 übernehmen …" = "Android 16 からデータをコピー…";
 "Daten und Speicherplatz" = "データとストレージ";
 "Datenordner öffnen" = "データフォルダを開く";
+"Dein Datenordner" = "データフォルダ";
 "Dein Mac" = "お使いの Mac";
 "Deine Systeme. Dein Speicherort." = "あなたのシステム。あなたの保存先。";
 "Dev einschließen" = "Dev を含める";
@@ -69,6 +76,7 @@
 "Passwort" = "パスワード";
 "Passwort wiederholen" = "パスワードを再入力";
 "Player öffnen" = "プレーヤーを開く";
+"Protokoll anzeigen" = "ログを表示";
 "Prozess beenden" = "プロセスを終了";
 "SSD oder Datenordner selbst wählen" = "SSD またはデータフォルダを選択";
 "SSD oder Ordner wählen …" = "SSD またはフォルダを選択…";
@@ -76,6 +84,7 @@
 "Software (Fehlersuche)" = "ソフトウェア（トラブル対処）";
 "Speicherbedarf je VM" = "VM ごとの必要容量";
 "Speicherort auswählen …" = "保存先を選択…";
+"Speicherort einrichten und Daten übernehmen" = "保存先を設定してデータを移行";
 "Speicherort verwalten" = "保存先を管理";
 "Speicherort wählen" = "保存先を選択";
 "Speicherort wählen …" = "保存先を選択…";
@@ -95,11 +104,13 @@
 "Updates" = "アップデート";
 "Updates über GitHub" = "GitHub から更新";
 "Verfügbar" = "利用可能";
+"Verstanden" = "確認";
 "Veröffentlichung und Downloads öffnen ↗" = "リリースとダウンロードを開く ↗";
 "Virtuelles Gerät" = "仮想デバイス";
 "Vollbild" = "フルスクリーン";
 "Vorabversionen berücksichtigen" = "プレリリースを含める";
 "Vorhandenes Windows starten" = "既存の Windows を起動";
+"Vorher Android und Windows herunterfahren und Android Studio beenden." = "先に Android と Windows を終了し、Android Studio を閉じてください。";
 "Wie macOS" = "macOS に合わせる";
 "Willkommen bei Stratovo" = "Stratovo へようこそ";
 "Windows einrichten" = "Windows を設定";
@@ -109,4 +120,6 @@
 "Windows-Ordner anlegen / prüfen" = "Windows フォルダを作成／確認";
 "Windows-Speicherort" = "Windows 保存先";
 "Wird beim ersten Start abgefragt und gespeichert." = "初回起動時に選択して保存します。";
+"Wo sollen deine Systeme gespeichert werden?" = "システムの保存先を選んでください";
+"Wähle ein Laufwerk oder einen Ordner. Stratovo erstellt dort einen eigenen Ordner „Stratovo“ für Android, Windows und die benötigten Dateien." = "ドライブまたはフォルダを選択してください。Android、Windows、必要なファイルを保存する Stratovo フォルダを作成します。";
 "Zurück" = "戻る";

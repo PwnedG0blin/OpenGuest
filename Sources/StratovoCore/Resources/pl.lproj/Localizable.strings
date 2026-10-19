@@ -3,12 +3,18 @@
 "2 · Vorbereitetes Test-Windows öffnen" = "2 · Otwórz przygotowany testowy Windows";
 "3D-Testkopie · experimentell" = "Kopia testowa 3D · eksperymentalna";
 "Abbrechen" = "Anuluj";
+"Ablehnen" = "Odrzuć";
 "Android einrichten" = "Skonfiguruj Android";
 "Android oder Windows einrichten" = "Skonfiguruj Android lub Windows";
 "Android starten" = "Uruchom Android";
+"Android {0} auswählen" = "Wybierz Android {0}";
+"Android {0} einrichten" = "Skonfiguruj Android {0}";
+"Android {0} laden und installieren" = "Pobierz i zainstaluj Android {0}";
+"Android {0} laden und installieren …" = "Pobierz i zainstaluj Android {0}…";
 "Android-Leistungsprofil" = "Profil wydajności Androida";
 "Android-Verbindung reparieren" = "Napraw połączenie Androida";
 "Android-Version wählen" = "Wybierz wersję Androida";
+"Angezeigte Lizenz akzeptieren" = "Akceptuj wyświetloną licencję";
 "Ansicht" = "Widok";
 "Anwenden" = "Zastosuj";
 "App-Sprache" = "Język aplikacji";
@@ -30,6 +36,7 @@
 "Daten aus Android 16 übernehmen …" = "Kopiuj dane z Androida 16…";
 "Daten und Speicherplatz" = "Dane i pamięć";
 "Datenordner öffnen" = "Otwórz folder danych";
+"Dein Datenordner" = "Twój folder danych";
 "Dein Mac" = "Twój Mac";
 "Deine Systeme. Dein Speicherort." = "Twoje systemy. Twoja pamięć.";
 "Dev einschließen" = "Uwzględnij dev";
@@ -69,6 +76,7 @@
 "Passwort" = "Hasło";
 "Passwort wiederholen" = "Powtórz hasło";
 "Player öffnen" = "Otwórz odtwarzacz";
+"Protokoll anzeigen" = "Pokaż dziennik";
 "Prozess beenden" = "Zakończ proces";
 "SSD oder Datenordner selbst wählen" = "Wybierz SSD lub folder danych";
 "SSD oder Ordner wählen …" = "Wybierz SSD lub folder…";
@@ -76,6 +84,7 @@
 "Software (Fehlersuche)" = "Programowa (diagnostyka)";
 "Speicherbedarf je VM" = "Pamięć na VM";
 "Speicherort auswählen …" = "Wybierz lokalizację…";
+"Speicherort einrichten und Daten übernehmen" = "Skonfiguruj pamięć i przenieś dane";
 "Speicherort verwalten" = "Zarządzaj pamięcią";
 "Speicherort wählen" = "Wybierz pamięć";
 "Speicherort wählen …" = "Wybierz pamięć…";
@@ -95,11 +104,13 @@
 "Updates" = "Aktualizacje";
 "Updates über GitHub" = "Aktualizacje przez GitHub";
 "Verfügbar" = "Dostępne";
+"Verstanden" = "Rozumiem";
 "Veröffentlichung und Downloads öffnen ↗" = "Otwórz wydanie i pliki ↗";
 "Virtuelles Gerät" = "Urządzenie wirtualne";
 "Vollbild" = "Pełny ekran";
 "Vorabversionen berücksichtigen" = "Uwzględnij wersje wstępne";
 "Vorhandenes Windows starten" = "Uruchom istniejący Windows";
+"Vorher Android und Windows herunterfahren und Android Studio beenden." = "Najpierw zamknij Android, Windows i Android Studio.";
 "Wie macOS" = "Jak w macOS";
 "Willkommen bei Stratovo" = "Witaj w Stratovo";
 "Windows einrichten" = "Skonfiguruj Windows";
@@ -109,4 +120,6 @@
 "Windows-Ordner anlegen / prüfen" = "Utwórz / sprawdź folder Windows";
 "Windows-Speicherort" = "Lokalizacja Windows";
 "Wird beim ersten Start abgefragt und gespeichert." = "Wybierane przy pierwszym uruchomieniu i zapisywane.";
+"Wo sollen deine Systeme gespeichert werden?" = "Gdzie przechowywać systemy?";
+"Wähle ein Laufwerk oder einen Ordner. Stratovo erstellt dort einen eigenen Ordner „Stratovo“ für Android, Windows und die benötigten Dateien." = "Wybierz dysk lub folder. Stratovo utworzy tam folder Stratovo dla Androida, Windows i potrzebnych plików.";
 "Zurück" = "Wstecz";

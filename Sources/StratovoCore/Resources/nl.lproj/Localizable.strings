@@ -3,12 +3,18 @@
 "2 · Vorbereitetes Test-Windows öffnen" = "2 · Voorbereide test-Windows openen";
 "3D-Testkopie · experimentell" = "3D-testkopie · experimenteel";
 "Abbrechen" = "Annuleren";
+"Ablehnen" = "Weigeren";
 "Android einrichten" = "Android instellen";
 "Android oder Windows einrichten" = "Android of Windows instellen";
 "Android starten" = "Android starten";
+"Android {0} auswählen" = "Android {0} kiezen";
+"Android {0} einrichten" = "Android {0} instellen";
+"Android {0} laden und installieren" = "Android {0} downloaden en installeren";
+"Android {0} laden und installieren …" = "Android {0} downloaden en installeren…";
 "Android-Leistungsprofil" = "Android-prestatieprofiel";
 "Android-Verbindung reparieren" = "Android-verbinding herstellen";
 "Android-Version wählen" = "Android-versie kiezen";
+"Angezeigte Lizenz akzeptieren" = "Getoonde licentie accepteren";
 "Ansicht" = "Weergave";
 "Anwenden" = "Toepassen";
 "App-Sprache" = "App-taal";
@@ -30,6 +36,7 @@
 "Daten aus Android 16 übernehmen …" = "Gegevens van Android 16 kopiëren…";
 "Daten und Speicherplatz" = "Gegevens en opslag";
 "Datenordner öffnen" = "Gegevensmap openen";
+"Dein Datenordner" = "Jouw gegevensmap";
 "Dein Mac" = "Jouw Mac";
 "Deine Systeme. Dein Speicherort." = "Jouw systemen. Jouw opslag.";
 "Dev einschließen" = "Dev meenemen";
@@ -69,6 +76,7 @@
 "Passwort" = "Wachtwoord";
 "Passwort wiederholen" = "Wachtwoord herhalen";
 "Player öffnen" = "Player openen";
+"Protokoll anzeigen" = "Logboek tonen";
 "Prozess beenden" = "Proces stoppen";
 "SSD oder Datenordner selbst wählen" = "Kies je SSD of gegevensmap";
 "SSD oder Ordner wählen …" = "SSD of map kiezen…";
@@ -76,6 +84,7 @@
 "Software (Fehlersuche)" = "Software (probleemoplossing)";
 "Speicherbedarf je VM" = "Opslag per VM";
 "Speicherort auswählen …" = "Opslaglocatie kiezen…";
+"Speicherort einrichten und Daten übernehmen" = "Opslag instellen en gegevens overzetten";
 "Speicherort verwalten" = "Opslag beheren";
 "Speicherort wählen" = "Opslag kiezen";
 "Speicherort wählen …" = "Opslag kiezen…";
@@ -95,11 +104,13 @@
 "Updates" = "Updates";
 "Updates über GitHub" = "Updates via GitHub";
 "Verfügbar" = "Beschikbaar";
+"Verstanden" = "Begrepen";
 "Veröffentlichung und Downloads öffnen ↗" = "Release en downloads openen ↗";
 "Virtuelles Gerät" = "Virtueel apparaat";
 "Vollbild" = "Volledig scherm";
 "Vorabversionen berücksichtigen" = "Voorlopige versies meenemen";
 "Vorhandenes Windows starten" = "Bestaande Windows starten";
+"Vorher Android und Windows herunterfahren und Android Studio beenden." = "Sluit eerst Android, Windows en Android Studio af.";
 "Wie macOS" = "Zoals macOS";
 "Willkommen bei Stratovo" = "Welkom bij Stratovo";
 "Windows einrichten" = "Windows instellen";
@@ -109,4 +120,6 @@
 "Windows-Ordner anlegen / prüfen" = "Windows-map maken / controleren";
 "Windows-Speicherort" = "Windows-opslaglocatie";
 "Wird beim ersten Start abgefragt und gespeichert." = "Bij eerste start gekozen en onthouden.";
+"Wo sollen deine Systeme gespeichert werden?" = "Waar wil je jouw systemen opslaan?";
+"Wähle ein Laufwerk oder einen Ordner. Stratovo erstellt dort einen eigenen Ordner „Stratovo“ für Android, Windows und die benötigten Dateien." = "Kies een schijf of map. Stratovo maakt daar een eigen map Stratovo voor Android, Windows en benodigde bestanden.";
 "Zurück" = "Terug";

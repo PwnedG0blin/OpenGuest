@@ -3,12 +3,18 @@
 "2 · Vorbereitetes Test-Windows öffnen" = "2 · Abrir Windows de prueba preparado";
 "3D-Testkopie · experimentell" = "Copia de prueba 3D · experimental";
 "Abbrechen" = "Cancelar";
+"Ablehnen" = "Rechazar";
 "Android einrichten" = "Configurar Android";
 "Android oder Windows einrichten" = "Configurar Android o Windows";
 "Android starten" = "Iniciar Android";
+"Android {0} auswählen" = "Elegir Android {0}";
+"Android {0} einrichten" = "Configurar Android {0}";
+"Android {0} laden und installieren" = "Descargar e instalar Android {0}";
+"Android {0} laden und installieren …" = "Descargar e instalar Android {0}…";
 "Android-Leistungsprofil" = "Perfil de rendimiento Android";
 "Android-Verbindung reparieren" = "Reparar conexión Android";
 "Android-Version wählen" = "Elegir versión Android";
+"Angezeigte Lizenz akzeptieren" = "Aceptar licencia mostrada";
 "Ansicht" = "Vista";
 "Anwenden" = "Aplicar";
 "App-Sprache" = "Idioma de la app";
@@ -30,6 +36,7 @@
 "Daten aus Android 16 übernehmen …" = "Copiar datos de Android 16…";
 "Daten und Speicherplatz" = "Datos y almacenamiento";
 "Datenordner öffnen" = "Abrir carpeta de datos";
+"Dein Datenordner" = "Tu carpeta de datos";
 "Dein Mac" = "Tu Mac";
 "Deine Systeme. Dein Speicherort." = "Tus sistemas. Tu almacenamiento.";
 "Dev einschließen" = "Incluir dev";
@@ -69,6 +76,7 @@
 "Passwort" = "Contraseña";
 "Passwort wiederholen" = "Repetir contraseña";
 "Player öffnen" = "Abrir reproductor";
+"Protokoll anzeigen" = "Mostrar registro";
 "Prozess beenden" = "Finalizar proceso";
 "SSD oder Datenordner selbst wählen" = "Elige tu SSD o carpeta de datos";
 "SSD oder Ordner wählen …" = "Elegir SSD o carpeta…";
@@ -76,6 +84,7 @@
 "Software (Fehlersuche)" = "Software (diagnóstico)";
 "Speicherbedarf je VM" = "Espacio por VM";
 "Speicherort auswählen …" = "Elegir ubicación…";
+"Speicherort einrichten und Daten übernehmen" = "Configurar almacenamiento y transferir datos";
 "Speicherort verwalten" = "Gestionar almacenamiento";
 "Speicherort wählen" = "Elegir almacenamiento";
 "Speicherort wählen …" = "Elegir almacenamiento…";
@@ -95,11 +104,13 @@
 "Updates" = "Actualizaciones";
 "Updates über GitHub" = "Actualizaciones mediante GitHub";
 "Verfügbar" = "Disponible";
+"Verstanden" = "Entendido";
 "Veröffentlichung und Downloads öffnen ↗" = "Abrir versión y descargas ↗";
 "Virtuelles Gerät" = "Dispositivo virtual";
 "Vollbild" = "Pantalla completa";
 "Vorabversionen berücksichtigen" = "Incluir versiones preliminares";
 "Vorhandenes Windows starten" = "Iniciar Windows existente";
+"Vorher Android und Windows herunterfahren und Android Studio beenden." = "Primero apaga Android y Windows y cierra Android Studio.";
 "Wie macOS" = "Según macOS";
 "Willkommen bei Stratovo" = "Bienvenido a Stratovo";
 "Windows einrichten" = "Configurar Windows";
@@ -109,4 +120,6 @@
 "Windows-Ordner anlegen / prüfen" = "Crear / comprobar carpeta Windows";
 "Windows-Speicherort" = "Ubicación de Windows";
 "Wird beim ersten Start abgefragt und gespeichert." = "Se elige al iniciar y se guarda.";
+"Wo sollen deine Systeme gespeichert werden?" = "¿Dónde guardar tus sistemas?";
+"Wähle ein Laufwerk oder einen Ordner. Stratovo erstellt dort einen eigenen Ordner „Stratovo“ für Android, Windows und die benötigten Dateien." = "Elige una unidad o carpeta. Stratovo creará allí una carpeta Stratovo para Android, Windows y los archivos necesarios.";
 "Zurück" = "Atrás";
