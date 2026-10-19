@@ -24,7 +24,11 @@ public enum L10n {
                 preferredLanguages: Locale.preferredLanguages)
     }
     private static let bundles: [String: Bundle] = Dictionary(uniqueKeysWithValues: languages.compactMap { language in
-        guard let path = Bundle.module.path(forResource: language.code, ofType: "lproj"), let bundle = Bundle(path: path) else { return nil }
+        // SwiftPM normalizes localization folder names (zh-Hans → zh-hans).
+        guard let resources = Bundle.module.resourceURL else { return nil }
+        let folders = (try? FileManager.default.contentsOfDirectory(at: resources, includingPropertiesForKeys: nil)) ?? []
+        guard let folder = folders.first(where: { $0.lastPathComponent.lowercased() == language.code.lowercased() + ".lproj" }),
+              let bundle = Bundle(url: folder) else { return nil }
         return (language.code, bundle)
     })
     public static func text(_ key: String, language: String? = nil) -> String {
