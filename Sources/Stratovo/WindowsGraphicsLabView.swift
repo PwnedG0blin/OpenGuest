@@ -152,7 +152,7 @@ struct WindowsGraphicsLabView: View {
                 Label("Windows-Modus", systemImage: "display.2").font(.title3.bold())
                 Picker("Windows-Modus", selection: $model.windowsLabSelected) {
                     Text("Normales Windows").tag(false)
-                    Text("3D-Testkopie · privat").tag(true)
+                    Text("3D-Testkopie · experimentell").tag(true)
                 }.pickerStyle(.segmented).disabled(model.running || lab.active)
                 if model.windowsLabSelected {
                     Text("Triton / Neptune → DXMT → Metal").font(.headline).foregroundStyle(.teal)
