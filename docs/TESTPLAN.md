@@ -15,7 +15,7 @@ There is no Swift toolchain or macOS SDK in the Linux authoring environment. Nat
 ## Mac acceptance tests before a release
 
 1. Run `swift test` and the Release build on Apple Silicon; fix all failures. Exercise failed/missing engine paths and log errors without hanging the app.
-2. Prepare a Google Play AVD; open OpenGuest and verify Android starts directly in its own player. Confirm the displayed service status and Google login in the guest.
+2. Prepare a Google Play AVD; open Stratovo and verify Android starts directly in its own player. Confirm the displayed service status and Google login in the guest.
 3. Install a known test APK; confirm that a connected physical phone or a second emulator receives no APK or input commands.
 4. Install Play Games; log in to a game that actually supports Google cloud saves. Verify the same test save is restored on another device using the same game/account. Do not infer cloud support merely from package presence.
 5. Install an APK, create local data, sign in; shut down and reopen at least 10 times. Verify all account/app state survives cold and Quick Boot paths. Never use wipe-data as a repair step.

@@ -1,6 +1,6 @@
 # Sicherheit und Datenhaltung
 
-**Pixelkoje · öffentliche Testversion** · Entwickelt von **PwnedG0blin**
+**Stratovo · öffentliche Testversion** · Entwickelt von **PwnedG0blin**
 
 Diese Seite beschreibt die derzeitige Umsetzung und ihre Grenzen. Automatisierte Builds und Tests sind kein unabhängiges Sicherheitsaudit und keine Garantie gegen Abstürze oder Datenverlust.
 

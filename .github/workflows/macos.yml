@@ -28,7 +28,7 @@ jobs:
         run: python3 scripts/tpm-smoke.py
       - name: Application launch smoke test
         run: |
-          dist/Pixelkoje.app/Contents/MacOS/Pixelkoje > dist/launch-smoke.log 2>&1 &
+          dist/Stratovo.app/Contents/MacOS/Stratovo > dist/launch-smoke.log 2>&1 &
           app_pid=$!
           trap 'kill -TERM "$app_pid" 2>/dev/null || true' EXIT
           sleep 5
@@ -39,18 +39,18 @@ jobs:
           echo "App stayed running for 5 seconds on a clean macOS runner. Guest integration is not tested."
       - name: Archive test app
         run: |
-          /usr/bin/ditto -c -k --sequesterRsrc --keepParent dist/Pixelkoje.app dist/Pixelkoje-macOS-AppleSilicon.app.zip
+          /usr/bin/ditto -c -k --sequesterRsrc --keepParent dist/Stratovo.app dist/Stratovo-macOS-AppleSilicon.app.zip
           mkdir -p dist/installer
-          /usr/bin/ditto dist/Pixelkoje.app dist/installer/Pixelkoje.app
+          /usr/bin/ditto dist/Stratovo.app dist/installer/Stratovo.app
           ln -s /Applications dist/installer/Applications
-          /usr/bin/hdiutil create -volname Pixelkoje -srcfolder dist/installer -ov -format UDZO dist/Pixelkoje_0.3.19_AppleSilicon.dmg
+          /usr/bin/hdiutil create -volname Stratovo -srcfolder dist/installer -ov -format UDZO dist/Stratovo_0.3.20_AppleSilicon.dmg
       - name: Upload compiled app
         uses: actions/upload-artifact@v7
         with:
-          name: Pixelkoje-macOS-AppleSilicon-test-app
+          name: Stratovo-macOS-AppleSilicon-test-app
           path: |
-            dist/Pixelkoje-macOS-AppleSilicon.app.zip
-            dist/Pixelkoje_0.3.19_AppleSilicon.dmg
+            dist/Stratovo-macOS-AppleSilicon.app.zip
+            dist/Stratovo_0.3.20_AppleSilicon.dmg
             dist/paste-preview/*.png
           if-no-files-found: error
           retention-days: 14

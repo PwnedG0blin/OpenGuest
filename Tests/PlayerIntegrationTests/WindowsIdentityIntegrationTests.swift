@@ -1,7 +1,7 @@
 import Foundation
 import XCTest
-import OpenGuestCore
-@testable import OpenGuest
+import StratovoCore
+@testable import Stratovo
 
 final class WindowsIdentityIntegrationTests: XCTestCase {
     @MainActor

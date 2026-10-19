@@ -13,7 +13,7 @@ binary_dir="$(xcrun swift build --show-bin-path)"
 cat > "$preview_tmp/Preview.swift" <<'SWIFT'
 import AppKit
 import SwiftUI
-import OpenGuestCore
+import StratovoCore
 
 @MainActor
 final class AppModel: ObservableObject {
@@ -123,7 +123,7 @@ struct PastePreview {
                 NSColor.systemTeal.setFill(); rect.fill()
                 NSColor.systemIndigo.setFill(); NSRect(x: 0, y: 0, width: 1000, height: 300).fill()
                 let attributes: [NSAttributedString.Key: Any] = [.font: NSFont.boldSystemFont(ofSize: 48), .foregroundColor: NSColor.white]
-                ("OBEN · Pixelkoje" as NSString).draw(at: NSPoint(x: 30, y: 520), withAttributes: attributes)
+                ("OBEN · Stratovo" as NSString).draw(at: NSPoint(x: 30, y: 520), withAttributes: attributes)
                 ("UNTEN · Beispielbild" as NSString).draw(at: NSPoint(x: 30, y: 30), withAttributes: attributes)
                 return true
             }
@@ -138,8 +138,8 @@ struct PastePreview {
 }
 SWIFT
 xcrun swiftc -parse-as-library -target "$(uname -m)-apple-macosx14.0" -I "$binary_dir/Modules" \
-    Sources/OpenGuest/WindowsPasteSheet.swift Sources/OpenGuest/DeveloperCredits.swift \
-    Sources/OpenGuest/SetupDownloadsView.swift Sources/OpenGuest/SetupInstaller.swift \
-    Sources/OpenGuest/AndroidDisplaySheet.swift Sources/OpenGuest/AndroidPasteSheet.swift Sources/OpenGuest/PlayerSurface.swift "$preview_tmp/Preview.swift" \
-    "$binary_dir"/OpenGuestCore.build/*.o -o "$preview_tmp/render-paste"
+    Sources/Stratovo/WindowsPasteSheet.swift Sources/Stratovo/DeveloperCredits.swift \
+    Sources/Stratovo/SetupDownloadsView.swift Sources/Stratovo/SetupInstaller.swift \
+    Sources/Stratovo/AndroidDisplaySheet.swift Sources/Stratovo/AndroidPasteSheet.swift Sources/Stratovo/PlayerSurface.swift "$preview_tmp/Preview.swift" \
+    "$binary_dir"/StratovoCore.build/*.o -o "$preview_tmp/render-paste"
 "$preview_tmp/render-paste" "$preview_dir"

@@ -14,7 +14,7 @@ Google sign-in happens in Android. The app does not read account tokens, passwor
 
 ## Windows
 
-QEMU ARM `virt` + HVF, NVMe qcow2 disk, pflash code and persistent variables, swtpm 2.0 CRB, basic ramfb display. A per-VM advisory lock prevents concurrent use by two OpenGuest instances. TPM storage is retained. The firmware must meet Windows' requirements; basic QEMU ARM firmware is not a substitute for a tested Secure-Boot-capable firmware pair.
+QEMU ARM `virt` + HVF, NVMe qcow2 disk, pflash code and persistent variables, swtpm 2.0 CRB, basic ramfb display. A per-VM advisory lock prevents concurrent use by two Stratovo instances. TPM storage is retained. The firmware must meet Windows' requirements; basic QEMU ARM firmware is not a substitute for a tested Secure-Boot-capable firmware pair.
 
 Display, QMP and TPM sockets live in a short random directory with mode 0700. No VNC TCP listener is created. The embedded RFB client requests raw pixels and desktop resizing; buffers and message sizes are bounded. A local QMP command asks the guest to power down. No native GPU acceleration or Windows audio device is configured yet.
 

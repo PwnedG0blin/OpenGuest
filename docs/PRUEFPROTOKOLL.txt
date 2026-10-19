@@ -1,4 +1,4 @@
-OpenGuest 0.1.0 – Quellcode-Prüfung vom 15.10.2026
+Stratovo 0.1.0 – Quellcode-Prüfung vom 15.10.2026
 
 Durchgeführt:
 - 17 Swift-Dateien mit tree-sitter-swift syntaktisch geparst: keine Syntaxfehler.
