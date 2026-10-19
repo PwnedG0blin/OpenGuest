@@ -17,7 +17,7 @@ struct GitHubUpdatesView: View {
             Label("Stratovo-Updates über GitHub", systemImage: "arrow.triangle.2.circlepath")
                 .font(.title2.bold())
 
-            Text("Updates über GitHub · kein API-Schlüssel erforderlich")
+            Text("Updates über GitHub")
                 .foregroundStyle(.secondary)
 
             HStack {
