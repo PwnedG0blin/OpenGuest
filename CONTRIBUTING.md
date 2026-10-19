@@ -1,6 +1,6 @@
-# Zu Pixelkoje beitragen
+# Zu Stratovo beitragen
 
-Pixelkoje wird von **PwnedG0blin** entwickelt. Beiträge zu Quellcode, Dokumentation und nachvollziehbaren Fehlerberichten sind willkommen. Der Projektname ist vorläufig.
+Stratovo wird von **PwnedG0blin** entwickelt. Beiträge zu Quellcode, Dokumentation und nachvollziehbaren Fehlerberichten sind willkommen.
 
 ## Fehler und Vorschläge
 

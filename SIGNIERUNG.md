@@ -7,7 +7,7 @@ Für eine öffentliche Veröffentlichung außerhalb des App Store braucht der He
 ## Einmalig auf dem eigenen Mac
 
 1. Developer-ID-Application-Zertifikat im lokalen Schlüsselbund einrichten. Die verfügbaren Signieridentitäten lassen sich mit `security find-identity -v -p codesigning` anzeigen.
-2. Mit `xcrun notarytool store-credentials OpenGuest-Notary` ein lokales Schlüsselbundprofil anlegen und die Apple-Abfragen im eigenen Terminal beantworten. Private Schlüssel, Passwörter und App-spezifische Passwörter nicht im Chat, Repository oder in Protokollen teilen.
+2. Mit `xcrun notarytool store-credentials Stratovo-Notary` ein lokales Schlüsselbundprofil anlegen und die Apple-Abfragen im eigenen Terminal beantworten. Private Schlüssel, Passwörter und App-spezifische Passwörter nicht im Chat, Repository oder in Protokollen teilen.
 
 ## Signierte Veröffentlichung erzeugen
 
@@ -15,7 +15,7 @@ Im Repository ausführen, mit dem tatsächlichen Namen der Signieridentität:
 
 ```bash
 OPENGUEST_SIGNING_IDENTITY='Developer ID Application: Dein Name (TEAMID)' \
-OPENGUEST_NOTARY_PROFILE='OpenGuest-Notary' \
+OPENGUEST_NOTARY_PROFILE='Stratovo-Notary' \
 bash scripts/notarize-app.sh
 ```
 

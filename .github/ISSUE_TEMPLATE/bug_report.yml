@@ -1,5 +1,5 @@
 name: Fehler melden
-description: Einen nachvollziehbaren Fehler in Pixelkoje melden.
+description: Einen nachvollziehbaren Fehler in Stratovo melden.
 title: "[Fehler] "
 body:
   - type: markdown
@@ -8,7 +8,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: Pixelkoje-Version
+      label: Stratovo-Version
       placeholder: "Zum Beispiel 0.3.19"
     validations:
       required: true

@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="300" viewBox="0 0 1280 300" role="img" aria-labelledby="title desc">
-  <title id="title">Pixelkoje</title>
+  <title id="title">Stratovo</title>
   <desc id="desc">Android und Windows auf dem Mac. Ein Open-Source-Projekt von PwnedG0blin.</desc>
   <rect width="1280" height="300" rx="22" fill="#101e30"/>
   <path d="M40 258H1240" stroke="#284154"/>
   <rect x="54" y="55" width="44" height="5" rx="2.5" fill="#45e0cc"/>
-  <text x="50" y="151" fill="#f3f7fc" font-family="Arial,Helvetica,sans-serif" font-size="76" font-weight="700" letter-spacing="-2">Pixelkoje</text>
+  <text x="50" y="151" fill="#f3f7fc" font-family="Arial,Helvetica,sans-serif" font-size="76" font-weight="700" letter-spacing="-2">Stratovo</text>
   <text x="54" y="205" fill="#a9c0d6" font-family="Arial,Helvetica,sans-serif" font-size="25">Android und Windows auf dem Mac</text>
   <g stroke="#3c6078" stroke-width="2">
     <rect x="850" y="60" width="300" height="174" rx="14" fill="#102538"/>

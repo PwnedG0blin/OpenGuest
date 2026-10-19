@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 config="$HOME/Library/Application Support/OpenGuest/storage.json"
-if [[ ! -f "$config" ]]; then echo "Bitte zuerst in Pixelkoje einen Datenordner wählen."; exit 1; fi
+if [[ ! -f "$config" ]]; then echo "Bitte zuerst in Stratovo einen Datenordner wählen."; exit 1; fi
 root="$(/usr/bin/plutil -extract root raw -o - "$config")"
 id="$(/usr/bin/plutil -extract id raw -o - "$config")"
 if [[ ! -f "$root/.openguest-storage-id" ]] || [[ "$(cat "$root/.openguest-storage-id")" != "$id" ]]; then
@@ -29,6 +29,6 @@ if [[ -e "$root/Installationsmedien/utm-guest-tools.iso" ]]; then
 fi
 mv "$work/utm-guest-tools.iso" "$root/Installationsmedien/utm-guest-tools.iso"
 /usr/bin/shasum -a 256 "$root/Installationsmedien/utm-guest-tools.iso"
-echo "Fertig. In Pixelkoje bei ARM64-Treiber-ISO diese Datei wählen:"
+echo "Fertig. In Stratovo bei ARM64-Treiber-ISO diese Datei wählen:"
 echo "$root/Installationsmedien/utm-guest-tools.iso"
 echo "Nur als Treibermedium verwenden. Nicht als Windows-Installations-ISO auswählen."

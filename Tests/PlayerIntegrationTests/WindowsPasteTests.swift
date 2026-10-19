@@ -1,8 +1,8 @@
 import AppKit
 import Foundation
-import OpenGuestCore
+import StratovoCore
 import XCTest
-@testable import OpenGuest
+@testable import Stratovo
 
 final class WindowsPasteTests: XCTestCase {
     @MainActor

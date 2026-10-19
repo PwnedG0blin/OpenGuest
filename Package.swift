@@ -2,13 +2,13 @@
 import PackageDescription
 
 let package = Package(
-    name: "Pixelkoje",
+    name: "Stratovo",
     platforms: [.macOS(.v14)],
-    products: [.executable(name: "Pixelkoje", targets: ["OpenGuest"])],
+    products: [.executable(name: "Stratovo", targets: ["Stratovo"])],
     targets: [
-        .target(name: "OpenGuestCore"),
-        .executableTarget(name: "OpenGuest", dependencies: ["OpenGuestCore"]),
-        .testTarget(name: "OpenGuestCoreTests", dependencies: ["OpenGuestCore"]),
-        .testTarget(name: "PlayerIntegrationTests", dependencies: ["OpenGuest", "OpenGuestCore"])
+        .target(name: "StratovoCore"),
+        .executableTarget(name: "Stratovo", dependencies: ["StratovoCore"]),
+        .testTarget(name: "StratovoCoreTests", dependencies: ["StratovoCore"]),
+        .testTarget(name: "PlayerIntegrationTests", dependencies: ["Stratovo", "StratovoCore"])
     ]
 )

@@ -1,4 +1,4 @@
-# Pixelkoje einrichten
+# Stratovo einrichten
 
 **Anleitung zur Testversion 0.3.19** · macOS 14 oder neuer · Apple Silicon
 
@@ -7,7 +7,7 @@ Entwickelt von **PwnedG0blin** · [Projektübersicht](README.md) · [Fehler meld
 ## 1. App und Datenordner vorbereiten
 
 1. Laufende Android- oder Windows-Gäste regulär herunterfahren und die bisherige App schließen.
-2. Die neue `Pixelkoje.app` nach **Programme / Applications** kopieren und dort öffnen. Die DMG danach auswerfen.
+2. Die neue `Stratovo.app` nach **Programme / Applications** kopieren und dort öffnen. Die DMG danach auswerfen.
 3. Beim ersten Start den Datenordner wählen. Auf einer externen SSD einen eigenen Ordner verwenden. Eine vorhandene Installation kann zum Beispiel `/Volumes/Extern/OpenGuest` weiterverwenden; für ein Update muss der Ordner nicht umbenannt werden.
 4. Den gewählten Datenträger während der Nutzung angeschlossen lassen. Fehlt er, sperrt die App Gaststarts und Downloads.
 
@@ -47,7 +47,7 @@ Zuerst **Bild einpassen** und ein kleineres Streaming-/Leistungsprofil testen. H
 ## 3. Windows ARM64 einrichten
 
 1. QEMU, `qemu-img` und `swtpm` auf dem Mac installieren. Bei bereits eingerichtetem Homebrew ist dies beispielsweise mit `brew install qemu swtpm` möglich.
-2. In Pixelkoje **System prüfen** und die fehlenden Komponenten ergänzen. Für Windows 11 werden geeignete ARM64-UEFI-Firmware und passende UEFI-Variablen benötigt. Eine gewöhnliche `edk2-aarch64-code.fd` ist nicht automatisch ein geeigneter Secure-Boot-Build.
+2. In Stratovo **System prüfen** und die fehlenden Komponenten ergänzen. Für Windows 11 werden geeignete ARM64-UEFI-Firmware und passende UEFI-Variablen benötigt. Eine gewöhnliche `edk2-aarch64-code.fd` ist nicht automatisch ein geeigneter Secure-Boot-Build.
 3. Im Windows-Speicherbereich einen Ordner anlegen und die gewünschte virtuelle Kapazität wählen. Die QCOW2-Datei wächst mit der Nutzung. Bestehende Datenträger können bei ausgeschaltetem Gast vergrößert, aber nicht verkleinert werden; zusätzlichen Platz anschließend in Windows zuordnen.
 4. **DVD-ISO manuell auswählen …** anklicken und eine eigene offizielle **Windows-ARM64-ISO** wählen. Den angezeigten vollständigen Pfad prüfen. Die Dateiprüfung allein bestätigt weder Architektur noch Bootfähigkeit.
 5. Unter **Downloads und Einrichtung** die Windows-Treiber beziehen und deren eigene ISO als **ARM64-Treiber-ISO** auswählen. Windows- und Treiber-ISO sind unterschiedliche Dateien. Treiber werden anschließend im Gast installiert.
@@ -66,7 +66,7 @@ Mit **Benutzername und Kennwort sicher merken** speichert die App ihre Einrichtu
 
 ## 4. Bestehende Daten auf eine externe SSD übernehmen
 
-1. Gäste, Pixelkoje, Android Studio und laufende Einrichtungsskripte beenden.
+1. Gäste, Stratovo, Android Studio und laufende Einrichtungsskripte beenden.
 2. In der Speicherorteinrichtung den gewünschten SSD-Ordner wählen und **Speicherort einrichten und Daten übernehmen** ausführen. Die Inhaltsprüfung bei großen Datenbeständen abwarten.
 3. Die App übernimmt erkannte Standardordner und ausdrücklich ausgewählte Installationsmedien. Quellen werden beim Kopieren nicht gelöscht. Konflikte oder geänderte Dateien werden gemeldet.
 4. Android und gegebenenfalls Windows im neuen Datenordner testen, anschließend wieder herunterfahren.
@@ -82,7 +82,7 @@ Das funktionierende Android 16 auswählen und alle Gäste beenden. Unter **Alte 
 
 ## 5. Aktualisieren, beenden und Fehler melden
 
-Vor einem App-Update Gäste regulär herunterfahren und Pixelkoje schließen. Die App ersetzen und denselben Datenordner weiterverwenden. Das Schließen eines Playerfensters beendet den Gast nicht. **Prozess beenden** ist eine Notlösung; ungespeicherte Änderungen können verloren gehen.
+Vor einem App-Update Gäste regulär herunterfahren und Stratovo schließen. Die App ersetzen und denselben Datenordner weiterverwenden. Das Schließen eines Playerfensters beendet den Gast nicht. **Prozess beenden** ist eine Notlösung; ungespeicherte Änderungen können verloren gehen.
 
 Bei einem Fehler **Gesamtprotokoll exportieren** verwenden. Vor dem Teilen Namen, E-Mail-Adressen und Gerätekennungen entfernen. Im [Fehlerbericht](https://github.com/PwnedG0blin/OpenGuest/issues/new/choose) App-/macOS-Version, Gastsystem, Schritte und erwartetes Verhalten angeben. Bildschirmbilder und Passwörter gehören nicht automatisch zum Diagnoseexport; eigene Anhänge trotzdem auf private Inhalte prüfen.
 
