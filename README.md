@@ -1,3 +1,7 @@
+# Stratovo · 1.0 Beta 1
+
+Public Apple Silicon beta with a guided dashboard, a user-selected data drive, experimental Windows 3D and verified GitHub app updates. See the [release guide and per-VM storage budget](docs/RELEASE_1.0_BETA1.md). Existing guest data locations are preserved.
+
 # Stratovo — Android Emulator & Windows VM for Mac
 
 **Free, open-source macOS app for Android emulation and Windows ARM64 virtual machines on Apple silicon.**

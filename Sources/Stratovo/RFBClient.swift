@@ -8,8 +8,10 @@ import StratovoCore
 @MainActor
 final class RFBClient {
     private var connection: NWConnection?
-    private var buffer = Data()
-    private var pixels = Data()
+    private var buffer = StreamByteBuffer()
+    private let renderer = WindowsFrameRenderer()
+    private var cadence = FrameRequestCadence()
+    private var stopped = false
     private var width = 0
     private var height = 0
     private(set) var initialized = false
@@ -20,6 +22,7 @@ final class RFBClient {
     func run(socket: String) async throws {
         let connection = NWConnection(to: .unix(path: socket), using: .tcp)
         self.connection = connection
+        stopped = false
         onStatus?("Windows-Bildverbindung wird aufgebaut …")
         connection.stateUpdateHandler = { [weak self, weak connection] state in
             switch state {
@@ -49,7 +52,7 @@ final class RFBClient {
         guard u32(result, 0) == 0 else { throw failure("Lokaler Player-Zugriff abgelehnt.") }
         send(Data([1])) // Shared session.
         let header = try await read(24)
-        try resize(Int(u16(header, 0)), Int(u16(header, 2)))
+        try await resize(Int(u16(header, 0)), Int(u16(header, 2)))
         let nameLength = Int(u32(header, 20))
         guard nameLength <= 1_048_576 else { throw failure("Ungültiger Player-Name.") }
         _ = try await read(nameLength)
@@ -58,7 +61,7 @@ final class RFBClient {
         send(Data([2, 0, 0, 2, 0, 0, 0, 0, 255, 255, 255, 33]))
         initialized = true
         handshakeTimeout.cancel()
-        onStatus?("Windows-Player verbunden · Maus und Tastatur aktiv")
+        onStatus?("Bildverbindung bereit · Firmware und Windows richten die Anzeige ein")
         request(incremental: false)
         while !Task.isCancelled {
             let type = try await read(1)[0]
@@ -74,20 +77,19 @@ final class RFBClient {
                     let w = Int(u16(rect, 4)), h = Int(u16(rect, 6))
                     let encoding = Int32(bitPattern: u32(rect, 8))
                     if encoding == -223 {
-                        try resize(w, h)
+                        try await resize(w, h)
                         fullRefresh = true
                     } else if encoding == 0 {
                         guard w > 0, h > 0, x + w <= width, y + h <= height else { throw failure("Ungültiges Player-Bildrechteck.") }
                         let bytes = try await read(w * h * 4)
-                        for row in 0..<h {
-                            let target = ((y + row) * width + x) * 4
-                            let source = row * w * 4
-                            pixels.replaceSubrange(target..<(target + w * 4), with: bytes[source..<(source + w * 4)])
-                        }
+                        try await renderer.apply(x: x, y: y, width: w, height: h, data: bytes)
                     } else { throw failure("Nicht angefordertes Bildformat: \(encoding)") }
                 }
-                publish()
-                try await Task.sleep(nanoseconds: 33_000_000)
+                await publish()
+                let delay = cadence.delay(at: ProcessInfo.processInfo.systemUptime)
+                if delay > 0 { try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000)) }
+                try Task.checkCancellation()
+                guard !stopped else { return }
                 request(incremental: !fullRefresh)
             case 1:
                 let colors = try await read(5)
@@ -103,7 +105,7 @@ final class RFBClient {
         }
     }
 
-    func stop() { wheel.reset(); connection?.cancel() }
+    func stop() { stopped = true; wheel.reset(); connection?.cancel() }
     func resetScroll() { wheel.reset() }
 
     func pointer(x: Int, y: Int, mask: UInt8) {
@@ -150,22 +152,18 @@ final class RFBClient {
               UInt8((symbol >> 8) & 255), UInt8(symbol & 255)])
     }
 
-    private func resize(_ w: Int, _ h: Int) throws {
-        guard w > 0, h > 0, w <= 4096, h <= 4096, w * h <= 16_777_216 else { throw failure("Player-Auflösung nicht unterstützt (maximal 4096 × 4096).") }
+    private func resize(_ w: Int, _ h: Int) async throws {
+        try await renderer.resize(width: w, height: h)
         width = w; height = h
-        pixels = Data(count: w * h * 4)
     }
 
-    private func publish() {
-        guard let provider = CGDataProvider(data: pixels as CFData),
-              let image = CGImage(width: width, height: height, bitsPerComponent: 8, bitsPerPixel: 32,
-                                  bytesPerRow: width * 4, space: CGColorSpaceCreateDeviceRGB(),
-                                  bitmapInfo: CGBitmapInfo.byteOrder32Little.union(CGBitmapInfo(rawValue: CGImageAlphaInfo.noneSkipFirst.rawValue)),
-                                  provider: provider, decode: nil, shouldInterpolate: false, intent: .defaultIntent) else { return }
-        onFrame?(NSImage(cgImage: image, size: NSSize(width: CGFloat(width), height: CGFloat(height))))
+    private func publish() async {
+        guard let frame = await renderer.takeFrame(), !Task.isCancelled, !stopped else { return }
+        onFrame?(NSImage(cgImage: frame.image, size: NSSize(width: CGFloat(width), height: CGFloat(height))))
     }
 
     private func request(incremental: Bool) {
+        cadence.requested(at: ProcessInfo.processInfo.systemUptime)
         send(Data([3, incremental ? 1 : 0, 0, 0, 0, 0, UInt8(width >> 8), UInt8(width & 255), UInt8(height >> 8), UInt8(height & 255)]))
     }
 
@@ -188,8 +186,7 @@ final class RFBClient {
             }
             buffer.append(chunk)
         }
-        let result = Data(buffer.prefix(count))
-        buffer = Data(buffer.dropFirst(count))
+        guard let result = buffer.read(count) else { throw failure("Unvollständige Player-Daten.") }
         return result
     }
 

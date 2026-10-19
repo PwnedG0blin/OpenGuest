@@ -2,12 +2,16 @@ import SwiftUI
 import StratovoCore
 
 enum WorkspaceTab: String, CaseIterable, Identifiable {
+    case dashboard = "Dashboard"
+    case updates = "Updates"
     case android = "Android"
     case windows = "Windows Arm"
     case setup = "Einrichtung"
     var id: String { rawValue }
     var icon: String {
         switch self {
+        case .dashboard: return "house.fill"
+        case .updates: return "arrow.triangle.2.circlepath"
         case .android: return "apps.iphone"
         case .windows: return "desktopcomputer"
         case .setup: return "slider.horizontal.3"
@@ -18,7 +22,7 @@ enum WorkspaceTab: String, CaseIterable, Identifiable {
 @MainActor
 struct ContentView: View {
     @ObservedObject var model: AppModel
-    @State private var selection: WorkspaceTab = .android
+    @State private var selection: WorkspaceTab = .dashboard
     @State private var showStopConfirmation = false
     @State private var showIdentityChange = false
     @State private var showIdentityRestore = false
@@ -32,12 +36,14 @@ struct ContentView: View {
                     header
                     if !model.supportedHost || !model.hypervisorAvailable {
                         notice("Apple Silicon und Hardwarevirtualisierung benötigt",
-                               "Starte die native ARM64-Version auf einem Mac mit M-Chip. Intel-Macs und Rosetta sind in Version 0.1 nicht unterstützt.", color: .orange)
+                               "Starte die native ARM64-Version auf einem Mac mit M-Chip. Intel-Macs und Rosetta werden nicht unterstützt.", color: .orange)
                     }
                     if !model.storageReady && model.storage != nil {
                         notice("Datenordner nicht erreichbar", "Bitte die gewählte SSD anschließen. Android, Windows und Downloads bleiben bis dahin gesperrt.", color: .orange)
                     }
                     switch selection {
+                    case .dashboard: DashboardView(model: model) { selection = $0 }
+                    case .updates: GitHubUpdatesView(model: model)
                     case .android: android
                     case .windows: windows
                     case .setup: setup
@@ -69,7 +75,7 @@ struct ContentView: View {
                 Image(systemName: "square.stack.3d.up.fill").font(.title).foregroundStyle(.teal)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Stratovo").font(.headline)
-                    Text("DEVELOPMENT " + (Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Unbekannt")).font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
+                    Text("PRIVAT 0.3.25").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
                 }
             }
             ForEach(WorkspaceTab.allCases) { tab in
@@ -93,7 +99,7 @@ struct ContentView: View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 5) {
                 Text(selection.rawValue).font(.system(size: 30, weight: .bold))
-                Text(selection == .android ? "Dein virtuelles Android auf dem Mac." : selection == .windows ? "Der erste Schritt zu Windows auf deinem Mac." : "Verbinde die lokalen Virtualisierungs-Engines.")
+                Text(selection == .dashboard ? "Deine Systeme. Dein Speicherort." : selection == .android ? "Dein virtuelles Android auf dem Mac." : selection == .windows ? "Der erste Schritt zu Windows auf deinem Mac." : "Verbinde die lokalen Virtualisierungs-Engines.")
                     .foregroundStyle(.secondary)
             }
             Spacer()
@@ -105,6 +111,7 @@ struct ContentView: View {
 
     private var android: some View {
         VStack(alignment: .leading, spacing: 18) {
+            AndroidVersionsView(model: model, installer: model.installer)
             playerPane(kind: "android", title: "Android Player")
             card {
                 VStack(alignment: .leading, spacing: 18) {
@@ -119,12 +126,12 @@ struct ContentView: View {
                     }
                     Divider()
                     if model.devices.isEmpty {
-                        Text("Noch kein virtuelles Gerät gefunden. Lege in Android Studio ein Gerät mit arm64-v8a-Systemabbild an und klicke auf „System prüfen“.")
+                        Text("Noch kein Android eingerichtet. Wähle oben Android 16 oder Android 17 und klicke auf „Laden und installieren …“.")
                             .foregroundStyle(.secondary)
                     } else {
                         Picker("Virtuelles Gerät", selection: $model.settings.selectedAVD) {
                             ForEach(model.devices) { device in
-                            Text("\(device.name) · \(device.abi)\(device.googlePlay ? " · Google Play" : "")").tag(device.name)
+                            Text("\(model.androidSystem(for: device.name).map { "Android \($0.rawValue) · " } ?? "")\(device.name) · \(device.abi)\(device.googlePlay ? " · Google Play" : "")").tag(device.name)
                             }
                         }
                         .disabled(model.running || model.busy)
@@ -148,10 +155,7 @@ struct ContentView: View {
                             Text(profile.title).tag(profile)
                         }
                     }.disabled(model.running || model.busy)
-                    Picker("Stream-Ziel", selection: $model.androidTargetFPS) {
-                        Text("60 FPS").tag(60)
-                        Text("30 FPS · weniger Last").tag(30)
-                    }.disabled(model.running || model.busy)
+                    AndroidFrameRateControls(model: model)
                     Text("Flüssig reduziert die Android-Auflösung und Streamgröße. Änderungen gelten beim nächsten Android-Start. Originalauflösung hebt die Bildschirm-Anpassung wieder auf.")
                         .font(.caption).foregroundStyle(.secondary)
                     Text(model.androidDisplayStatus).font(.caption).textSelection(.enabled)
@@ -219,6 +223,8 @@ struct ContentView: View {
 
     private var windows: some View {
         VStack(alignment: .leading, spacing: 18) {
+            WindowsGraphicsLabView(model: model, lab: model.graphicsLab)
+            if !model.windowsLabSelected {
             playerPane(kind: "windows", title: "Windows Player")
             windowsIdentityCard
             card {
@@ -251,7 +257,7 @@ struct ContentView: View {
                     Text("64–4096 GB frei eingeben. Die Datei wächst mit deinen Daten; die maximale Größe wird nicht sofort auf der SSD belegt. Änderungen werden über „Größe anwenden“ oder beim nächsten Windows-Start übernommen. Vergrößern ist bei ausgeschaltetem Windows möglich; vorhandene Festplatten werden nicht verkleinert. Zusätzlichen Speicher anschließend in Windows zuordnen.")
                         .font(.subheadline).foregroundStyle(.secondary)
                     DisclosureGroup("Voraussetzungen und Entwicklungsstand") {
-                        Text("Benötigt werden QEMU, swtpm und geeignete Secure-Boot-fähige ARM64-Firmware. Ein vollständiger Installationsdurchlauf ist auf dem Ziel-Mac noch zu prüfen; Windows-3D-Beschleunigung ist nicht implementiert.")
+                        Text("Der normale Player verwendet eine 2D-Anzeige. Den experimentellen 3D-Modus mit eigener Windows-Testkopie findest du oben unter Windows-Modus.")
                             .font(.subheadline).foregroundStyle(.secondary).padding(.top, 6)
                     }
                 }
@@ -284,7 +290,7 @@ struct ContentView: View {
                                 ForEach(WindowsDisplayMode.allCases, id: \.rawValue) { Text($0.title).tag($0) }
                             }.disabled(model.running || model.busy)
                         }
-                        Text("Basisgrafik liefert eine feste Firmware-Anzeige. Für frei wählbare Auflösungen zuerst die ARM64-Gasttreiber von der Treiber-CD in Windows installieren. Dann Windows herunterfahren, Virtio-GPU wählen und vorhandenes Windows starten. Der bevorzugte Modus ist eine Monitorvorgabe; erst der Gasttreiber aktiviert passende Windows-Modi. Bei schwarzem Bild ausgeschaltet zur Basisgrafik zurückwechseln. Keine Neuinstallation nötig.")
+                        Text("Zusätzliche Windows-Auflösungen benötigen passende ARM64-Gasttreiber. Der bevorzugte Modus ist eine Monitorvorgabe; der Gasttreiber aktiviert passende Windows-Modi.")
                             .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                         Text("Virtio hier ist 2D-Anzeige, keine 3D-Beschleunigung. Anzeigeoptionen werden pro Windows-Datenordner gemerkt.")
                             .font(.caption).foregroundStyle(.secondary)
@@ -348,6 +354,7 @@ struct ContentView: View {
                         model.revealWindowsFolder()
                     }.disabled(model.busy)
                 }
+            }
             }
         }
     }
@@ -429,7 +436,6 @@ struct ContentView: View {
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
-            GitHubUpdatesView()
             Text("Stratovo enthält keine Telemetrie. Android, QEMU und das Gastbetriebssystem haben eigene Netzwerk- und Datenschutzeinstellungen. Protokolle und Einstellungen liegen lokal auf diesem Mac.")
                 .font(.caption).foregroundStyle(.secondary)
         }
@@ -444,6 +450,7 @@ struct ContentView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     Text("Wähle ein Laufwerk oder einen Ordner. Stratovo erstellt dort einen eigenen Ordner „Stratovo“ für Android, Windows und die benötigten Dateien.")
                         .font(.system(size: 16)).foregroundStyle(.primary)
+                    StorageBudgetView(windowsGiB: model.windowsCapacityGiB ?? 80)
                     Text("Vorhandene Daten werden kopiert und vollständig geprüft. Die Originale bleiben zunächst als Sicherung auf der internen Festplatte. Nach dem erfolgreichen Test kannst du diese Sicherungen in der App entfernen.")
                         .font(.system(size: 16)).foregroundStyle(.primary)
                     Label("Vorher Android und Windows herunterfahren und Android Studio beenden.", systemImage: "info.circle.fill")
@@ -456,7 +463,7 @@ struct ContentView: View {
                             .font(.system(size: 16, weight: .medium, design: .monospaced))
                             .foregroundStyle(.primary).textSelection(.enabled)
                             .fixedSize(horizontal: false, vertical: true)
-                        Button("Ordner wählen …", action: model.chooseStorageFolder)
+                        Button("SSD oder Ordner wählen …", action: model.chooseStorageFolder)
                             .font(.system(size: 15, weight: .semibold)).controlSize(.large).disabled(model.busy)
                     }.frame(maxWidth: .infinity, alignment: .leading)
                     VStack(alignment: .leading, spacing: 10) {

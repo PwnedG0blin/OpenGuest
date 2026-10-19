@@ -1,5 +1,6 @@
 import AppKit
 import AVFoundation
+import Combine
 import SwiftUI
 import StratovoCore
 
@@ -17,12 +18,26 @@ struct PlayerSurface: NSViewRepresentable {
     var allowsScrollMomentum = true
     var touchScroll: ((Int, Int, Double, Double, GuestTouchScrollPhase) -> Void)? = nil
 
+    var windowsFrames: WindowsFrameStore? = nil
+    @MainActor final class Coordinator {
+        private weak var source: WindowsFrameStore?
+        private weak var target: GuestViewport?
+        private var subscription: AnyCancellable?
+        func bind(_ frames: WindowsFrameStore?, to view: GuestViewport) {
+            guard source !== frames || target !== view else { return }
+            subscription = nil; source = frames; target = view
+            subscription = frames?.$image.sink { [weak view] image in view?.surface.setImage(image) }
+        }
+        func detach() { subscription = nil; source = nil; target = nil }
+    }
+    func makeCoordinator() -> Coordinator { Coordinator() }
     func makeNSView(context: Context) -> GuestViewport { GuestViewport() }
     func updateNSView(_ view: GuestViewport, context: Context) {
-        view.configure(image: image, video: videoLayer, size: sourceSize, pointer: pointer, key: key,
+        context.coordinator.bind(windowsFrames, to: view)
+        view.configure(image: windowsFrames?.image ?? image, video: videoLayer, size: sourceSize, pointer: pointer, key: key,
                        paste: paste, scroll: scroll, resetScroll: resetScroll, zoomPercent: zoomPercent, allowsScrollMomentum: allowsScrollMomentum, touchScroll: touchScroll)
     }
-    static func dismantleNSView(_ nsView: GuestViewport, coordinator: ()) { nsView.surface.detach() }
+    static func dismantleNSView(_ nsView: GuestViewport, coordinator: Coordinator) { coordinator.detach(); nsView.surface.detach() }
 }
 
 @MainActor
@@ -56,11 +71,10 @@ final class GuestViewport: NSScrollView {
         let oldCenter = CGPoint(x: contentView.bounds.midX, y: contentView.bounds.midY)
         let oldSource = surface.sourcePoint(at: oldCenter, clamped: true)
         let changed = surface.frame.size != geometry.documentSize || surface.imageRect != geometry.imageRect
-        surface.setFrameSize(geometry.documentSize)
         surface.setGeometry(geometry)
-        // Keep the AV video layer in sync immediately after live resolution or window changes.
-        surface.layoutSubtreeIfNeeded()
         if changed {
+            surface.setFrameSize(geometry.documentSize)
+            surface.layoutSubtreeIfNeeded()
             let center = oldSource.map { CGPoint(x: geometry.imageRect.minX + CGFloat($0.0) * geometry.scale,
                                                  y: geometry.imageRect.minY + CGFloat($0.1) * geometry.scale) }
                 ?? CGPoint(x: geometry.documentSize.width / 2, y: geometry.documentSize.height / 2)
@@ -88,6 +102,7 @@ final class GuestSurface: NSView {
     private var pressedButtons: UInt8 = 0
     private var lastPointer: (Int, Int)?
     private let imageLayer = CALayer()
+    private var lastImage: NSImage?
     private var geometry: GuestDisplayGeometry?
     var imageRect: CGRect { displayGeometry.imageRect }
     private var displayGeometry: GuestDisplayGeometry {
@@ -116,16 +131,24 @@ final class GuestSurface: NSView {
         if sourceSize != size || self.allowsScrollMomentum != allowsScrollMomentum || (touchScrollAction == nil) != (touchScroll == nil) { resetScrolling() }
         self.allowsScrollMomentum = allowsScrollMomentum
         self.touchScrollAction = touchScroll
+        let sizeChanged = sourceSize != size
         sourceSize = size; self.pointer = pointer; self.key = key; pasteAction = paste
         scrollAction = scroll; resetScrollAction = resetScroll
         if self.video !== video {
             self.video?.removeFromSuperlayer()
             self.video = video
             if let video { layer?.addSublayer(video) }
+            needsLayout = true
         }
-        if let image { imageLayer.contents = image.cgImage(forProposedRect: nil, context: nil, hints: nil) }
-        else { imageLayer.contents = nil }
-        needsLayout = true
+        setImage(image)
+        if sizeChanged { needsLayout = true }
+    }
+    func setImage(_ image: NSImage?) {
+        guard lastImage !== image else { return }
+        lastImage = image
+        CATransaction.begin(); CATransaction.setDisableActions(true)
+        imageLayer.contents = image?.cgImage(forProposedRect: nil, context: nil, hints: nil)
+        CATransaction.commit()
     }
     override func layout() {
         super.layout()
@@ -137,8 +160,10 @@ final class GuestSurface: NSView {
         CATransaction.commit()
     }
     func setGeometry(_ geometry: GuestDisplayGeometry) {
-        if self.geometry?.imageRect != geometry.imageRect { resetScrolling() }
-        self.geometry = geometry; needsLayout = true
+        let changed = self.geometry?.imageRect != geometry.imageRect
+        if changed { resetScrolling() }
+        self.geometry = geometry
+        if changed { needsLayout = true }
     }
     func detach() { releaseKeys(); releasePointer(); resetScrolling(); video?.removeFromSuperlayer(); video = nil }
     override func resignFirstResponder() -> Bool {

@@ -18,7 +18,7 @@ final class GitHubUpdateChecker: ObservableObject {
     @Published private(set) var lastChecked: Date?
 
     private let lastAttemptKey = "Pixelkoje.GitHubUpdates.lastAttempt"
-    let installedVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Unbekannt"
+    let installedVersion = Bundle.main.object(forInfoDictionaryKey: "StratovoReleaseVersion") as? String ?? Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Unbekannt"
 
     func checkIfDue(includePrereleases: Bool) async {
         if let last = UserDefaults.standard.object(forKey: lastAttemptKey) as? Date,
@@ -41,7 +41,7 @@ final class GitHubUpdateChecker: ObservableObject {
         request.timeoutInterval = 15
         request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
         request.setValue("2022-11-28", forHTTPHeaderField: "X-GitHub-Api-Version")
-        request.setValue("Stratovo/0.3 GitHub-Releases-Check", forHTTPHeaderField: "User-Agent")
+        request.setValue("Stratovo/1.0 GitHub-Releases-Check", forHTTPHeaderField: "User-Agent")
         request.cachePolicy = .reloadIgnoringLocalCacheData
         do {
             let (data, response) = try await URLSession.shared.data(for: request)

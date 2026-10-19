@@ -5,7 +5,7 @@ permissions:
 jobs:
   build:
     runs-on: macos-15
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - name: Shell syntax
@@ -22,8 +22,6 @@ jobs:
         env:
           OPENGUEST_REQUIRE_QEMU_TEST: "1"
         run: bash scripts/build-app.sh
-      - name: Render paste dialog in light and dark appearance
-        run: bash scripts/preview-windows-paste.sh
       - name: Real QEMU TPM initialization regression test
         run: python3 scripts/tpm-smoke.py
       - name: Application launch smoke test
@@ -43,14 +41,45 @@ jobs:
           mkdir -p dist/installer
           /usr/bin/ditto dist/Stratovo.app dist/installer/Stratovo.app
           ln -s /Applications dist/installer/Applications
-          /usr/bin/hdiutil create -volname Stratovo -srcfolder dist/installer -ov -format UDZO dist/Stratovo_0.3.20_AppleSilicon.dmg
+          /usr/bin/hdiutil create -volname Stratovo -srcfolder dist/installer -ov -format UDZO dist/Stratovo_1.0.0-beta.1_AppleSilicon.dmg
       - name: Upload compiled app
         uses: actions/upload-artifact@v7
         with:
           name: Stratovo-macOS-AppleSilicon-test-app
           path: |
             dist/Stratovo-macOS-AppleSilicon.app.zip
-            dist/Stratovo_0.3.20_AppleSilicon.dmg
-            dist/paste-preview/*.png
+            dist/Stratovo_1.0.0-beta.1_AppleSilicon.dmg
           if-no-files-found: error
           retention-days: 14
+
+  release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Stratovo-macOS-AppleSilicon-test-app
+          path: release-assets
+      - name: Publish official 1.0 Beta 1 after successful tests
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_COMMIT: ${{ github.sha }}
+        run: |
+          tag=v1.0.0-beta.1
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release already exists; preserving published assets."
+            exit 0
+          fi
+          cd release-assets
+          sha256sum Stratovo-macOS-AppleSilicon.app.zip Stratovo_1.0.0-beta.1_AppleSilicon.dmg > SHA256SUMS
+          cd ..
+          gh release create "$tag" --target "$RELEASE_COMMIT" --prerelease \
+            --title "Stratovo 1.0 Beta 1" --notes-file docs/RELEASE_1.0_BETA1.md \
+            release-assets/Stratovo-macOS-AppleSilicon.app.zip \
+            release-assets/Stratovo_1.0.0-beta.1_AppleSilicon.dmg \
+            release-assets/SHA256SUMS

@@ -39,9 +39,21 @@ final class AppModel: ObservableObject {
     @Published var androidProfile = AndroidPerformance(rawValue: UserDefaults.standard.string(forKey: "Pixelkoje.androidProfile") ?? "smooth") ?? .smooth {
         didSet { UserDefaults.standard.set(androidProfile.rawValue, forKey: "Pixelkoje.androidProfile") }
     }
-    @Published var androidTargetFPS = UserDefaults.standard.integer(forKey: "Pixelkoje.androidFPS") == 30 ? 30 : 60 {
-        didSet { UserDefaults.standard.set(androidTargetFPS, forKey: "Pixelkoje.androidFPS") }
+    private let frameRateDefaults: UserDefaults
+    @Published private var storedAndroidTargetFPS: Int
+    // Keep validation outside a @Published didSet: assigning the wrapped
+    // property from its own observer re-enters the setter through Combine.
+    var androidTargetFPS: Int {
+        get { storedAndroidTargetFPS }
+        set {
+            let value = AndroidFrameRate.limit(newValue)
+            guard value != storedAndroidTargetFPS else { return }
+            storedAndroidTargetFPS = value
+            frameRateDefaults.set(value, forKey: "Pixelkoje.androidFPS")
+        }
     }
+    @Published private(set) var androidGuestRefreshHz = 60
+
     @Published private(set) var androidRendererStatus = "Grafikrenderer wird beim Android-Start geprüft"
     @Published private(set) var androidSoftwareRendering = false
     @Published private(set) var androidDisplayStatus = "Leistungsprofil wird nach dem Android-Start angewendet"
@@ -97,6 +109,10 @@ final class AppModel: ObservableObject {
     @Published private(set) var devices: [AndroidDevice] = []
     @Published private(set) var sdk: String?
     @Published private(set) var qemu: String?
+    let graphicsLab = WindowsGraphicsLabController()
+    @Published var windowsLabSelected = false
+    func setGraphicsLabBusy(_ active: Bool) { busy = active }
+    func recordGraphicsLabEvent(_ text: String) { recordDiagnostic("Experimentelles Grafiklabor", text) }
     @Published private(set) var firmware: String?
     @Published private(set) var swtpm: String?
     @Published private(set) var qemuImg: String?
@@ -308,7 +324,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var apkBusy = false
     @Published private(set) var apkStatus = ""
     @Published private(set) var sessionName = "Kein Gast gestartet"
-    @Published private(set) var log = "Stratovo 0.3.20 · Entwicklungsprototyp\nSystem prüfen, dann einen Gast auswählen."
+    @Published private(set) var log = "Stratovo 1.0 Beta 1\nSystem prüfen, dann einen Gast auswählen."
     @Published private(set) var lastCommand = ""
     @Published var errorMessage: String? {
         didSet {
@@ -457,7 +473,8 @@ final class AppModel: ObservableObject {
             recordDiagnostic("Windows · Schlüsselbund", credentialStatus)
         } catch { credentialStatus = error.localizedDescription; errorMessage = error.localizedDescription }
     }
-    @Published private(set) var playerImage: NSImage?
+    let windowsFrames = WindowsFrameStore()
+    var playerImage: NSImage? { windowsFrames.image }
     @Published private(set) var playerSize = CGSize.zero
     @Published private(set) var playerStatus = "Player noch nicht gestartet"
     @Published private(set) var activeGuest = ""
@@ -473,7 +490,7 @@ final class AppModel: ObservableObject {
     @Published var androidVulkanEnabled = UserDefaults.standard.object(forKey: "Pixelkoje.androidVulkanEnabled") as? Bool ?? true {
         didSet { UserDefaults.standard.set(androidVulkanEnabled, forKey: "Pixelkoje.androidVulkanEnabled"); settings.coldBoot = true }
     }
-    @Published private(set) var windowsFrameCount = 0
+    private(set) var windowsFrameCount = 0
     @Published private(set) var googleServicesStatus = "Google-Dienste werden nach dem Android-Start geprüft."
     let h264Player = H264Player()
     let installer = SetupInstaller()
@@ -511,12 +528,18 @@ final class AppModel: ObservableObject {
         return ready
     }
 
-    func installComponents(_ selection: Set<SetupComponent>, microsoftLink: String) async {
+    func installComponents(_ selection: Set<SetupComponent>, microsoftLink: String, androidDataSource: String? = nil) async {
         guard !busy, !running, let storage, !selection.isEmpty else { return }
         busy = true
+        errorMessage = nil
+        var completed = false
+        var copiedProfile: String?
         do {
+            if selection.contains(.android) || selection.contains(.android17) { try await requireAndroidStopped() }
             let result = try await installer.install(selection, storage: storage, existingISO: settings.iso,
-                existingDrivers: settings.driversISO, microsoftLink: microsoftLink, ready: setupReady, androidChannel: androidSDKChannel, preferredAndroidProfile: settings.selectedAVD)
+                existingDrivers: settings.driversISO, microsoftLink: microsoftLink, ready: setupReady, androidChannel: androidSDKChannel, preferredAndroidProfile: settings.selectedAVD,
+                androidDataSource: androidDataSource, qemuImg: qemuImg)
+            copiedProfile = result.androidProfile
             if let iso = result.iso { settings.iso = iso }
             if let drivers = result.drivers { settings.driversISO = drivers }
             // Pick up a driver ISO left by a previous interrupted setup as well.
@@ -524,10 +547,16 @@ final class AppModel: ObservableObject {
             if settings.driversISO.isEmpty, (try? SetupInstaller.validateISO(drivers)) != nil {
                 settings.driversISO = drivers.path
             }
+            completed = true
         } catch { errorMessage = error.localizedDescription }
         busy = false
         await refresh()
-        if selection.contains(.android17), let device = devices.first(where: { androidSystem(for: $0.name) == .android17 }) {
+        guard completed else { return }
+        androidCleanupPlan = nil
+        if let copiedProfile, devices.contains(where: { $0.name == copiedProfile }) {
+            settings.selectedAVD = copiedProfile
+            settings.coldBoot = true
+        } else if selection.contains(.android17), let device = devices.first(where: { androidSystem(for: $0.name) == .android17 }) {
             settings.selectedAVD = device.name
             settings.coldBoot = true
         } else if selection.contains(.android), let device = devices.first(where: { androidSystem(for: $0.name) == .android16 }) {
@@ -553,6 +582,27 @@ final class AppModel: ObservableObject {
         return AndroidSystem.detect(RuntimeDiscovery.avdConfig(name: name, environment: storage.environment))
     }
     var selectedAndroidSystem: AndroidSystem? { androidSystem(for: settings.selectedAVD) }
+    var android16DataSource: String? {
+        let source = selectedAndroidSystem == .android16 ? settings.selectedAVD
+            : devices.first(where: { $0.supported && androidSystem(for: $0.name) == .android16 })?.name
+        guard let source, let storage else { return nil }
+        let profile = storage.avd.appendingPathComponent(source + ".avd")
+        return ["userdata-qemu.img", "userdata-qemu.img.qcow2"].contains {
+            FileManager.default.isReadableFile(atPath: profile.appendingPathComponent($0).path)
+        } ? source : nil
+    }
+    var hasAndroid17DataCopy: Bool {
+        devices.contains { $0.name == SetupInstaller.android17DataProfile && androidSystem(for: $0.name) == .android17 }
+    }
+    func selectAndroidSystem(_ system: AndroidSystem) {
+        guard canManageAndroid else { return }
+        let dataCopy = devices.first { $0.name == SetupInstaller.android17DataProfile && androidSystem(for: $0.name) == system }
+        guard let device = dataCopy ?? devices.first(where: { $0.supported && androidSystem(for: $0.name) == system }) else { return }
+        settings.selectedAVD = device.name
+        settings.coldBoot = true
+        androidCleanupPlan = nil
+        androidMaintenanceStatus = "Android \(system.rawValue) ausgewählt. Mit „Android starten“ öffnen."
+    }
     var canManageAndroid: Bool { storageReady && !running && !busy && !installer.running }
 
     func manageAndroidUpdates(install: Bool) async {
@@ -611,6 +661,10 @@ final class AppModel: ObservableObject {
     private var logURL: URL?
     private var sessionCommand = ""
     private var timer: Timer?
+    private var logReadTask: Task<Void, Never>?
+    private var lastLogSize: UInt64?
+    private var rendererInspected = false
+    private var guestActivity: NSObjectProtocol?
     private var bootTask: Task<Void, Never>?
     private var androidPort: Int?
     private var windowsSession: WindowsSession?
@@ -619,6 +673,8 @@ final class AppModel: ObservableObject {
     private var windowsPlayer: RFBClient?
     private var displayTask: Task<Void, Never>?
     private var qmpSocket: String?
+    private var windowsDisplaySocket: String?
+    @Published private(set) var windowsReconnectBusy = false
     private var windowsBootProbe: Task<Void, Never>?
     private var windowsPasteTask: Task<Void, Never>?
     private var stopRequested = false
@@ -660,7 +716,10 @@ final class AppModel: ObservableObject {
     }
     var resources: GuestResources { GuestResources(memoryMiB: settings.memoryGB * 1024, cores: settings.cores) }
 
-    init() {
+    init(frameRateDefaults: UserDefaults = .standard, applyPerformanceDefaults: Bool = true) {
+        self.frameRateDefaults = frameRateDefaults
+        self.storedAndroidTargetFPS = AndroidFrameRate.limit(frameRateDefaults.object(forKey: "Pixelkoje.androidFPS") as? Int ?? 60)
+        guard applyPerformanceDefaults else { return }
         if !UserDefaults.standard.bool(forKey: "Pixelkoje.performanceDefaultsApplied") {
             if settings.gpu == "auto" { settings.gpu = "host"; settings.save() }
             UserDefaults.standard.set(true, forKey: "Pixelkoje.performanceDefaultsApplied")
@@ -794,8 +853,10 @@ final class AppModel: ObservableObject {
         do {
             try checkStorageSpace(minimumGB: 16)
             let port = try AndroidPorts.available()
+            let refreshChanged = try AndroidFrameRate.prepareAVD(root: storage.avd, name: device.name, fps: androidTargetFPS)
+            androidGuestRefreshHz = AndroidFrameRate.displayHz(for: androidTargetFPS)
             let base = try LaunchPlan.android(sdk: sdk, device: device, resources: resources,
-                                              coldBoot: settings.coldBoot, gpu: settings.gpu, port: port, vulkan: androidVulkanEnabled)
+                                              coldBoot: settings.coldBoot || refreshChanged, gpu: settings.gpu, port: port, vulkan: androidVulkanEnabled)
             let spec = CommandSpec(executable: base.executable, arguments: base.arguments, environment: storage.environment)
             try start(spec, title: "Android · \(device.name)")
             activeGuest = "android"
@@ -868,6 +929,7 @@ final class AppModel: ObservableObject {
                 : "Start von der gespeicherten Festplatte; keine Installations-DVD eingebunden.")
             activeGuest = "windows"
             showPlayer(kind: "windows")
+            windowsDisplaySocket = files.displaySocket
             qmpSocket = files.qmpSocket
             connectWindowsPlayer(socket: files.displaySocket)
             inspectWindowsBoot(socket: files.qmpSocket, installing: installing)
@@ -1016,6 +1078,29 @@ final class AppModel: ObservableObject {
         }
     }
 
+    var canReconnectWindowsDisplay: Bool {
+        running && activeGuest == "windows" && !busy && !windowsReconnectBusy && !windowsPasteBusy
+    }
+    func reconnectWindowsDisplay() async {
+        guard canReconnectWindowsDisplay, let socket = windowsDisplaySocket else { return }
+        windowsReconnectBusy = true
+        defer { windowsReconnectBusy = false }
+        let previous = displayTask
+        previous?.cancel(); windowsPlayer?.stop()
+        await previous?.value
+        guard running, activeGuest == "windows", windowsDisplaySocket == socket else { return }
+        displayTask = nil; windowsPlayer = nil
+        connectWindowsPlayer(socket: socket)
+        recordDiagnostic("Windows · Anzeige", "Bildverbindung neu angefordert; Windows läuft weiter")
+    }
+    func openWindowsFirmwareMenu() {
+        guard running, activeGuest == "windows", !windowsPasteBusy else { return }
+        let escape = [WindowsKeyboard.Event(symbol: 0xff1b, down: true), WindowsKeyboard.Event(symbol: 0xff1b, down: false)]
+        if windowsPlayer?.sendKeySequence(escape) == true {
+            playerStatus = "Escape an den Gast gesendet · UEFI-Startmenü ist nur während des Firmwarestarts verfügbar"
+        }
+    }
+
     private func connectWindowsPlayer(socket: String) {
         playerStatus = "Warte auf Windows-Bildschirmanschluss …"
         windowsFrameCount = 0
@@ -1024,14 +1109,15 @@ final class AppModel: ObservableObject {
             while ProcessInfo.processInfo.systemUptime < deadline {
                 guard let self, self.running, !Task.isCancelled else { return }
                 if !FileManager.default.fileExists(atPath: socket) {
-                    try? await Task.sleep(nanoseconds: 100_000_000)
+                    try? await Task.sleep(nanoseconds: 50_000_000)
                     continue
                 }
                 let client = RFBClient()
                 self.windowsPlayer = client
                 client.onFrame = { [weak self] image in
                     guard let self else { return }
-                    self.playerImage = image; self.playerSize = image.size
+                    self.windowsFrames.publish(image)
+                    if self.playerSize != image.size { self.playerSize = image.size }
                     self.windowsFrameCount += 1
                     if self.windowsFrameCount == 1 {
                         self.recordDiagnostic("Windows · Anzeige", "Erstes Bild empfangen: \(Int(image.size.width)) × \(Int(image.size.height))")
@@ -1252,34 +1338,44 @@ final class AppModel: ObservableObject {
         lastCommand = spec.display
         sessionCommand = spec.display
         running = true
+        if let guestActivity { ProcessInfo.processInfo.endActivity(guestActivity) }
+        guestActivity = ProcessInfo.processInfo.beginActivity(options: .userInitiatedAllowingIdleSystemSleep, reason: "Stratovo · interaktive Gastsitzung")
+        lastLogSize = nil; rendererInspected = false
         recordDiagnostic("Gaststart", "\(title) · \(url.lastPathComponent)")
         stopRequested = false
-        playerImage = nil
+        windowsFrames.publish(nil)
         playerSize = .zero
         streamFPS = 0
         log = "Prozess gestartet. Der Gast ist erst bereit, wenn sein Startbildschirm sichtbar ist.\n\n\(sessionCommand)\n"
-        timer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in self?.readLog() }
         }
     }
 
     private func readLog() {
-        guard let logURL, let reader = try? FileHandle(forReadingFrom: logURL) else { return }
-        defer { try? reader.close() }
-        let size = (try? reader.seekToEnd()) ?? 0
-        try? reader.seek(toOffset: size > 60_000 ? size - 60_000 : 0)
-        let data = (try? reader.read(upToCount: 60_000)) ?? Data()
-        let text = String(decoding: data, as: UTF8.self)
-        log = "\(sessionCommand)\n\n" + text
-        if activeGuest == "android" {
-            // Renderer selection is near the beginning even when the live log is long.
-            try? reader.seek(toOffset: 0)
-            let head = (try? reader.read(upToCount: 96_000)) ?? Data()
-            let renderer = AndroidRenderer.inspect(String(decoding: head, as: UTF8.self) + text)
-            if renderer.kind != .unknown, renderer.summary != androidRendererStatus {
-                androidRendererStatus = renderer.summary
-                androidSoftwareRendering = renderer.kind == .software
-                recordDiagnostic("Android · Grafik", renderer.summary)
+        guard logReadTask == nil, let url = logURL else { return }
+        let previous = lastLogSize
+        let inspectRenderer = activeGuest == "android" && !rendererInspected
+        logReadTask = Task { [weak self] in
+            let snapshot = await Task.detached(priority: .utility) {
+                try? SessionLogReader.read(url: url, previousSize: previous, includeHeader: inspectRenderer)
+            }.value
+            guard let self else { return }
+            defer { self.logReadTask = nil }
+            guard self.logURL == url, let snapshot else { return }
+            self.lastLogSize = snapshot.size
+            let text = self.sessionCommand + "\n\n" + snapshot.tail
+            if self.log != text { self.log = text }
+            if inspectRenderer {
+                let renderer = AndroidRenderer.inspect(snapshot.header + snapshot.tail)
+                if renderer.kind != .unknown {
+                    self.rendererInspected = true
+                    if renderer.summary != self.androidRendererStatus {
+                        self.androidRendererStatus = renderer.summary
+                        self.androidSoftwareRendering = renderer.kind == .software
+                        self.recordDiagnostic("Android · Grafik", renderer.summary)
+                    }
+                }
             }
         }
     }
@@ -1303,16 +1399,21 @@ final class AppModel: ObservableObject {
         androidBooted = false
         timer?.invalidate()
         timer = nil
+        await logReadTask?.value
         readLog()
+        await logReadTask?.value
         log += "\n\nProzess beendet · Exit-Code \(code)\n"
         if let logURL { log += "Protokoll: \(logURL.path)\n" }
         try? output?.close()
         output = nil
         process = nil
         running = false
+        if let guestActivity { ProcessInfo.processInfo.endActivity(guestActivity) }
+        guestActivity = nil
         if let windowsSession { await windowsSession.stop() }
         windowsSession = nil
         qmpSocket = nil
+        windowsDisplaySocket = nil
         activeGuest = ""
         playerStatus = "Gast beendet · Daten bleiben gespeichert"
         sessionName = "Kein Gast gestartet"
@@ -1353,7 +1454,7 @@ final class AppModel: ObservableObject {
         panel.canChooseFiles = false
         panel.canCreateDirectories = true
         panel.allowsMultipleSelection = false
-        panel.directoryURL = URL(fileURLWithPath: FileManager.default.fileExists(atPath: "/Volumes/Extern") ? "/Volumes/Extern" : NSHomeDirectory())
+        panel.directoryURL = URL(fileURLWithPath: "/Volumes", isDirectory: true)
         if panel.runModal() == .OK, let parent = panel.url {
             proposedStoragePath = (["Stratovo", "Pixelkoje", "OpenGuest"].contains(parent.lastPathComponent) ? parent : parent.appendingPathComponent("Stratovo")).path
         }

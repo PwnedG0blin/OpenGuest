@@ -1,0 +1,21 @@
+PIXELKOJE · GRAFIKTEST AUF DEINEM MAC
+
+Dieser Finder-Ordner ist kein Windows-Laufwerk. .cmd und .ps1 laufen erst
+im virtuellen Windows. Du brauchst keinen weiteren Computer.
+
+1. In Stratovo: Windows > 3D-Testkopie > Mac-Voraussetzungen prüfen.
+2. Grafik vorbereiten und Test-Windows öffnen wählen.
+   Fehlendes pkg-config wird auf deinem Datenlaufwerk gebaut. Für den
+   Grafikbau brauchst du vollständiges Xcode mit Metal-Werkzeugen.
+3. Nach erfolgreichem Bau startet ein eigenes Windows-Testfenster.
+4. In diesem Windows: Explorer > Dieser PC > DVD PKGRAPHICS.
+   INSTALL_GRAPHICS.cmd doppelklicken, Administratorabfrage bestätigen.
+5. Test-Windows herunterfahren und in Stratovo erneut starten.
+
+Wenn pkg-config oder Xcode als Fehler erscheint, gibt es noch kein
+Test-Windows und keine Treiber-DVD. Zuerst die Mac-Vorbereitung abschließen.
+Die Ursache steht in GraphicsLab/Build.log.
+
+Die Grafiktreiber sind vorgefertigte, signierte Windows-ARM64X-Treiber.
+Auf deinem Mac werden die Grafiklaufzeit und ihre Werkzeuge gebaut.
+Der Grafiktest ist experimentell. Dein normales Windows bleibt getrennt.

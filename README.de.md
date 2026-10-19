@@ -1,3 +1,7 @@
+# Stratovo · 1.0 Beta 1
+
+[Beta-Anleitung und Speicherbedarf pro VM](docs/RELEASE_1.0_BETA1.md)
+
 # Stratovo — Android-Emulator und Windows-ARM64-VM für Mac
 
 [English](README.md)

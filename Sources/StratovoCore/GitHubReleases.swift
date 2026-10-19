@@ -8,12 +8,13 @@ public struct StratovoRelease: Decodable, Sendable {
     public let body: String?
     public let draft: Bool
     public let prerelease: Bool
+    public let assets: [StratovoReleaseAsset]?
 
     enum CodingKeys: String, CodingKey {
         case tagName = "tag_name"
         case name
         case htmlURL = "html_url"
-        case body, draft, prerelease
+        case body, draft, prerelease, assets
     }
 
     public var version: StratovoVersion? { StratovoVersion(tagName) }
@@ -100,5 +101,31 @@ public enum StratovoReleaseCatalog {
               let latest = latestRelease(in: releases, includePrereleases: includePrereleases),
               let version = latest.version, installed < version else { return nil }
         return latest
+    }
+}
+
+public struct StratovoReleaseAsset: Decodable, Sendable {
+    public let name: String
+    public let size: Int64
+    public let browserDownloadURL: URL
+    public let digest: String?
+    enum CodingKeys: String, CodingKey {
+        case name, size, digest
+        case browserDownloadURL = "browser_download_url"
+    }
+    public var sha256: String? {
+        guard let digest, digest.hasPrefix("sha256:") else { return nil }
+        let hash = String(digest.dropFirst(7)).lowercased()
+        return hash.count == 64 && hash.allSatisfy({ "0123456789abcdef".contains($0) }) ? hash : nil
+    }
+    public func isTrusted(for release: StratovoRelease) -> Bool {
+        guard release.hasTrustedURL, !release.draft,
+              name == "Stratovo-macOS-AppleSilicon.app.zip", size > 0, size <= 300 * 1024 * 1024,
+              sha256 != nil,
+              let parts = URLComponents(url: browserDownloadURL, resolvingAgainstBaseURL: false),
+              parts.scheme == "https", parts.host == "github.com",
+              parts.user == nil, parts.password == nil, parts.port == nil,
+              parts.query == nil, parts.fragment == nil else { return false }
+        return parts.path == "/PwnedG0blin/OpenGuest/releases/download/\(release.tagName)/\(name)"
     }
 }

@@ -127,6 +127,7 @@ final class ScrcpySession {
                 queue.append(data: data, pts: pts, configuration: config, keyframe: rawHeader[0] & 0x20 != 0)
                 if queue.droppedFrames != previousDrops { onQueueDrops?(queue.droppedFrames) }
                 deliverQueuedFrames()
+                await Task.yield()
             }
         }
     }
@@ -221,7 +222,7 @@ final class ScrcpySession {
 @MainActor
 final class LocalStream {
     private let connection: NWConnection
-    private var buffer = Data()
+    private var buffer = StreamByteBuffer()
     init(port: Int) {
         connection = NWConnection(host: "127.0.0.1", port: NWEndpoint.Port(rawValue: UInt16(port))!, using: .tcp)
         connection.start(queue: DispatchQueue(label: "OpenGuest.Android.stream"))
@@ -254,7 +255,7 @@ final class LocalStream {
             }
             buffer.append(data)
         }
-        let result = Data(buffer.prefix(count)); buffer = Data(buffer.dropFirst(count))
+        guard let result = buffer.read(count) else { throw GuestError.invalidResources }
         return result
     }
 }
