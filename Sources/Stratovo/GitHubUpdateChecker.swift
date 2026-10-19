@@ -29,7 +29,7 @@ final class GitHubUpdateChecker: ObservableObject {
     func check(includePrereleases: Bool) async {
         guard !isChecking else { return }
         guard StratovoVersion(installedVersion) != nil else {
-            state = .failed("Die installierte App-Version konnte nicht gelesen werden.")
+            state = .failed(L10n.text("Die installierte App-Version konnte nicht gelesen werden."))
             return
         }
         isChecking = true
@@ -46,17 +46,17 @@ final class GitHubUpdateChecker: ObservableObject {
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
             guard let http = response as? HTTPURLResponse else {
-                state = .failed("Keine gültige Antwort von GitHub erhalten.")
+                state = .failed(L10n.text("Keine gültige Antwort von GitHub erhalten."))
                 return
             }
             guard http.statusCode == 200 else {
                 switch http.statusCode {
                 case 403, 429:
-                    state = .failed("GitHub begrenzt gerade die öffentlichen API-Abfragen. Bitte später erneut prüfen.")
+                    state = .failed(L10n.text("GitHub begrenzt gerade die öffentlichen API-Abfragen. Bitte später erneut prüfen."))
                 case 404:
-                    state = .failed("Die GitHub-Veröffentlichungen sind momentan nicht erreichbar.")
+                    state = .failed(L10n.text("Die GitHub-Veröffentlichungen sind momentan nicht erreichbar."))
                 default:
-                    state = .failed("GitHub antwortet mit HTTP \(http.statusCode). Bitte später erneut prüfen.")
+                    state = .failed(L10n.message("GitHub antwortet mit HTTP \(http.statusCode). Bitte später erneut prüfen."))
                 }
                 return
             }
@@ -73,7 +73,7 @@ final class GitHubUpdateChecker: ObservableObject {
                 state = .upToDate(latest?.tagName)
             }
         } catch {
-            state = .failed("Die GitHub-Abfrage ist fehlgeschlagen. Prüfe die Internetverbindung und versuche es erneut.")
+            state = .failed(L10n.text("Die GitHub-Abfrage ist fehlgeschlagen. Prüfe die Internetverbindung und versuche es erneut."))
         }
     }
 }

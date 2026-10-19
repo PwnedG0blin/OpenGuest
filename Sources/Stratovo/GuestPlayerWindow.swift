@@ -98,7 +98,7 @@ private struct GuestPlayerView: View {
                 if active && kind == "android" {
                     Text("Stream \(Int(model.streamFPS.rounded())) · Decoder \(Int(model.decoderFPS.rounded())) FPS")
                         .font(.system(size: 13, weight: .semibold).monospacedDigit())
-                        .help("Empfangene Bilder / Decoder-Zuführung. Keine Messung der Spiel-FPS.")
+                        .help(L10n.text("Empfangene Bilder / Decoder-Zuführung. Keine Messung der Spiel-FPS."))
                 }
                 Button { model.togglePlayerFullScreen(kind: kind) } label: {
                     Image(systemName: "arrow.up.left.and.arrow.down.right")
@@ -125,7 +125,7 @@ private struct GuestPlayerView: View {
                     VStack(spacing: 12) {
                         Image(systemName: kind == "android" ? "apps.iphone" : "desktopcomputer")
                             .font(.system(size: 42))
-                        Text(active ? (kind == "windows" ? model.playerStatus : "System startet …") : "Gastsystem ist ausgeschaltet")
+                        Text(active ? (kind == "windows" ? model.playerStatus : "System startet …") : L10n.text("Gastsystem ist ausgeschaltet"))
                             .multilineTextAlignment(.center)
                         if active && kind == "windows" {
                             Text(model.windowsBootMediaStatus).font(.caption).multilineTextAlignment(.center)
@@ -135,46 +135,46 @@ private struct GuestPlayerView: View {
                 }
             }.frame(maxWidth: .infinity, maxHeight: .infinity)
             HStack {
-                Label("Player-Steuerung", systemImage: "slider.horizontal.3").font(.system(size: 13, weight: .semibold))
+                Label(L10n.text("Player-Steuerung"), systemImage: "slider.horizontal.3").font(.system(size: 13, weight: .semibold))
                 Spacer(minLength: 4)
-                Text("Weitere Optionen: hier scrollen").font(.system(size: 12))
+                Text(L10n.text("Weitere Optionen: hier scrollen")).font(.system(size: 12))
             }.padding(.horizontal, 14).padding(.top, 10)
              .background(Color(nsColor: .controlBackgroundColor))
             ScrollView {
               VStack(alignment: .leading, spacing: 10) {
                 if kind == "android" {
-                    DisclosureGroup("Bildrate · bis 90 FPS") { AndroidFrameRateControls(model: model).padding(.vertical, 8) }
+                    DisclosureGroup(L10n.text("Bildrate · bis 90 FPS")) { AndroidFrameRateControls(model: model).padding(.vertical, 8) }
                     HStack {
-                        Button("Bild einpassen") { fitsWindow = true }
-                        Button("Telefonfenster") { fitsWindow = true; model.fitAndroidPlayerWindow() }
+                        Button(L10n.text("Bild einpassen")) { fitsWindow = true }
+                        Button(L10n.text("Telefonfenster")) { fitsWindow = true; model.fitAndroidPlayerWindow() }
                     }
-                    Button("Anzeige neu verbinden") { Task { await model.reconnectAndroidDisplay() } }
+                    Button(L10n.text("Anzeige neu verbinden")) { Task { await model.reconnectAndroidDisplay() } }
                         .disabled(!model.canReconnectAndroidDisplay)
-                    Button("Text einfügen …", action: beginPaste).disabled(!active || model.playerSize == .zero)
-                        .help("Text vom Mac nach Android übertragen. Auch mit ⌘V im Gastbild.")
+                    Button(L10n.text("Text einfügen …"), action: beginPaste).disabled(!active || model.playerSize == .zero)
+                        .help(L10n.text("Text vom Mac nach Android übertragen. Auch mit ⌘V im Gastbild."))
                     if !model.androidPasteStatus.isEmpty { Text(model.androidPasteStatus).font(.system(size: 13)) }
                 }
                 HStack {
-                    Toggle("An Fenster anpassen", isOn: $fitsWindow).toggleStyle(.checkbox)
+                    Toggle(L10n.text("An Fenster anpassen"), isOn: $fitsWindow).toggleStyle(.checkbox)
                     Spacer(minLength: 4)
                     if kind == "android" {
-                        Button("Android-Auflösung …") { androidDisplayPresented = true }
+                        Button(L10n.text("Android-Auflösung …")) { androidDisplayPresented = true }
                     } else {
-                        Button("Windows-Einstellungen …", action: model.openWindowsDisplaySettings)
+                        Button(L10n.text("Windows-Einstellungen …"), action: model.openWindowsDisplaySettings)
                             .disabled(!active || model.playerSize == .zero || model.windowsPasteBusy)
-                            .help("Windows + I; danach System → Anzeige für die vom Gast unterstützten Auflösungen und Skalierungen.")
+                            .help(L10n.text("Windows + I; danach System → Anzeige für die vom Gast unterstützten Auflösungen und Skalierungen."))
                     }
                 }
                 if !fitsWindow {
                     HStack {
-                        Text("Ansicht")
+                        Text(L10n.text("Ansicht"))
                         Slider(value: $zoomPercent, in: 25...300, step: 5)
                         Text("\(Int(safeZoom)) %").monospacedDigit().frame(width: 50, alignment: .trailing)
                         Button("100 %") { zoomPercent = 100 }
                     }
                 }
                 HStack {
-                    Text("Scrolltempo").font(.system(size: 13))
+                    Text(L10n.text("Scrolltempo")).font(.system(size: 13))
                     Slider(value: Binding(get: {
                         kind == "android" ? model.androidScrollSpeed : model.windowsScrollSpeed
                     }, set: { value in
@@ -187,45 +187,45 @@ private struct GuestPlayerView: View {
                         if kind == "android" { model.androidScrollSpeed = 100 }
                         else { model.windowsScrollSpeed = 100 }
                     }.controlSize(.small)
-                }.help("Trackpad und Mausrad · 50 % = halbes bisheriges Tempo. Pro Gastsystem gespeichert; wirkt sofort.")
+                }.help(L10n.text("Trackpad und Mausrad · 50 % = halbes bisheriges Tempo. Pro Gastsystem gespeichert; wirkt sofort."))
                 if kind == "android" {
-                    Toggle("Wischen wie am Handy", isOn: $androidTouchScroll).toggleStyle(.checkbox)
-                        .help("Zwei Finger auf dem Trackpad ziehen als ein Finger in Android. Aus: Scrollrad-Ereignisse. Die Scrollrichtung folgt macOS; Apps können eigene Wischgesten erkennen.")
+                    Toggle(L10n.text("Wischen wie am Handy"), isOn: $androidTouchScroll).toggleStyle(.checkbox)
+                        .help(L10n.text("Zwei Finger auf dem Trackpad ziehen als ein Finger in Android. Aus: Scrollrad-Ereignisse. Die Scrollrichtung folgt macOS; Apps können eigene Wischgesten erkennen."))
                 }
-                Toggle("Trackpad-Nachlauf", isOn: $scrollMomentum).toggleStyle(.checkbox)
-                    .help("Aus: keinen Mac-Nachlauf übertragen. Ein: Mac-Schwung weitergeben. Android-Apps können nach einer Wischgeste zusätzlich eigenen Nachlauf erzeugen. Pro Gastsystem gespeichert.")
+                Toggle(L10n.text("Trackpad-Nachlauf"), isOn: $scrollMomentum).toggleStyle(.checkbox)
+                    .help(L10n.text("Aus: keinen Mac-Nachlauf übertragen. Ein: Mac-Schwung weitergeben. Android-Apps können nach einer Wischgeste zusätzlich eigenen Nachlauf erzeugen. Pro Gastsystem gespeichert."))
                 Text(fitsWindow
-                    ? "Zwei Finger: im Gast scrollen. Bild passt sich der Fenstergröße an."
-                    : "100 % = ein Gast-Bildpixel pro Mac-Bildpixel. Bild über Scrollleisten verschieben; zwei Finger scrollen im Gast.")
+                    ? L10n.text("Zwei Finger: im Gast scrollen. Bild passt sich der Fenstergröße an.")
+                    : L10n.text("100 % = ein Gast-Bildpixel pro Mac-Bildpixel. Bild über Scrollleisten verschieben; zwei Finger scrollen im Gast."))
                     .font(.system(size: 13)).foregroundStyle(.primary).fixedSize(horizontal: false, vertical: true)
                 if kind == "windows" {
-                    Text("Auflösung und Textgröße in Windows: System → Anzeige. Die verfügbaren Modi hängen vom Gasttreiber ab; „Ansicht“ vergrößert nur das Playerbild.")
+                    Text(L10n.text("Auflösung und Textgröße in Windows: System → Anzeige. Die verfügbaren Modi hängen vom Gasttreiber ab; „Ansicht“ vergrößert nur das Playerbild."))
                         .font(.system(size: 13)).foregroundStyle(.primary).fixedSize(horizontal: false, vertical: true)
                 }
                 if kind == "windows" {
                     HStack {
-                        Button("Anzeige neu verbinden") { Task { await model.reconnectWindowsDisplay() } }
+                        Button(L10n.text("Anzeige neu verbinden")) { Task { await model.reconnectWindowsDisplay() } }
                             .disabled(!active || !model.canReconnectWindowsDisplay)
-                        Button("UEFI-Startmenü · Esc", action: model.openWindowsFirmwareMenu)
+                        Button(L10n.text("UEFI-Startmenü · Esc"), action: model.openWindowsFirmwareMenu)
                             .disabled(!active || model.playerSize == .zero || model.windowsPasteBusy)
                     }
-                    Text("Bei Display output is not active ist die Verbindung möglicherweise bereits bereit, während die virtuelle Grafikkarte noch kein Bild liefert. Neu verbinden startet Windows nicht neu. Das UEFI-Menü lässt sich während des frühen Starts mit Esc öffnen.")
+                    Text(L10n.text("Bei Display output is not active ist die Verbindung möglicherweise bereits bereit, während die virtuelle Grafikkarte noch kein Bild liefert. Neu verbinden startet Windows nicht neu. Das UEFI-Menü lässt sich während des frühen Starts mit Esc öffnen."))
                         .font(.system(size: 13)).fixedSize(horizontal: false, vertical: true)
                     HStack {
-                        Button("Einrichtungskonsole öffnen", action: model.openWindowsSetupConsole)
+                        Button(L10n.text("Einrichtungskonsole öffnen"), action: model.openWindowsSetupConsole)
                             .disabled(!active || model.playerSize == .zero || model.windowsPasteBusy)
-                            .help("Sendet Shift + F10 direkt an Windows, ohne eine Funktionstaste auf dem Mac zu drücken.")
+                            .help(L10n.text("Sendet Shift + F10 direkt an Windows, ohne eine Funktionstaste auf dem Mac zu drücken."))
                         Spacer(minLength: 0)
                     }
-                    Text("Sendet Shift + F10. In Windows Setup öffnet das normalerweise eine Konsole.")
+                    Text(L10n.text("Sendet Shift + F10. In Windows Setup öffnet das normalerweise eine Konsole."))
                         .font(.system(size: 13)).foregroundStyle(.primary)
                     HStack {
-                        Button("Text einfügen …", action: beginPaste)
+                        Button(L10n.text("Text einfügen …"), action: beginPaste)
                             .disabled(!active || model.playerSize == .zero || model.windowsPasteBusy)
                             .help("Text aus der Mac-Zwischenablage in Windows eingeben. Auch mit ⌘V im Windows-Bild.")
                         if model.windowsPasteBusy {
                             ProgressView().controlSize(.small)
-                            Button("Abbrechen", action: model.cancelWindowsPaste)
+                            Button(L10n.text("Abbrechen"), action: model.cancelWindowsPaste)
                         }
                         Spacer(minLength: 0)
                     }
@@ -236,24 +236,24 @@ private struct GuestPlayerView: View {
                 HStack(spacing: 12) {
                     if kind == "android" {
                         Button { model.androidNavigation(4) } label: { Image(systemName: "chevron.left") }
-                            .help("Zurück").disabled(!active)
+                            .help(L10n.text("Zurück")).disabled(!active)
                         Button { model.androidNavigation(3) } label: { Image(systemName: "house") }
                             .help("Startbildschirm").disabled(!active)
                         Button { model.androidNavigation(187) } label: { Image(systemName: "square.on.square") }
                             .help("Letzte Apps").disabled(!active)
                     }
                     Spacer(minLength: 0)
-                    Button("Herunterfahren", action: model.shutdownGuest).disabled(!active)
+                    Button(L10n.text("Herunterfahren"), action: model.shutdownGuest).disabled(!active)
                 }
               }.padding(14).frame(maxWidth: .infinity, alignment: .leading)
             }.frame(height: 225).background(Color(nsColor: .controlBackgroundColor))
             VStack(alignment: .leading, spacing: 7) {
-                Label(active ? model.playerStatus : "Apps, Dateien und Einstellungen bleiben gespeichert.",
+                Label(active ? model.playerStatus : L10n.text("Apps, Dateien und Einstellungen bleiben gespeichert."),
                       systemImage: active ? "info.circle.fill" : "externaldrive.fill")
                     .font(.system(size: 14, weight: .semibold))
                     .fixedSize(horizontal: false, vertical: true)
                     .textSelection(.enabled)
-                Text("Fenster schließen: Das Gastsystem läuft weiter.")
+                Text(L10n.text("Fenster schließen: Das Gastsystem läuft weiter."))
                     .font(.system(size: 13, weight: .medium))
             }
             .foregroundStyle(.primary)

@@ -93,7 +93,7 @@ final class H264Player {
                 }
             }
         }
-        guard status == noErr, let description else { throw failure("H.264-Konfiguration nicht unterstützt.") }
+        guard status == noErr, let description else { throw failure(L10n.text("H.264-Konfiguration nicht unterstützt.")) }
         layer.flushAndRemoveImage()
         waitingForKeyframe = true
         format = description

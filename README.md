@@ -2,15 +2,19 @@
 
 Public Apple Silicon beta with a guided dashboard, a user-selected data drive, experimental Windows 3D and verified GitHub app updates. See the [release guide and per-VM storage budget](docs/RELEASE_1.0_BETA1.md). Existing guest data locations are preserved.
 
-# Stratovo — Android Emulator & Windows VM for Mac
+## Android Emulator & Windows VM for Mac
 
 **Free, open-source macOS app for Android emulation and Windows ARM64 virtual machines on Apple silicon.**
 
-Developed by **PwnedG0blin** · macOS **14+** · **MIT license** · **Public test version 0.3.20**
+Developed by **PwnedG0blin** · macOS **14+** · **MIT license** · **1.0 Beta 1**
 
 [Deutsch: vollständige Anleitung](README.de.md) · [Setup](LIES_MICH_ZUERST.md) · [Mac test builds](https://github.com/PwnedG0blin/OpenGuest/actions/workflows/macos.yml) · [Report an issue](https://github.com/PwnedG0blin/OpenGuest/issues)
 
 Stratovo brings Android ARM64 and Windows ARM64 guest systems into a native Mac interface. Install Android APKs, use persistent guest storage, and open each guest in its own resizable player window. Only one guest runs at a time. System images, engines and drivers are set up separately.
+
+## Interface language
+
+Stratovo follows your preferred macOS language at launch. Override it under Setup → Language. Fourteen language folders are included: German, English, French, Spanish, Italian, Portuguese, Dutch, Polish, Turkish, Ukrainian, Arabic, Simplified Chinese, Japanese and Korean. Core controls are translated; technical text falls back to English, and some tool errors/logs retain their original language. Full technical translation is still in progress. Guest languages are independent.
 
 ## Android on Apple silicon
 
@@ -23,11 +27,11 @@ Stratovo brings Android ARM64 and Windows ARM64 guest systems into a native Mac 
 
 - Install Windows using your own ARM64 ISO and an appropriate Windows license.
 - Persistent virtual disks, ARM64 firmware, TPM support and optional Virtio drivers.
-- Accelerated Windows 3D graphics is not implemented.
+- Experimental Windows 3D through VirtIO / Neptune / DXMT in an independent test copy. The first build requires full Xcode and additional libraries; see the release guide.
 
 ## Install or build
 
-Download an artifact from a successful [GitHub Actions run](https://github.com/PwnedG0blin/OpenGuest/actions/workflows/macos.yml), or run `bash scripts/build-app.sh` on an Apple-silicon Mac with Xcode command line tools. The output is `dist/Stratovo.app`.
+Download the DMG from [GitHub Releases](https://github.com/PwnedG0blin/OpenGuest/releases), or run `bash scripts/build-app.sh` on an Apple-silicon Mac with Xcode command line tools. The output is `dist/Stratovo.app`.
 
 The test app is ad-hoc signed, not Developer ID signed or notarized. See [signing information](SIGNIERUNG.md), [setup instructions](LIES_MICH_ZUERST.md) and [third-party licenses](THIRD_PARTY_NOTICES.md).
 

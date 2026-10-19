@@ -4,13 +4,15 @@
 
 ## Neu
 
+- Automatische macOS-Spracherkennung mit optionaler Auswahl unter Einrichtung → Sprache: Deutsch, Englisch, Französisch, Spanisch, Italienisch, Portugiesisch, Niederländisch, Polnisch, Türkisch, Ukrainisch, Arabisch, Chinesisch (vereinfacht), Japanisch und Koreanisch. Separate `.lproj`-Sprachordner; für nicht übersetzte technische Hinweise wird Englisch verwendet. Die vollständige Übersetzung aller technischen Meldungen ist in dieser Beta noch nicht abgeschlossen. Externe Werkzeugausgaben und Diagnoseprotokolle bleiben im Original. Die Sprache der Gastsysteme wird nicht verändert.
+
 - Dashboard mit klaren Einrichtungsschritten, Speicherplanung und direktem Grafiklabor-Zugang.
 - Beim ersten Start SSD oder Datenordner frei wählen. Der Name des Laufwerks spielt keine Rolle; bestehende Speicherorte und Gastdaten werden weiterverwendet.
 - Android 16 und separates Android-17-Testprofil; optionale einmalige Datenkopie, keine gemeinsame schreibbare Datenpartition.
 - Android-Bildrate bis 90 FPS wählbar, ohne den bisherigen rekursiven Einstellungsfehler. Tatsächliche FPS sind abhängig von Gast, Spiel und Hardware.
 - Verbesserte Player-Verarbeitung, Textübertragung und Trackpad-Steuerung.
 - Experimentelles Windows-3D-Grafiklabor direkt aus der App. Die auf macOS 27 erprobten Compiler-, Abhängigkeits-, GnuTLS-, Suchpfad- und TPM-Startkorrekturen sind in den eingebetteten Ressourcen enthalten. Ein App-Start setzt sie nicht mehr auf den alten Stand zurück.
-- Updateprüfung über öffentliche GitHub Releases; geprüfte Apple-Silicon-App nach Bestätigung laden, austauschen und neu starten. Keine API-Schlüssel erforderlich. Gäste und Grafikbau müssen vorher beendet sein.
+- Updateprüfung über öffentliche GitHub Releases; geprüfte Apple-Silicon-App nach Bestätigung laden, austauschen und neu starten. Gäste und Grafikbau müssen vorher beendet sein.
 
 ## Speicherbedarf pro VM
 
@@ -36,4 +38,4 @@ Das Grafiklabor benötigt vollständiges Xcode einschließlich Metal Toolchain u
 
 Die App ist lokal signiert (ad-hoc), noch nicht mit Apple Developer ID signiert oder notarisiert. macOS kann beim ersten Öffnen eine Freigabe verlangen. Ein Update umgeht Gatekeeper nicht. Die Updatefunktion prüft Repository/Tag, SHA-256, Paketgröße, Bundle-ID, Version und Codesignatur; eine alte App-Kopie bleibt zur manuellen Rückkehr neben der App erhalten. Update-Downloads liegen unter `Updates` im gewählten Datenordner.
 
-Die Grafiklaufzeit wurde auf dem Mac mini M4 des Entwicklers gebaut und der Teststart dort bestätigt. Automatisierte App-Tests ersetzen keinen Hardware-/Spieletest. Windows benötigt eine eigene Lizenz; Insider-/Hardwarefreigaben werden nicht zugesichert. Private Windows-Setup-Umgehungen sind nicht Teil dieser Veröffentlichung.
+Die Grafiklaufzeit wurde auf dem Mac mini M4 des Entwicklers gebaut und der Teststart dort bestätigt. Automatisierte App-Tests ersetzen keinen Hardware-/Spieletest. Windows benötigt eine eigene Lizenz; Insider-/Hardwarefreigaben werden nicht zugesichert.

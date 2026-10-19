@@ -9,7 +9,7 @@ struct ImmutableVideoSample: @unchecked Sendable { let value: CMSampleBuffer }
 actor H264PacketBuilder {
     func prepare(_ data: Data) throws -> PreparedH264Packet {
         let units = ScrcpyWire.nalUnits(data)
-        guard !units.isEmpty else { throw failure("Ungültiger H.264-Datenstrom.") }
+        guard !units.isEmpty else { throw failure(L10n.text("Ungültiger H.264-Datenstrom.")) }
         var avcc = Data(); avcc.reserveCapacity(data.count)
         for unit in units where ![7, 8, 9].contains(unit[0] & 31) {
             avcc.append(ScrcpyWire.integer(UInt64(unit.count), bytes: 4)); avcc.append(unit)
@@ -21,19 +21,19 @@ actor H264PacketBuilder {
         guard CMBlockBufferCreateWithMemoryBlock(allocator: kCFAllocatorDefault, memoryBlock: nil,
             blockLength: avcc.count, blockAllocator: kCFAllocatorDefault, customBlockSource: nil,
             offsetToData: 0, dataLength: avcc.count, flags: 0, blockBufferOut: &block) == noErr, let block else {
-            throw failure("Video-Puffer konnte nicht erstellt werden.")
+            throw failure(L10n.text("Video-Puffer konnte nicht erstellt werden."))
         }
         let copyStatus = avcc.withUnsafeBytes { raw in
             CMBlockBufferReplaceDataBytes(with: raw.baseAddress!, blockBuffer: block, offsetIntoDestination: 0, dataLength: avcc.count)
         }
-        guard copyStatus == noErr else { throw failure("Video-Puffer konnte nicht gefüllt werden.") }
+        guard copyStatus == noErr else { throw failure(L10n.text("Video-Puffer konnte nicht gefüllt werden.")) }
         var timing = CMSampleTimingInfo(duration: .invalid, presentationTimeStamp: CMTime(value: Int64(pts), timescale: 1_000_000), decodeTimeStamp: .invalid)
         var size = avcc.count
         var sample: CMSampleBuffer?
         guard CMSampleBufferCreateReady(allocator: kCFAllocatorDefault, dataBuffer: block, formatDescription: format.value,
             sampleCount: 1, sampleTimingEntryCount: 1, sampleTimingArray: &timing,
             sampleSizeEntryCount: 1, sampleSizeArray: &size, sampleBufferOut: &sample) == noErr, let sample else {
-            throw failure("Videoframe konnte nicht erstellt werden.")
+            throw failure(L10n.text("Videoframe konnte nicht erstellt werden."))
         }
         if let attachments = CMSampleBufferGetSampleAttachmentsArray(sample, createIfNecessary: true) {
             let dictionary = unsafeBitCast(CFArrayGetValueAtIndex(attachments, 0), to: CFMutableDictionary.self)

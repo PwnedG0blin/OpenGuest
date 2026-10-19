@@ -23,7 +23,7 @@ final class RFBClient {
         let connection = NWConnection(to: .unix(path: socket), using: .tcp)
         self.connection = connection
         stopped = false
-        onStatus?("Windows-Bildverbindung wird aufgebaut …")
+        onStatus?(L10n.text("Windows-Bildverbindung wird aufgebaut …"))
         connection.stateUpdateHandler = { [weak self, weak connection] state in
             switch state {
             case .waiting(let error), .failed(let error):
@@ -40,13 +40,13 @@ final class RFBClient {
         connection.start(queue: DispatchQueue(label: "OpenGuest.RFB.transport"))
         defer { connection.cancel(); self.connection = nil; initialized = false; wheel.reset() }
         let version = try await read(12)
-        onStatus?("Windows-Bildverbindung antwortet · Anzeige wird eingerichtet …")
-        guard String(decoding: version, as: UTF8.self).hasPrefix("RFB 003.008") else { throw failure("RFB 3.8 benötigt.") }
+        onStatus?(L10n.text("Windows-Bildverbindung antwortet · Anzeige wird eingerichtet …"))
+        guard String(decoding: version, as: UTF8.self).hasPrefix("RFB 003.008") else { throw failure(L10n.text("RFB 3.8 benötigt.")) }
         send(Data("RFB 003.008\n".utf8))
         let count = Int(try await read(1)[0])
-        guard count > 0, count <= 64 else { throw failure("Keine unterstützte Player-Verbindung.") }
+        guard count > 0, count <= 64 else { throw failure(L10n.text("Keine unterstützte Player-Verbindung.")) }
         let security = try await read(count)
-        guard security.contains(1) else { throw failure("Lokale RFB-Sicherheitsart nicht verfügbar.") }
+        guard security.contains(1) else { throw failure(L10n.text("Lokale RFB-Sicherheitsart nicht verfügbar.")) }
         send(Data([1]))
         let result = try await read(4)
         guard u32(result, 0) == 0 else { throw failure("Lokaler Player-Zugriff abgelehnt.") }
@@ -54,7 +54,7 @@ final class RFBClient {
         let header = try await read(24)
         try await resize(Int(u16(header, 0)), Int(u16(header, 2)))
         let nameLength = Int(u32(header, 20))
-        guard nameLength <= 1_048_576 else { throw failure("Ungültiger Player-Name.") }
+        guard nameLength <= 1_048_576 else { throw failure(L10n.text("Ungültiger Player-Name.")) }
         _ = try await read(nameLength)
         // 32bpp, 24-bit true color, little endian, red/green/blue shifts 16/8/0.
         send(Data([0, 0, 0, 0, 32, 24, 0, 1, 0, 255, 0, 255, 0, 255, 16, 8, 0, 0, 0, 0]))
@@ -80,7 +80,7 @@ final class RFBClient {
                         try await resize(w, h)
                         fullRefresh = true
                     } else if encoding == 0 {
-                        guard w > 0, h > 0, x + w <= width, y + h <= height else { throw failure("Ungültiges Player-Bildrechteck.") }
+                        guard w > 0, h > 0, x + w <= width, y + h <= height else { throw failure(L10n.text("Ungültiges Player-Bildrechteck.")) }
                         let bytes = try await read(w * h * 4)
                         try await renderer.apply(x: x, y: y, width: w, height: h, data: bytes)
                     } else { throw failure("Nicht angefordertes Bildformat: \(encoding)") }
@@ -98,7 +98,7 @@ final class RFBClient {
             case 3:
                 let clipboard = try await read(7)
                 let count = Int(u32(clipboard, 3))
-                guard count <= 1_048_576 else { throw failure("Zwischenablagedaten zu groß.") }
+                guard count <= 1_048_576 else { throw failure(L10n.text("Zwischenablagedaten zu groß.")) }
                 _ = try await read(count) // Never import to the host clipboard.
             default: throw failure("Unbekannte Player-Nachricht: \(type)")
             }
@@ -172,21 +172,21 @@ final class RFBClient {
     }
 
     private func read(_ count: Int) async throws -> Data {
-        guard count >= 0, count <= 67_108_864 else { throw failure("Ungültige Player-Nachrichtenlänge.") }
+        guard count >= 0, count <= 67_108_864 else { throw failure(L10n.text("Ungültige Player-Nachrichtenlänge.")) }
         while buffer.count < count {
             try Task.checkCancellation()
-            guard let connection else { throw failure("Player-Verbindung geschlossen.") }
+            guard let connection else { throw failure(L10n.text("Player-Verbindung geschlossen.")) }
             let chunk: Data = try await withCheckedThrowingContinuation { continuation in
                 connection.receive(minimumIncompleteLength: 1, maximumLength: 1_048_576) { data, _, complete, error in
                     if let error { continuation.resume(throwing: error) }
                     else if let data, !data.isEmpty { continuation.resume(returning: data) }
                     else { continuation.resume(throwing: NSError(domain: "OpenGuest.RFB", code: 1,
-                        userInfo: [NSLocalizedDescriptionKey: complete ? "Player-Verbindung beendet." : "Keine Player-Daten."])) }
+                        userInfo: [NSLocalizedDescriptionKey: complete ? L10n.text("Player-Verbindung beendet.") : "Keine Player-Daten."])) }
                 }
             }
             buffer.append(chunk)
         }
-        guard let result = buffer.read(count) else { throw failure("Unvollständige Player-Daten.") }
+        guard let result = buffer.read(count) else { throw failure(L10n.text("Unvollständige Player-Daten.")) }
         return result
     }
 

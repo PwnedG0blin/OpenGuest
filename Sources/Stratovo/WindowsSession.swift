@@ -25,15 +25,15 @@ final class WindowsSession {
 
     func prepare(qemuImg: String, swtpm: String, variablesTemplate: String, capacityGiB: Int, selectPro: Bool,
                  localAccount: WindowsEdition.LocalAccount?) async throws -> Files {
-        guard let storage = GuestStorage.load() else { throw failure("Speicherort fehlt.") }
+        guard let storage = GuestStorage.load() else { throw failure(L10n.text("Speicherort fehlt.")) }
         try storage.validate()
         let fm = FileManager.default
         let root = try storage.prepareWindowsFolder()
         let fd = Darwin.open(root.appendingPathComponent("session.lock").path, O_CREAT | O_RDWR, 0o600)
-        guard fd >= 0 else { throw failure("Die Windows-VM konnte nicht gesperrt werden.") }
+        guard fd >= 0 else { throw failure(L10n.text("Die Windows-VM konnte nicht gesperrt werden.")) }
         guard flock(fd, LOCK_EX | LOCK_NB) == 0 else {
             close(fd)
-            throw failure("Diese Windows-VM wird bereits von einer anderen Stratovo-Instanz verwendet.")
+            throw failure(L10n.text("Diese Windows-VM wird bereits von einer anderen Stratovo-Instanz verwendet."))
         }
         lockFD = fd
 
@@ -72,7 +72,7 @@ final class WindowsSession {
         socketDirectory = socketDir
         let socket = socketDir.appendingPathComponent("tpm.sock")
         let tpmLog = root.appendingPathComponent("tpm-last.log")
-        guard fm.createFile(atPath: tpmLog.path, contents: nil) else { throw failure("TPM-Protokoll konnte nicht erstellt werden.") }
+        guard fm.createFile(atPath: tpmLog.path, contents: nil) else { throw failure(L10n.text("TPM-Protokoll konnte nicht erstellt werden.")) }
         let handle = try FileHandle(forWritingTo: tpmLog)
         tpmOutput = handle
         let child = Process()
@@ -96,7 +96,7 @@ final class WindowsSession {
             }
             try await Task.sleep(nanoseconds: 50_000_000)
         }
-        throw failure("TPM-Start hat das Zeitlimit überschritten.")
+        throw failure(L10n.text("TPM-Start hat das Zeitlimit überschritten."))
     }
 
     func stop() async {

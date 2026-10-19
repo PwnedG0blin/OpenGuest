@@ -30,7 +30,7 @@ enum QMPClient {
         _ = try await command("qmp_capabilities", id: 1, stream: stream)
         let response = try await command("query-uuid", id: 2, stream: stream) as? [String: Any]
         guard let uuid = response?["UUID"] as? String, UUID(uuidString: uuid) != nil else {
-            throw StorageMigration.failure("QEMU hat keine gültige VM-UUID zurückgegeben.")
+            throw StorageMigration.failure(L10n.text("QEMU hat keine gültige VM-UUID zurückgegeben."))
         }
         return uuid.lowercased()
     }

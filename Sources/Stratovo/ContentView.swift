@@ -8,6 +8,7 @@ enum WorkspaceTab: String, CaseIterable, Identifiable {
     case windows = "Windows Arm"
     case setup = "Einrichtung"
     var id: String { rawValue }
+    var title: String { L10n.text(rawValue) }
     var icon: String {
         switch self {
         case .dashboard: return "house.fill"
@@ -35,11 +36,11 @@ struct ContentView: View {
                 VStack(alignment: .leading, spacing: 22) {
                     header
                     if !model.supportedHost || !model.hypervisorAvailable {
-                        notice("Apple Silicon und Hardwarevirtualisierung benötigt",
-                               "Starte die native ARM64-Version auf einem Mac mit M-Chip. Intel-Macs und Rosetta werden nicht unterstützt.", color: .orange)
+                        notice(L10n.text("Apple Silicon und Hardwarevirtualisierung benötigt"),
+                               L10n.text("Starte die native ARM64-Version auf einem Mac mit M-Chip. Intel-Macs und Rosetta werden nicht unterstützt."), color: .orange)
                     }
                     if !model.storageReady && model.storage != nil {
-                        notice("Datenordner nicht erreichbar", "Bitte die gewählte SSD anschließen. Android, Windows und Downloads bleiben bis dahin gesperrt.", color: .orange)
+                        notice(L10n.text("Datenordner nicht erreichbar"), L10n.text("Bitte die gewählte SSD anschließen. Android, Windows und Downloads bleiben bis dahin gesperrt."), color: .orange)
                     }
                     switch selection {
                     case .dashboard: DashboardView(model: model) { selection = $0 }
@@ -61,11 +62,11 @@ struct ContentView: View {
         .alert("Stratovo", isPresented: Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })) {
             Button("OK") { model.errorMessage = nil }
         } message: { Text(model.errorMessage ?? "") }
-        .confirmationDialog("Gastprozess beenden?", isPresented: $showStopConfirmation) {
-            Button("Prozess beenden", role: .destructive) { model.terminateGuest() }
-            Button("Abbrechen", role: .cancel) { }
+        .confirmationDialog(L10n.text("Gastprozess beenden?"), isPresented: $showStopConfirmation) {
+            Button(L10n.text("Prozess beenden"), role: .destructive) { model.terminateGuest() }
+            Button(L10n.text("Abbrechen"), role: .cancel) { }
         } message: {
-            Text("Fahre Android oder Windows möglichst zuerst im Gastfenster herunter. Das Beenden des Prozesses kann nicht gespeicherte Änderungen verlieren oder das Gastdateisystem beschädigen.")
+            Text(L10n.text("Fahre Android oder Windows möglichst zuerst im Gastfenster herunter. Das Beenden des Prozesses kann nicht gespeicherte Änderungen verlieren oder das Gastdateisystem beschädigen."))
         }
     }
 
@@ -80,7 +81,7 @@ struct ContentView: View {
             }
             ForEach(WorkspaceTab.allCases) { tab in
                 Button { selection = tab } label: {
-                    Label(tab.rawValue, systemImage: tab.icon)
+                    Label(tab.title, systemImage: tab.icon)
                         .font(.system(size: 14, weight: .medium))
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(11)
@@ -98,13 +99,13 @@ struct ContentView: View {
     private var header: some View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 5) {
-                Text(selection.rawValue).font(.system(size: 30, weight: .bold))
-                Text(selection == .dashboard ? "Deine Systeme. Dein Speicherort." : selection == .android ? "Dein virtuelles Android auf dem Mac." : selection == .windows ? "Der erste Schritt zu Windows auf deinem Mac." : "Verbinde die lokalen Virtualisierungs-Engines.")
+                Text(selection.title).font(.system(size: 30, weight: .bold))
+                Text(selection == .dashboard ? L10n.text("Deine Systeme. Dein Speicherort.") : selection == .android ? "Dein virtuelles Android auf dem Mac." : selection == .windows ? "Der erste Schritt zu Windows auf deinem Mac." : "Verbinde die lokalen Virtualisierungs-Engines.")
                     .foregroundStyle(.secondary)
             }
             Spacer()
             if model.busy { ProgressView().controlSize(.small) }
-            Button { Task { await model.refresh() } } label: { Label("System prüfen", systemImage: "arrow.clockwise") }
+            Button { Task { await model.refresh() } } label: { Label(L10n.text("System prüfen"), systemImage: "arrow.clockwise") }
                 .disabled(model.busy || model.running)
         }
     }
@@ -122,102 +123,102 @@ struct ContentView: View {
                             Text("Android Emulator · Hypervisor.framework").foregroundStyle(.secondary)
                         }
                         Spacer()
-                        status(model.androidReady ? "Engine bereit" : "Einrichtung nötig", ready: model.androidReady)
+                        status(model.androidReady ? L10n.text("Engine bereit") : L10n.text("Einrichtung nötig"), ready: model.androidReady)
                     }
                     Divider()
                     if model.devices.isEmpty {
-                        Text("Noch kein Android eingerichtet. Wähle oben Android 16 oder Android 17 und klicke auf „Laden und installieren …“.")
+                        Text(L10n.text("Noch kein Android eingerichtet. Wähle oben Android 16 oder Android 17 und klicke auf „Laden und installieren …“."))
                             .foregroundStyle(.secondary)
                     } else {
-                        Picker("Virtuelles Gerät", selection: $model.settings.selectedAVD) {
+                        Picker(L10n.text("Virtuelles Gerät"), selection: $model.settings.selectedAVD) {
                             ForEach(model.devices) { device in
                             Text("\(model.androidSystem(for: device.name).map { "Android \($0.rawValue) · " } ?? "")\(device.name) · \(device.abi)\(device.googlePlay ? " · Google Play" : "")").tag(device.name)
                             }
                         }
                         .disabled(model.running || model.busy)
                         if let device = model.selectedDevice, !device.supported {
-                            Text("Dieses Gerät ist kein erkanntes ARM64-Gerät und wird in diesem Prototyp nicht gestartet.")
+                            Text(L10n.text("Dieses Gerät ist kein erkanntes ARM64-Gerät und wird in diesem Prototyp nicht gestartet."))
                                 .font(.caption).foregroundStyle(.orange)
                         }
                     }
                     resourceControls
-                    Picker("Grafik", selection: $model.settings.gpu) {
-                        Text("Automatisch").tag("auto")
-                        Text("Mac-GPU bevorzugen").tag("host")
-                        Text("Software (Fehlersuche)").tag("software")
+                    Picker(L10n.text("Grafik"), selection: $model.settings.gpu) {
+                        Text(L10n.text("Automatisch")).tag("auto")
+                        Text(L10n.text("Mac-GPU bevorzugen")).tag("host")
+                        Text(L10n.text("Software (Fehlersuche)")).tag("software")
                     }.disabled(model.running || model.busy)
-                    Toggle("Vulkan für Android-Spiele zulassen", isOn: $model.androidVulkanEnabled)
+                    Toggle(L10n.text("Vulkan für Android-Spiele zulassen"), isOn: $model.androidVulkanEnabled)
                         .disabled(model.running || model.busy)
-                    Text("Mac-GPU nutzt die Grafikübersetzung des Android Emulators. Vulkan aus: OpenGL-ES-Kompatibilitätstest für Spiele ohne Vulkan-Pflicht. Ein Wechsel gilt beim nächsten Start und kann je nach Spiel helfen oder die Kompatibilität einschränken.")
+                    Text(L10n.text("Mac-GPU nutzt die Grafikübersetzung des Android Emulators. Vulkan aus: OpenGL-ES-Kompatibilitätstest für Spiele ohne Vulkan-Pflicht. Ein Wechsel gilt beim nächsten Start und kann je nach Spiel helfen oder die Kompatibilität einschränken."))
                         .font(.caption).foregroundStyle(.secondary)
-                    Picker("Android-Leistungsprofil", selection: $model.androidProfile) {
+                    Picker(L10n.text("Android-Leistungsprofil"), selection: $model.androidProfile) {
                         ForEach(AndroidPerformance.allCases, id: \.rawValue) { profile in
                             Text(profile.title).tag(profile)
                         }
                     }.disabled(model.running || model.busy)
                     AndroidFrameRateControls(model: model)
-                    Text("Flüssig reduziert die Android-Auflösung und Streamgröße. Änderungen gelten beim nächsten Android-Start. Originalauflösung hebt die Bildschirm-Anpassung wieder auf.")
+                    Text(L10n.text("Flüssig reduziert die Android-Auflösung und Streamgröße. Änderungen gelten beim nächsten Android-Start. Originalauflösung hebt die Bildschirm-Anpassung wieder auf."))
                         .font(.caption).foregroundStyle(.secondary)
                     Text(model.androidDisplayStatus).font(.caption).textSelection(.enabled)
-                    DisclosureGroup("Auflösung und Android-Skalierung") {
+                    DisclosureGroup(L10n.text("Auflösung und Android-Skalierung")) {
                         AndroidDisplayControls(model: model).padding(.top, 8)
                     }
                     Label(model.androidRendererStatus, systemImage: model.androidSoftwareRendering ? "exclamationmark.triangle" : "info.circle")
                         .font(.caption).foregroundStyle(model.androidSoftwareRendering ? Color.orange : Color.secondary)
-                    Toggle("Kaltstart beim nächsten Start", isOn: $model.settings.coldBoot)
+                    Toggle(L10n.text("Kaltstart beim nächsten Start"), isOn: $model.settings.coldBoot)
                         .disabled(model.running || model.busy)
-                    Button("Android-Verbindung reparieren") { Task { await model.repairAndroidConnection() } }
+                    Button(L10n.text("Android-Verbindung reparieren")) { Task { await model.repairAndroidConnection() } }
                         .disabled(!model.canRepairAndroidConnection)
-                    Text("Bei „device offline“: Gastsystem herunterfahren, dann hier ADB neu starten und Kaltstart aktivieren. Apps, Konten und Spielstände bleiben erhalten. Der ADB-Neustart trennt auch andere ADB-Debugverbindungen auf diesem Mac.")
+                    Text(L10n.text("Bei „device offline“: Gastsystem herunterfahren, dann hier ADB neu starten und Kaltstart aktivieren. Apps, Konten und Spielstände bleiben erhalten. Der ADB-Neustart trennt auch andere ADB-Debugverbindungen auf diesem Mac."))
                         .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                     if !model.androidRepairStatus.isEmpty { Text(model.androidRepairStatus).font(.caption).textSelection(.enabled) }
                     if let device = model.selectedDevice {
-                        Label(device.googlePlay ? "Google-Play-Systemabbild im Profil erkannt" : "Dieses Profil enthält keinen erkannten Google Play Store",
+                        Label(device.googlePlay ? "Google-Play-Systemabbild im Profil erkannt" : L10n.text("Dieses Profil enthält keinen erkannten Google Play Store"),
                               systemImage: device.googlePlay ? "checkmark.seal" : "info.circle")
                             .font(.caption).foregroundStyle(device.googlePlay ? Color.teal : Color.orange)
                     }
                     Text(model.androidAcceleration).font(.caption).foregroundStyle(.secondary)
                     HStack {
-                        Button(action: model.startAndroid) { Label("Android starten", systemImage: "play.fill") }
+                        Button(action: model.startAndroid) { Label(L10n.text("Android starten"), systemImage: "play.fill") }
                             .buttonStyle(.borderedProminent).controlSize(.large)
                             .disabled(!model.canStartAndroid)
                         Spacer()
-                        Link("Gerät anlegen ↗", destination: URL(string: "https://developer.android.com/studio/run/managing-avds")!)
+                        Link(L10n.text("Gerät anlegen ↗"), destination: URL(string: "https://developer.android.com/studio/run/managing-avds")!)
                     }
                     Divider()
                     HStack {
-                        Button(action: model.chooseAndInstallAPK) { Label("APK installieren …", systemImage: "square.and.arrow.down") }
+                        Button(action: model.chooseAndInstallAPK) { Label(L10n.text("APK installieren …"), systemImage: "square.and.arrow.down") }
                             .disabled(!model.canInstallAPK)
                         if model.apkBusy { ProgressView().controlSize(.small) }
                     }
                     if !ScrcpySession.installed {
-                        Text("Streaming-Modul fehlt. Unter „Einrichtung“ kannst du es vorbereiten.")
+                        Text(L10n.text("Streaming-Modul fehlt. Unter „Einrichtung“ kannst du es vorbereiten."))
                             .font(.caption).foregroundStyle(.orange)
                     }
                     if !model.apkStatus.isEmpty { Text(model.apkStatus).font(.caption).foregroundStyle(.secondary) }
                     Divider()
-                    Text("Google-Konto & Cloud-Spielstände").font(.headline)
+                    Text(L10n.text("Google-Konto & Cloud-Spielstände")).font(.headline)
                     Button(action: model.openGoogleInMacBrowser) {
-                        Label("Google im Mac-Browser öffnen", systemImage: "arrow.up.forward.app")
+                        Label(L10n.text("Google im Mac-Browser öffnen"), systemImage: "arrow.up.forward.app")
                     }
-                    Text("Öffnet die Google-Kontoauswahl außerhalb von Stratovo in deinem normalen Standardbrowser. Dort können vorhandene Google-Anmeldungen und gespeicherte Zugangsdaten deines Browserprofils genutzt werden.")
+                    Text(L10n.text("Öffnet die Google-Kontoauswahl außerhalb von Stratovo in deinem normalen Standardbrowser. Dort können vorhandene Google-Anmeldungen und gespeicherte Zugangsdaten deines Browserprofils genutzt werden."))
                         .font(.subheadline).foregroundStyle(.secondary)
-                    Text("Die Browser-Anmeldung gilt für den Mac. Sie fügt kein Konto zu Android hinzu. Für Play Store und Cloud-Spielstände das Konto zusätzlich im Android-System anmelden.")
+                    Text(L10n.text("Die Browser-Anmeldung gilt für den Mac. Sie fügt kein Konto zu Android hinzu. Für Play Store und Cloud-Spielstände das Konto zusätzlich im Android-System anmelden."))
                         .font(.subheadline).foregroundStyle(.secondary)
-                    Button("Google-Konto in Android hinzufügen", action: model.openGoogleAccountSettings)
+                    Button(L10n.text("Google-Konto in Android hinzufügen"), action: model.openGoogleAccountSettings)
                         .disabled(!model.canInstallAPK || model.selectedDevice?.googlePlay != true)
                     HStack {
-                        Button("Play Spiele", action: model.openPlayGames)
-                        Button("Kontosynchronisierung", action: model.openSyncSettings)
-                        Button("Android-Sicherung", action: model.openBackupSettings)
+                        Button(L10n.text("Play Spiele"), action: model.openPlayGames)
+                        Button(L10n.text("Kontosynchronisierung"), action: model.openSyncSettings)
+                        Button(L10n.text("Android-Sicherung"), action: model.openBackupSettings)
                     }.disabled(!model.canInstallAPK || model.selectedDevice?.googlePlay != true)
                     Text(model.googleServicesStatus).font(.caption).foregroundStyle(.secondary)
-                    Text("Melde dich in Play Spiele und im jeweiligen Spiel mit demselben Konto an. Cloud-Spielstände und Backups funktionieren nur, soweit App, Spiel und Systemabbild sie unterstützen. Lokale Apps, Daten und Anmeldungen bleiben unabhängig davon gespeichert.")
+                    Text(L10n.text("Melde dich in Play Spiele und im jeweiligen Spiel mit demselben Konto an. Cloud-Spielstände und Backups funktionieren nur, soweit App, Spiel und Systemabbild sie unterstützen. Lokale Apps, Daten und Anmeldungen bleiben unabhängig davon gespeichert."))
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
-            notice("Android auswählen → Starten → Apps nutzen",
-                   "Einmalig ein offizielles Google-Play-Gerät einrichten. Mit „Android starten“ öffnest du dein ausgewähltes Android im eigenen Playerfenster. Apps, Google-Anmeldung und Einstellungen bleiben gespeichert. Die Google-Webseite lässt sich zusätzlich im normalen Mac-Browser öffnen; die Android-Anmeldung erfolgt separat im Gastsystem.", color: .teal)
+            notice(L10n.text("Android auswählen → Starten → Apps nutzen"),
+                   L10n.text("Einmalig ein offizielles Google-Play-Gerät einrichten. Mit „Android starten“ öffnest du dein ausgewähltes Android im eigenen Playerfenster. Apps, Google-Anmeldung und Einstellungen bleiben gespeichert. Die Google-Webseite lässt sich zusätzlich im normalen Mac-Browser öffnen; die Android-Anmeldung erfolgt separat im Gastsystem."), color: .teal)
         }
     }
 
@@ -229,35 +230,35 @@ struct ContentView: View {
             windowsIdentityCard
             card {
                 VStack(alignment: .leading, spacing: 12) {
-                    Label("Windows-Speicherort", systemImage: "externaldrive.fill").font(.headline)
-                    Text(model.storage?.windows.path ?? "Zuerst unter Einrichtung einen Datenordner wählen")
+                    Label(L10n.text("Windows-Speicherort"), systemImage: "externaldrive.fill").font(.headline)
+                    Text(model.storage?.windows.path ?? L10n.text("Zuerst unter Einrichtung einen Datenordner wählen"))
                         .font(.body.monospaced()).textSelection(.enabled)
                     Text(model.windowsFolderStatus).font(.subheadline)
                     HStack {
-                        Button("Windows-Ordner anlegen / prüfen", action: model.prepareWindowsFolder)
+                        Button(L10n.text("Windows-Ordner anlegen / prüfen"), action: model.prepareWindowsFolder)
                             .disabled(model.busy || model.running || !model.storageReady)
-                        Button("Ordner öffnen", action: model.revealWindowsFolder)
+                        Button(L10n.text("Ordner öffnen"), action: model.revealWindowsFolder)
                             .disabled(model.storage?.windowsFolderReady != true)
                     }
-                    Text("Windows-Festplatte, Einstellungen und TPM bleiben in diesem Ordner gespeichert. Beim ersten Start installierst du Windows aus deiner ARM64-ISO.")
+                    Text(L10n.text("Windows-Festplatte, Einstellungen und TPM bleiben in diesem Ordner gespeichert. Beim ersten Start installierst du Windows aus deiner ARM64-ISO."))
                         .font(.subheadline).foregroundStyle(.secondary)
                     Divider()
                     HStack {
-                        Text("Maximale Windows-Festplatte")
+                        Text(L10n.text("Maximale Windows-Festplatte"))
                         TextField("GB", text: $model.windowsDiskSize)
                             .textFieldStyle(.roundedBorder).frame(width: 100)
                             .disabled(model.busy || model.running)
                         Text("GB")
                         Spacer(minLength: 0)
-                        Button("Größe anwenden") { Task { await model.applyWindowsDiskSize() } }
+                        Button(L10n.text("Größe anwenden")) { Task { await model.applyWindowsDiskSize() } }
                             .disabled(model.busy || model.running || !model.storageReady || model.qemuImg == nil || model.windowsCapacityIssue != nil)
                     }
                     Text(model.windowsDiskStatus).font(.subheadline).textSelection(.enabled)
                     if let issue = model.windowsCapacityIssue { Text(issue).font(.subheadline).foregroundStyle(.orange) }
-                    Text("64–4096 GB frei eingeben. Die Datei wächst mit deinen Daten; die maximale Größe wird nicht sofort auf der SSD belegt. Änderungen werden über „Größe anwenden“ oder beim nächsten Windows-Start übernommen. Vergrößern ist bei ausgeschaltetem Windows möglich; vorhandene Festplatten werden nicht verkleinert. Zusätzlichen Speicher anschließend in Windows zuordnen.")
+                    Text(L10n.text("64–4096 GB frei eingeben. Die Datei wächst mit deinen Daten; die maximale Größe wird nicht sofort auf der SSD belegt. Änderungen werden über „Größe anwenden“ oder beim nächsten Windows-Start übernommen. Vergrößern ist bei ausgeschaltetem Windows möglich; vorhandene Festplatten werden nicht verkleinert. Zusätzlichen Speicher anschließend in Windows zuordnen."))
                         .font(.subheadline).foregroundStyle(.secondary)
-                    DisclosureGroup("Voraussetzungen und Entwicklungsstand") {
-                        Text("Der normale Player verwendet eine 2D-Anzeige. Den experimentellen 3D-Modus mit eigener Windows-Testkopie findest du oben unter Windows-Modus.")
+                    DisclosureGroup(L10n.text("Voraussetzungen und Entwicklungsstand")) {
+                        Text(L10n.text("Der normale Player verwendet eine 2D-Anzeige. Den experimentellen 3D-Modus mit eigener Windows-Testkopie findest du oben unter Windows-Modus."))
                             .font(.subheadline).foregroundStyle(.secondary).padding(.top, 6)
                     }
                 }
@@ -268,89 +269,89 @@ struct ContentView: View {
                         Image(systemName: "desktopcomputer").font(.system(size: 32)).foregroundStyle(.blue)
                         VStack(alignment: .leading, spacing: 3) {
                             Text("Windows 11 Pro Arm64").font(.title2.bold())
-                            Text("QEMU · HVF · einfacher Framebuffer").foregroundStyle(.secondary)
+                            Text(L10n.text("QEMU · HVF · einfacher Framebuffer")).foregroundStyle(.secondary)
                         }
                         Spacer()
-                        status(model.windowsReady && model.firmware != nil ? "Engine bereit" : "Einrichtung nötig", ready: model.windowsReady && model.firmware != nil)
+                        status(model.windowsReady && model.firmware != nil ? L10n.text("Engine bereit") : L10n.text("Einrichtung nötig"), ready: model.windowsReady && model.firmware != nil)
                     }
                     Divider()
                     resourceControls
-                    Toggle("Nächster Start: Windows von DVD einrichten", isOn: $model.settings.installWindows)
+                    Toggle(L10n.text("Nächster Start: Windows von DVD einrichten"), isOn: $model.settings.installWindows)
                         .disabled(model.running || model.busy)
-                    Text("Der DVD-Start gilt einmalig. Danach startet die VM von ihrer gespeicherten Festplatte; die ISO-Auswahl bleibt erhalten. Für einen weiteren DVD-Start diese Option erneut einschalten.")
+                    Text(L10n.text("Der DVD-Start gilt einmalig. Danach startet die VM von ihrer gespeicherten Festplatte; die ISO-Auswahl bleibt erhalten. Für einen weiteren DVD-Start diese Option erneut einschalten."))
                         .font(.caption).foregroundStyle(.secondary)
                     windowsDVDControls
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("Windows-Grafik und Auflösung").font(.headline)
-                        Picker("Grafikadapter", selection: $model.windowsGraphics) {
+                        Text(L10n.text("Windows-Grafik und Auflösung")).font(.headline)
+                        Picker(L10n.text("Grafikadapter"), selection: $model.windowsGraphics) {
                             ForEach(WindowsGraphics.allCases, id: \.rawValue) { Text($0.title).tag($0) }
                         }.disabled(model.running || model.busy)
                         if model.windowsGraphics == .virtio {
-                            Picker("Bevorzugter Modus", selection: $model.windowsResolution) {
+                            Picker(L10n.text("Bevorzugter Modus"), selection: $model.windowsResolution) {
                                 ForEach(WindowsDisplayMode.allCases, id: \.rawValue) { Text($0.title).tag($0) }
                             }.disabled(model.running || model.busy)
                         }
-                        Text("Zusätzliche Windows-Auflösungen benötigen passende ARM64-Gasttreiber. Der bevorzugte Modus ist eine Monitorvorgabe; der Gasttreiber aktiviert passende Windows-Modi.")
+                        Text(L10n.text("Zusätzliche Windows-Auflösungen benötigen passende ARM64-Gasttreiber. Der bevorzugte Modus ist eine Monitorvorgabe; der Gasttreiber aktiviert passende Windows-Modi."))
                             .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                        Text("Virtio hier ist 2D-Anzeige, keine 3D-Beschleunigung. Anzeigeoptionen werden pro Windows-Datenordner gemerkt.")
+                        Text(L10n.text("Virtio hier ist 2D-Anzeige, keine 3D-Beschleunigung. Anzeigeoptionen werden pro Windows-Datenordner gemerkt."))
                             .font(.caption).foregroundStyle(.secondary)
-                        Button("Treiber-CD in Windows suchen", action: model.openWindowsDriverDisc)
+                        Button(L10n.text("Treiber-CD in Windows suchen"), action: model.openWindowsDriverDisc)
                             .disabled(model.activeGuest != "windows" || !model.running || model.windowsPasteBusy)
                     }
-                    fileRow(title: "ARM64-Treiber-ISO (empfohlen)", value: model.settings.driversISO.isEmpty ? "Windows-Gastwerkzeuge / VirtIO-Netzwerktreiber" : model.settings.driversISO) {
-                        if let file = model.chooseFile(title: "ARM64-Windows-Gasttreiber-ISO auswählen") { model.settings.driversISO = file }
+                    fileRow(title: "ARM64-Treiber-ISO (empfohlen)", value: model.settings.driversISO.isEmpty ? L10n.text("Windows-Gastwerkzeuge / VirtIO-Netzwerktreiber") : model.settings.driversISO) {
+                        if let file = model.chooseFile(title: L10n.text("ARM64-Windows-Gasttreiber-ISO auswählen")) { model.settings.driversISO = file }
                     }.disabled(model.running || model.busy)
                     if !model.settings.driversISO.isEmpty {
-                        Button("Treiber-ISO aus Auswahl entfernen") { model.settings.driversISO = "" }
+                        Button(L10n.text("Treiber-ISO aus Auswahl entfernen")) { model.settings.driversISO = "" }
                             .font(.caption).disabled(model.running || model.busy)
                     }
                     if model.settings.driversISO == model.settings.iso && !model.settings.iso.isEmpty {
-                        Text("Hier ist dieselbe ISO zweimal ausgewählt. Eine Windows-ISO ist keine Treiber-ISO.").font(.caption).foregroundStyle(.orange)
+                        Text(L10n.text("Hier ist dieselbe ISO zweimal ausgewählt. Eine Windows-ISO ist keine Treiber-ISO.")).font(.caption).foregroundStyle(.orange)
                     }
-                    Toggle("Windows 11 Pro vorauswählen", isOn: $model.settings.selectPro)
+                    Toggle(L10n.text("Windows 11 Pro vorauswählen"), isOn: $model.settings.selectPro)
                         .disabled(model.running || model.busy || !model.settings.installWindows)
-                    Toggle("Lokales Windows-Konto · ohne Microsoft-Anmeldung", isOn: $model.settings.localWindowsAccount)
+                    Toggle(L10n.text("Lokales Windows-Konto · ohne Microsoft-Anmeldung"), isOn: $model.settings.localWindowsAccount)
                         .disabled(model.running || model.busy || !model.settings.installWindows)
                     if model.settings.installWindows && model.settings.localWindowsAccount {
                         VStack(alignment: .leading, spacing: 10) {
                             TextField("Lokaler Benutzername", text: $model.settings.localWindowsUser)
                             SecureField("Passwort (mindestens 8 Zeichen)", text: $model.localPassword)
-                            SecureField("Passwort wiederholen", text: $model.localPasswordConfirmation)
-                            Text("Passwort: \(model.localPassword.count) Zeichen · Wiederholung: \(model.localPasswordConfirmation.count) Zeichen")
+                            SecureField(L10n.text("Passwort wiederholen"), text: $model.localPasswordConfirmation)
+                            Text(L10n.message("Passwort: \(model.localPassword.count) Zeichen · Wiederholung: \(model.localPasswordConfirmation.count) Zeichen"))
                                 .font(.subheadline.monospacedDigit())
-                            Label(model.localAccountIssue ?? "Kontodaten gültig · Passwörter stimmen überein",
+                            Label(model.localAccountIssue ?? L10n.text("Kontodaten gültig · Passwörter stimmen überein"),
                                   systemImage: model.localAccountIssue == nil ? "checkmark.circle.fill" : "info.circle.fill")
                                 .foregroundStyle(model.localAccountIssue == nil ? Color.teal : Color.orange)
-                            Toggle("Benutzername und Kennwort sicher merken", isOn: $model.rememberWindowsCredential)
+                            Toggle(L10n.text("Benutzername und Kennwort sicher merken"), isOn: $model.rememberWindowsCredential)
                             HStack {
-                                Button("Im Schlüsselbund speichern") { Task { await model.saveWindowsCredential() } }
+                                Button(L10n.text("Im Schlüsselbund speichern")) { Task { await model.saveWindowsCredential() } }
                                     .disabled(model.localAccountIssue != nil)
-                                Button("Aus Schlüsselbund laden") { Task { await model.loadWindowsCredential() } }
+                                Button(L10n.text("Aus Schlüsselbund laden")) { Task { await model.loadWindowsCredential() } }
                             }
                             Text(model.credentialStatus).font(.subheadline).textSelection(.enabled)
-                            Text("Dieses Windows-Konto entsteht während der Installation. Bei „sicher merken“ speichert Stratovo Benutzername und Kennwort vor dem Start im macOS-Schlüsselbund und stellt sie beim nächsten Öffnen wieder her, soweit macOS den Zugriff bereits erlaubt. Zum Freigeben „Aus Schlüsselbund laden“ wählen und das Kennwort des Mac-Anmeldeschlüsselbunds verwenden. Das Kennwort bleibt auch nach dem Start in diesen Feldern; es steht nicht in Einstellungen oder Protokollen. Dieser App-Eintrag wird in der Schlüsselbundverwaltung verwaltet. Das temporäre Einrichtungsmedium wird nach Ende der Sitzung entfernt.")
+                            Text(L10n.text("Dieses Windows-Konto entsteht während der Installation. Bei „sicher merken“ speichert Stratovo Benutzername und Kennwort vor dem Start im macOS-Schlüsselbund und stellt sie beim nächsten Öffnen wieder her, soweit macOS den Zugriff bereits erlaubt. Zum Freigeben „Aus Schlüsselbund laden“ wählen und das Kennwort des Mac-Anmeldeschlüsselbunds verwenden. Das Kennwort bleibt auch nach dem Start in diesen Feldern; es steht nicht in Einstellungen oder Protokollen. Dieser App-Eintrag wird in der Schlüsselbundverwaltung verwaltet. Das temporäre Einrichtungsmedium wird nach Ende der Sitzung entfernt."))
                                 .font(.caption).foregroundStyle(.secondary)
                         }.disabled(model.running || model.busy)
                     }
-                    Toggle("Windows-Netzwerk / Internet aktivieren", isOn: $model.settings.windowsNetwork)
+                    Toggle(L10n.text("Windows-Netzwerk / Internet aktivieren"), isOn: $model.settings.windowsNetwork)
                         .disabled(model.running || model.busy)
-                    Text("Wähle ausdrücklich Arm64, keine x64-ISO. Die ISO-Architektur wird hier noch nicht automatisch erkannt. Zum Start des Installationsmediums gegebenenfalls im Gastfenster eine Taste drücken.")
+                    Text(L10n.text("Wähle ausdrücklich Arm64, keine x64-ISO. Die ISO-Architektur wird hier noch nicht automatisch erkannt. Zum Start des Installationsmediums gegebenenfalls im Gastfenster eine Taste drücken."))
                         .font(.caption).foregroundStyle(.secondary)
-                    Text("Deine Windows-Lizenz bleibt erforderlich. Für Internet im Gast den ARM64-VirtIO-Netzwerktreiber von der Treiber-ISO laden. Beim lokalen Konto ist keine Microsoft-Anmeldung nötig.")
+                    Text(L10n.text("Deine Windows-Lizenz bleibt erforderlich. Für Internet im Gast den ARM64-VirtIO-Netzwerktreiber von der Treiber-ISO laden. Beim lokalen Konto ist keine Microsoft-Anmeldung nötig."))
                         .font(.caption).foregroundStyle(.secondary)
                     Text(model.windowsAcceleration).font(.caption).foregroundStyle(.secondary)
-                    if model.settings.memoryGB < 4 { Text("Für den Windows-Boot-Test mindestens 4 GB RAM wählen.").foregroundStyle(.orange).font(.caption) }
+                    if model.settings.memoryGB < 4 { Text(L10n.text("Für den Windows-Boot-Test mindestens 4 GB RAM wählen.")).foregroundStyle(.orange).font(.caption) }
                     HStack {
-                        Button(action: model.startWindows) { Label(model.settings.installWindows ? "Windows einrichten" : "Windows starten", systemImage: "play.fill") }
+                        Button(action: model.startWindows) { Label(model.settings.installWindows ? L10n.text("Windows einrichten") : L10n.text("Windows starten"), systemImage: "play.fill") }
                             .buttonStyle(.borderedProminent).controlSize(.large)
                             .disabled(!model.canStartWindows)
-                        Button("Vorhandenes Windows starten", action: model.startExistingWindows)
+                        Button(L10n.text("Vorhandenes Windows starten"), action: model.startExistingWindows)
                             .disabled(!model.canResumeWindows)
                         Spacer()
                         Link("Windows Arm64 ↗", destination: URL(string: "https://www.microsoft.com/de-de/software-download/windows11arm64")!)
                     }
-                    Link("ARM64-Windows-Gasttreiber ↗", destination: URL(string: "https://docs.getutm.app/guest-support/windows/")!)
-                    Button("Windows-Dateien im Finder zeigen") {
+                    Link(L10n.text("ARM64-Windows-Gasttreiber ↗"), destination: URL(string: "https://docs.getutm.app/guest-support/windows/")!)
+                    Button(L10n.text("Windows-Dateien im Finder zeigen")) {
                         model.revealWindowsFolder()
                     }.disabled(model.busy)
                 }
@@ -362,7 +363,7 @@ struct ContentView: View {
     private var windowsIdentityCard: some View {
         card {
             VStack(alignment: .leading, spacing: 12) {
-                Label("Windows-Gerätekennung", systemImage: "cpu").font(.headline).foregroundStyle(.teal)
+                Label(L10n.text("Windows-Gerätekennung"), systemImage: "cpu").font(.headline).foregroundStyle(.teal)
                 Text(model.windowsIdentityStatus).font(.subheadline).textSelection(.enabled)
                     .fixedSize(horizontal: false, vertical: true)
                 if let identity = model.windowsIdentity, identity.mode == .unique {
@@ -370,57 +371,58 @@ struct ContentView: View {
                         .font(.caption.monospaced()).textSelection(.enabled)
                 }
                 if model.windowsIdentity?.mode == .legacy {
-                    Text("Die bisherige Standardkennung wurde von mehreren VMs verwendet. Eine eigene Kennung verhindert diese Überschneidung; eine damit zusammenhängende Firmenzuordnung ist noch im Gast zu prüfen.")
+                    Text(L10n.text("Die bisherige Standardkennung wurde von mehreren VMs verwendet. Eine eigene Kennung verhindert diese Überschneidung; eine damit zusammenhängende Firmenzuordnung ist noch im Gast zu prüfen."))
                         .font(.caption).foregroundStyle(.orange).fixedSize(horizontal: false, vertical: true)
-                    Button("Eigene Gerätekennung einrichten …") { showIdentityChange = true }
+                    Button(L10n.text("Eigene Gerätekennung einrichten …")) { showIdentityChange = true }
                         .buttonStyle(.borderedProminent).disabled(model.running || model.busy || !model.storageReady)
                 }
                 if model.windowsIdentityCanRestore {
-                    Button("Ursprüngliche Kennung wiederherstellen …") { showIdentityRestore = true }
+                    Button(L10n.text("Ursprüngliche Kennung wiederherstellen …")) { showIdentityRestore = true }
                         .disabled(model.running || model.busy || !model.storageReady)
                 }
-                Text("UUID, Seriennummer und MAC bleiben bei Neustarts gleich und liegen im Windows-Ordner auf deinem gewählten Datenträger. Ein schon in Windows gespeichertes Autopilot-Firmenprofil wird durch die Kennung allein nicht entfernt.")
+                Text(L10n.text("UUID, Seriennummer und MAC bleiben bei Neustarts gleich und liegen im Windows-Ordner auf deinem gewählten Datenträger. Ein schon in Windows gespeichertes Autopilot-Firmenprofil wird durch die Kennung allein nicht entfernt."))
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
         }
-        .confirmationDialog("Eigene Windows-Gerätekennung einrichten?", isPresented: $showIdentityChange) {
-            Button("Eigene Kennung übernehmen") { Task { await model.changeWindowsIdentity() } }
-            Button("Abbrechen", role: .cancel) { }
+        .confirmationDialog(L10n.text("Eigene Windows-Gerätekennung einrichten?"), isPresented: $showIdentityChange) {
+            Button(L10n.text("Eigene Kennung übernehmen")) { Task { await model.changeWindowsIdentity() } }
+            Button(L10n.text("Abbrechen"), role: .cancel) { }
         } message: {
-            Text("Die bisherige Kennung wird im gewählten Windows-Ordner gesichert. Die VM erhält eine eigene UUID, Seriennummer und MAC. Windows-Festplatte, UEFI-Dateien und TPM werden nicht geändert. Windows kann eine erneute Aktivierung oder bei Verschlüsselung den BitLocker-Wiederherstellungsschlüssel verlangen. Danach ist der Start vom vorhandenen Windows ausgewählt.")
+            Text(L10n.text("Die bisherige Kennung wird im gewählten Windows-Ordner gesichert. Die VM erhält eine eigene UUID, Seriennummer und MAC. Windows-Festplatte, UEFI-Dateien und TPM werden nicht geändert. Windows kann eine erneute Aktivierung oder bei Verschlüsselung den BitLocker-Wiederherstellungsschlüssel verlangen. Danach ist der Start vom vorhandenen Windows ausgewählt."))
         }
-        .confirmationDialog("Ursprüngliche Gerätekennung wiederherstellen?", isPresented: $showIdentityRestore) {
-            Button("Kennung wiederherstellen") { Task { await model.changeWindowsIdentity(restore: true) } }
-            Button("Abbrechen", role: .cancel) { }
+        .confirmationDialog(L10n.text("Ursprüngliche Gerätekennung wiederherstellen?"), isPresented: $showIdentityRestore) {
+            Button(L10n.text("Kennung wiederherstellen")) { Task { await model.changeWindowsIdentity(restore: true) } }
+            Button(L10n.text("Abbrechen"), role: .cancel) { }
         } message: {
-            Text("Die ursprünglichen virtuellen Gerätekennungen werden aus der gespeicherten Sicherung übernommen. Die Festplatte wird nicht zurückgesetzt. Auch bei dieser Hardwareänderung kann Windows eine Aktivierung oder einen BitLocker-Schlüssel verlangen.")
+            Text(L10n.text("Die ursprünglichen virtuellen Gerätekennungen werden aus der gespeicherten Sicherung übernommen. Die Festplatte wird nicht zurückgesetzt. Auch bei dieser Hardwareänderung kann Windows eine Aktivierung oder einen BitLocker-Schlüssel verlangen."))
         }
     }
 
     private var setup: some View {
         VStack(alignment: .leading, spacing: 18) {
+            LanguageSettingsView(model: model)
             storageCard
             SetupDownloadsView(model: model, installer: model.installer)
             card {
                 VStack(alignment: .leading, spacing: 18) {
-                    Text("Lokale Engines").font(.title2.bold())
-                    Text("Vorhandene Engines und eigene Firmware auswählen. Downloads und Lizenzen werden oben direkt in Stratovo verwaltet.")
+                    Text(L10n.text("Lokale Engines")).font(.title2.bold())
+                    Text(L10n.text("Vorhandene Engines und eigene Firmware auswählen. Downloads und Lizenzen werden oben direkt in Stratovo verwaltet."))
                         .foregroundStyle(.secondary)
                     VStack(alignment: .leading, spacing: 5) {
                         Text("Android SDK").font(.subheadline.bold())
-                        Text(model.sdk ?? model.storage?.sdk.path ?? "Zuerst Speicherort wählen").font(.system(size: 11, design: .monospaced)).textSelection(.enabled)
-                        Text(model.sdk == nil ? "Die Download-Auswahl richtet Android-Werkzeuge und Emulator im gewählten Datenordner ein." : "SDK gefunden").font(.caption).foregroundStyle(.secondary)
+                        Text(model.sdk ?? model.storage?.sdk.path ?? L10n.text("Zuerst Speicherort wählen")).font(.system(size: 11, design: .monospaced)).textSelection(.enabled)
+                        Text(model.sdk == nil ? L10n.text("Die Download-Auswahl richtet Android-Werkzeuge und Emulator im gewählten Datenordner ein.") : L10n.text("SDK gefunden")).font(.caption).foregroundStyle(.secondary)
                     }
-                    fileRow(title: "qemu-system-aarch64", value: model.qemu ?? "Nicht gefunden") {
-                        if let path = model.chooseFile(title: "qemu-system-aarch64 auswählen") { model.settings.qemu = path; Task { await model.refresh() } }
+                    fileRow(title: "qemu-system-aarch64", value: model.qemu ?? L10n.text("Nicht gefunden")) {
+                        if let path = model.chooseFile(title: L10n.text("qemu-system-aarch64 auswählen")) { model.settings.qemu = path; Task { await model.refresh() } }
                     }
-                    fileRow(title: "ARM64-UEFI-Firmware", value: model.firmware ?? "Nicht gefunden") {
-                        if let path = model.chooseFile(title: "edk2-aarch64-code.fd auswählen") { model.settings.firmware = path; Task { await model.refresh() } }
+                    fileRow(title: "ARM64-UEFI-Firmware", value: model.firmware ?? L10n.text("Nicht gefunden")) {
+                        if let path = model.chooseFile(title: L10n.text("edk2-aarch64-code.fd auswählen")) { model.settings.firmware = path; Task { await model.refresh() } }
                     }
-                    fileRow(title: "swtpm · virtuelles TPM 2.0", value: model.swtpm ?? "Nicht gefunden") {
-                        if let path = model.chooseFile(title: "swtpm auswählen") { model.settings.swtpm = path; Task { await model.refresh() } }
+                    fileRow(title: "swtpm · virtuelles TPM 2.0", value: model.swtpm ?? L10n.text("Nicht gefunden")) {
+                        if let path = model.chooseFile(title: L10n.text("swtpm auswählen")) { model.settings.swtpm = path; Task { await model.refresh() } }
                     }
-                    Button("Standardpfade verwenden") {
+                    Button(L10n.text("Standardpfade verwenden")) {
                         model.settings.qemu = ""; model.settings.firmware = ""; model.settings.swtpm = ""
                         Task { await model.refresh() }
                     }
@@ -428,42 +430,42 @@ struct ContentView: View {
             }.disabled(model.running || model.busy)
             card {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Dein Mac").font(.headline)
-                    LabeledContent("Arbeitsspeicher", value: "\(model.totalMemoryGB) GB")
-                    LabeledContent("CPU-Kerne", value: "\(model.hostCores)")
-                    LabeledContent("Hypervisor", value: model.hypervisorAvailable ? "Verfügbar" : "Nicht verfügbar")
-                    Text("Für einen Mac mit 16 GB empfehlen wir zunächst 4 GB und 4 Kerne. In dieser Version läuft jeweils ein Gastprozess.")
+                    Text(L10n.text("Dein Mac")).font(.headline)
+                    LabeledContent(L10n.text("Arbeitsspeicher"), value: "\(model.totalMemoryGB) GB")
+                    LabeledContent(L10n.text("CPU-Kerne"), value: "\(model.hostCores)")
+                    LabeledContent("Hypervisor", value: model.hypervisorAvailable ? L10n.text("Verfügbar") : L10n.text("Nicht verfügbar"))
+                    Text(L10n.text("Für einen Mac mit 16 GB empfehlen wir zunächst 4 GB und 4 Kerne. In dieser Version läuft jeweils ein Gastprozess."))
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
-            Text("Stratovo enthält keine Telemetrie. Android, QEMU und das Gastbetriebssystem haben eigene Netzwerk- und Datenschutzeinstellungen. Protokolle und Einstellungen liegen lokal auf diesem Mac.")
+            Text(L10n.text("Stratovo enthält keine Telemetrie. Android, QEMU und das Gastbetriebssystem haben eigene Netzwerk- und Datenschutzeinstellungen. Protokolle und Einstellungen liegen lokal auf diesem Mac."))
                 .font(.caption).foregroundStyle(.secondary)
         }
     }
 
     private var storageSetup: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Label("Wo sollen deine Systeme gespeichert werden?", systemImage: "externaldrive.fill")
+            Label(L10n.text("Wo sollen deine Systeme gespeichert werden?"), systemImage: "externaldrive.fill")
                 .font(.system(size: 24, weight: .bold))
                 .foregroundStyle(.primary)
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    Text("Wähle ein Laufwerk oder einen Ordner. Stratovo erstellt dort einen eigenen Ordner „Stratovo“ für Android, Windows und die benötigten Dateien.")
+                    Text(L10n.text("Wähle ein Laufwerk oder einen Ordner. Stratovo erstellt dort einen eigenen Ordner „Stratovo“ für Android, Windows und die benötigten Dateien."))
                         .font(.system(size: 16)).foregroundStyle(.primary)
                     StorageBudgetView(windowsGiB: model.windowsCapacityGiB ?? 80)
-                    Text("Vorhandene Daten werden kopiert und vollständig geprüft. Die Originale bleiben zunächst als Sicherung auf der internen Festplatte. Nach dem erfolgreichen Test kannst du diese Sicherungen in der App entfernen.")
+                    Text(L10n.text("Vorhandene Daten werden kopiert und vollständig geprüft. Die Originale bleiben zunächst als Sicherung auf der internen Festplatte. Nach dem erfolgreichen Test kannst du diese Sicherungen in der App entfernen."))
                         .font(.system(size: 16)).foregroundStyle(.primary)
-                    Label("Vorher Android und Windows herunterfahren und Android Studio beenden.", systemImage: "info.circle.fill")
+                    Label(L10n.text("Vorher Android und Windows herunterfahren und Android Studio beenden."), systemImage: "info.circle.fill")
                         .font(.system(size: 16, weight: .semibold)).foregroundStyle(.primary)
                         .padding(14).frame(maxWidth: .infinity, alignment: .leading)
                         .background(Color.teal.opacity(0.14), in: RoundedRectangle(cornerRadius: 10))
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("Dein Datenordner").font(.system(size: 16, weight: .bold))
-                        Text(model.proposedStoragePath.isEmpty ? "Noch kein Ziel ausgewählt" : model.proposedStoragePath)
+                        Text(L10n.text("Dein Datenordner")).font(.system(size: 16, weight: .bold))
+                        Text(model.proposedStoragePath.isEmpty ? L10n.text("Noch kein Ziel ausgewählt") : model.proposedStoragePath)
                             .font(.system(size: 16, weight: .medium, design: .monospaced))
                             .foregroundStyle(.primary).textSelection(.enabled)
                             .fixedSize(horizontal: false, vertical: true)
-                        Button("SSD oder Ordner wählen …", action: model.chooseStorageFolder)
+                        Button(L10n.text("SSD oder Ordner wählen …"), action: model.chooseStorageFolder)
                             .font(.system(size: 15, weight: .semibold)).controlSize(.large).disabled(model.busy)
                     }.frame(maxWidth: .infinity, alignment: .leading)
                     VStack(alignment: .leading, spacing: 10) {
@@ -480,11 +482,11 @@ struct ContentView: View {
                 }.padding(.trailing, 8)
             }
             Divider()
-            Text("Kleine Einstellungen und macOS-Auslagerungsdateien können intern bleiben.")
+            Text(L10n.text("Kleine Einstellungen und macOS-Auslagerungsdateien können intern bleiben."))
                 .font(.system(size: 14)).foregroundStyle(.primary)
             HStack {
                 Spacer()
-                Button("Speicherort einrichten und Daten übernehmen", action: model.configureStorage)
+                Button(L10n.text("Speicherort einrichten und Daten übernehmen"), action: model.configureStorage)
                     .font(.system(size: 16, weight: .semibold))
                     .buttonStyle(.borderedProminent).controlSize(.large)
                     .disabled(model.proposedStoragePath.isEmpty || model.busy)
@@ -495,26 +497,26 @@ struct ContentView: View {
     private var storageCard: some View {
         card {
             VStack(alignment: .leading, spacing: 14) {
-                Label("Daten und Speicherplatz", systemImage: "externaldrive.fill").font(.title2.bold())
-                Text(model.storage?.root ?? "Noch kein Speicherort gewählt").font(.system(size: 12, design: .monospaced)).textSelection(.enabled)
+                Label(L10n.text("Daten und Speicherplatz"), systemImage: "externaldrive.fill").font(.title2.bold())
+                Text(model.storage?.root ?? L10n.text("Noch kein Speicherort gewählt")).font(.system(size: 12, design: .monospaced)).textSelection(.enabled)
                 Text(model.storageFree).foregroundStyle(model.storageReady ? Color.teal : Color.orange)
-                Text("SDK, Android-Geräte, Windows-Festplatte, TPM, Streaming und neue Protokolle verwenden diesen Ordner. Die App und Homebrew-Werkzeuge können intern bleiben.").font(.caption).foregroundStyle(.secondary)
+                Text(L10n.text("SDK, Android-Geräte, Windows-Festplatte, TPM, Streaming und neue Protokolle verwenden diesen Ordner. Die App und Homebrew-Werkzeuge können intern bleiben.")).font(.caption).foregroundStyle(.secondary)
                 Text(model.storageStatus).font(.caption).textSelection(.enabled)
                 HStack {
-                    if model.storage == nil { Button("Speicherort wählen …") { model.showStorageSetup = true } }
-                    Button("Datenordner öffnen", action: model.revealStorage).disabled(!model.storageReady)
+                    if model.storage == nil { Button(L10n.text("Speicherort wählen …")) { model.showStorageSetup = true } }
+                    Button(L10n.text("Datenordner öffnen"), action: model.revealStorage).disabled(!model.storageReady)
                 }
                 if !model.backupPaths.isEmpty {
                     Divider()
-                    Text("Diese internen Kopien können nach dem Test entfernt werden:").font(.subheadline.bold())
+                    Text(L10n.text("Diese internen Kopien können nach dem Test entfernt werden:")).font(.subheadline.bold())
                     ForEach(model.backupPaths, id: \.self) { path in
                         Text(path).font(.system(size: 10, design: .monospaced)).textSelection(.enabled)
                     }
-                    Toggle("Android/Windows mit dem neuen Speicherort geprüft; interne Sicherungen dürfen entfernt werden", isOn: $model.storageTested)
+                    Toggle(L10n.text("Android/Windows mit dem neuen Speicherort geprüft; interne Sicherungen dürfen entfernt werden"), isOn: $model.storageTested)
                         .font(.caption)
-                    Button("Geprüfte interne Kopien endgültig entfernen …", role: .destructive, action: model.confirmStorageCleanup)
+                    Button(L10n.text("Geprüfte interne Kopien endgültig entfernen …"), role: .destructive, action: model.confirmStorageCleanup)
                         .disabled(!model.storageTested || !model.storageReady)
-                    Text("Entfernt ausschließlich die oben gelisteten Sicherungen. Aktive Daten auf der SSD, andere Downloads, Xcode und Homebrew werden nicht gelöscht.").font(.caption).foregroundStyle(.secondary)
+                    Text(L10n.text("Entfernt ausschließlich die oben gelisteten Sicherungen. Aktive Daten auf der SSD, andere Downloads, Xcode und Homebrew werden nicht gelöscht.")).font(.caption).foregroundStyle(.secondary)
                 }
             }
         }.disabled(model.running || model.busy)
@@ -522,10 +524,10 @@ struct ContentView: View {
 
     private var resourceControls: some View {
         HStack(spacing: 24) {
-            Picker("RAM", selection: $model.settings.memoryGB) {
+            Picker(L10n.text("RAM"), selection: $model.settings.memoryGB) {
                 ForEach(2...model.maxMemoryGB, id: \.self) { Text("\($0) GB").tag($0) }
             }
-            Picker("CPU", selection: $model.settings.cores) {
+            Picker(L10n.text("CPU"), selection: $model.settings.cores) {
                 ForEach(2...model.maxCores, id: \.self) { Text("\($0) Kerne").tag($0) }
             }
         }.disabled(model.running || model.busy)
@@ -539,18 +541,18 @@ struct ContentView: View {
                     Text(model.sessionName).font(.headline)
                     Spacer()
                     if model.running {
-                        Button("Herunterfahren", action: model.shutdownGuest)
-                        Button("Prozess beenden", role: .destructive) { showStopConfirmation = true }
+                        Button(L10n.text("Herunterfahren"), action: model.shutdownGuest)
+                        Button(L10n.text("Prozess beenden"), role: .destructive) { showStopConfirmation = true }
                     }
-                    Button("Sitzungslog zeigen", action: model.revealLogs).disabled(model.lastCommand.isEmpty)
+                    Button(L10n.text("Sitzungslog zeigen"), action: model.revealLogs).disabled(model.lastCommand.isEmpty)
                 }
                 HStack {
                     Button {
                         Task { await model.exportDiagnostics() }
-                    } label: { Label("Gesamtprotokoll exportieren", systemImage: "doc.badge.arrow.up") }
+                    } label: { Label(L10n.text("Gesamtprotokoll exportieren"), systemImage: "doc.badge.arrow.up") }
                         .disabled(model.diagnosticBusy || !model.storageReady)
                     if model.diagnosticBusy { ProgressView().controlSize(.small) }
-                    Text("Android + Windows + Einrichtung in einer Datei").font(.caption).foregroundStyle(.secondary)
+                    Text(L10n.text("Android + Windows + Einrichtung in einer Datei")).font(.caption).foregroundStyle(.secondary)
                 }
                 if !model.diagnosticStatus.isEmpty { Text(model.diagnosticStatus).font(.caption).textSelection(.enabled) }
                 ScrollView([.horizontal, .vertical]) {
@@ -570,17 +572,17 @@ struct ContentView: View {
                     .font(.title).foregroundStyle(.teal)
                 VStack(alignment: .leading, spacing: 5) {
                     Text(title).font(.headline)
-                    Text(active ? model.playerStatus : "Eigenes Fenster · frei skalierbar · Vollbild möglich")
+                    Text(active ? model.playerStatus : L10n.text("Eigenes Fenster · frei skalierbar · Vollbild möglich"))
                         .font(.subheadline).foregroundStyle(.secondary)
                     if active && kind == "android" {
-                        Text("Stream: \(Int(model.streamFPS.rounded())) FPS · Decoder-Zuführung: \(Int(model.decoderFPS.rounded())) FPS · Ziel \(model.androidTargetFPS)")
+                        Text(L10n.message("Stream: \(Int(model.streamFPS.rounded())) FPS · Decoder-Zuführung: \(Int(model.decoderFPS.rounded())) FPS · Ziel \(model.androidTargetFPS)"))
                             .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
-                        Text("Empfangene und an den Decoder übergebene Bilder; keine Messung der Spiel-FPS.")
+                        Text(L10n.text("Empfangene und an den Decoder übergebene Bilder; keine Messung der Spiel-FPS."))
                             .font(.caption).foregroundStyle(.secondary)
                     }
                 }
                 Spacer(minLength: 0)
-                Button("Player öffnen") { model.showPlayer(kind: kind) }
+                Button(L10n.text("Player öffnen")) { model.showPlayer(kind: kind) }
             }
         }
     }
@@ -588,38 +590,38 @@ struct ContentView: View {
     private var windowsDVDControls: some View {
         GroupBox {
             VStack(alignment: .leading, spacing: 10) {
-                Label("Installations-DVD · Windows ARM64", systemImage: "opticaldiscdrive")
+                Label(L10n.text("Installations-DVD · Windows ARM64"), systemImage: "opticaldiscdrive")
                     .font(.headline)
-                Text(model.settings.iso.isEmpty ? "Keine ISO ausgewählt" : model.settings.iso)
+                Text(model.settings.iso.isEmpty ? L10n.text("Keine ISO ausgewählt") : model.settings.iso)
                     .font(.system(size: 12, design: .monospaced)).textSelection(.enabled)
                     .fixedSize(horizontal: false, vertical: true)
                 Label(model.windowsISODetail, systemImage: model.windowsISOReady ? "checkmark.circle" : "exclamationmark.triangle")
                     .font(.subheadline).foregroundStyle(model.windowsISOReady ? Color.teal : Color.orange)
                 Text(model.settings.installWindows
-                     ? "Diese ISO wird beim nächsten Einrichtungsstart als DVD verbunden."
-                     : "DVD ist nicht zum Start ausgewählt. Die VM startet von ihrer gespeicherten Festplatte.")
+                     ? L10n.text("Diese ISO wird beim nächsten Einrichtungsstart als DVD verbunden.")
+                     : L10n.text("DVD ist nicht zum Start ausgewählt. Die VM startet von ihrer gespeicherten Festplatte."))
                     .font(.caption).foregroundStyle(.secondary)
                 HStack {
-                    Button("DVD-ISO manuell auswählen …", action: model.chooseWindowsISO)
+                    Button(L10n.text("DVD-ISO manuell auswählen …"), action: model.chooseWindowsISO)
                         .buttonStyle(.borderedProminent)
-                    Button("Auswahl entfernen") { model.settings.iso = ""; model.refreshWindowsISO() }
+                    Button(L10n.text("Auswahl entfernen")) { model.settings.iso = ""; model.refreshWindowsISO() }
                         .disabled(model.settings.iso.isEmpty)
                 }.disabled(model.running || model.busy)
-                Text("Eine vorhandene ISO auf Extern auswählen. Der Pfad wird gespeichert. Geprüft werden Dateiverfügbarkeit und Größe; ARM64-Inhalt und Bootfähigkeit sind damit noch nicht bestätigt. Zum Ändern Windows ausschalten.")
+                Text(L10n.text("Eine vorhandene ISO auf Extern auswählen. Der Pfad wird gespeichert. Geprüft werden Dateiverfügbarkeit und Größe; ARM64-Inhalt und Bootfähigkeit sind damit noch nicht bestätigt. Zum Ändern Windows ausschalten."))
                     .font(.caption).foregroundStyle(.secondary)
                 Text(model.windowsBootMediaStatus).font(.caption).textSelection(.enabled)
                 Divider()
                 HStack {
-                    Button("ISO mit Microsoft-Prüfsumme vergleichen") { Task { await model.verifyWindowsISO() } }
+                    Button(L10n.text("ISO mit Microsoft-Prüfsumme vergleichen")) { Task { await model.verifyWindowsISO() } }
                         .disabled(model.running || model.busy || !model.windowsISOReady || !model.storageReady)
-                    Link("Microsoft-Prüfwerte ↗", destination: URL(string: WindowsISOHash.source)!)
+                    Link(L10n.text("Microsoft-Prüfwerte ↗"), destination: URL(string: WindowsISOHash.source)!)
                 }
                 Text(model.windowsISOHashStatus).font(.caption).fixedSize(horizontal: false, vertical: true)
                 if !model.windowsISOHashDigest.isEmpty {
                     Text("SHA-256: " + model.windowsISOHashDigest).font(.caption.monospaced()).textSelection(.enabled)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                Text("Verglichen wird die deutsche ARM64-ISO von Windows 11 26H2. Andere Versionen oder Sprachen brauchen ihren eigenen offiziellen Prüfwert. Es wird nichts neu heruntergeladen.")
+                Text(L10n.text("Verglichen wird die deutsche ARM64-ISO von Windows 11 26H2. Andere Versionen oder Sprachen brauchen ihren eigenen offiziellen Prüfwert. Es wird nichts neu heruntergeladen."))
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }.frame(maxWidth: .infinity, alignment: .leading).padding(6)
         }
@@ -633,7 +635,7 @@ struct ContentView: View {
                     .textSelection(.enabled).lineLimit(2).truncationMode(.middle)
             }
             Spacer(minLength: 10)
-            Button("Auswählen …", action: action)
+            Button(L10n.text("Auswählen …"), action: action)
         }
     }
 

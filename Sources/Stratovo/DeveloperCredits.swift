@@ -1,3 +1,4 @@
+import StratovoCore
 import SwiftUI
 
 @MainActor
@@ -10,21 +11,21 @@ struct DeveloperCredits: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Label("Open Source · MIT", systemImage: "curlybraces")
-            Text("Eine Oberfläche. Zwei Engines.\nEntwickelt für Apple Silicon.")
+            Text(L10n.text("Eine Oberfläche. Zwei Engines.\nEntwickelt für Apple Silicon."))
                 .foregroundStyle(.secondary)
             Divider().padding(.vertical, 4)
             VStack(alignment: .leading, spacing: 3) {
-                Text("Entwickelt von").foregroundStyle(.secondary)
+                Text(L10n.text("Entwickelt von")).foregroundStyle(.secondary)
                 Text("PwnedG0blin").font(.subheadline.weight(.semibold))
             }
             Link("X · @PwnedG0blin ↗", destination: URL(string: "https://x.com/PwnedG0blin")!)
                 .foregroundStyle(linkColor)
-                .help("X-Profil von PwnedG0blin im Browser öffnen")
-            Link("GitHub Sponsors · Unterstützen ↗", destination: URL(string: "https://github.com/sponsors/PwnedG0blin")!)
+                .help(L10n.text("X-Profil von PwnedG0blin im Browser öffnen"))
+            Link(L10n.text("GitHub Sponsors · Unterstützen ↗"), destination: URL(string: "https://github.com/sponsors/PwnedG0blin")!)
                 .foregroundStyle(linkColor)
-            Link("Patreon · Unterstützen ↗", destination: URL(string: "https://www.patreon.com/cw/PwnedG0blinApp")!)
+            Link(L10n.text("Patreon · Unterstützen ↗"), destination: URL(string: "https://www.patreon.com/cw/PwnedG0blinApp")!)
                 .foregroundStyle(linkColor)
-                .help("PwnedG0blin auf Patreon im Browser öffnen")
+                .help(L10n.text("PwnedG0blin auf Patreon im Browser öffnen"))
         }
         .font(.caption)
         .frame(maxWidth: .infinity, alignment: .leading)

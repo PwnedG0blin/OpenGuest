@@ -4,9 +4,9 @@ public enum AndroidPerformance: String, CaseIterable, Hashable {
     case smooth, balanced, native
     public var title: String {
         switch self {
-        case .smooth: return "Flüssig · empfohlen"
+        case .smooth: return L10n.text("Flüssig · empfohlen")
         case .balanced: return "Ausgewogen"
-        case .native: return "Originalauflösung"
+        case .native: return L10n.text("Originalauflösung")
         }
     }
     public var guestMaxSize: Int { self == .smooth ? 1600 : (self == .balanced ? 2000 : 0) }

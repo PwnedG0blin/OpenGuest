@@ -1,3 +1,4 @@
+import StratovoCore
 import Foundation
 import Security
 
@@ -16,7 +17,7 @@ enum WindowsSetupKeychain {
         let base = query(storageID: storageID)
         let data = try JSONEncoder().encode(credential)
         let values: [String: Any] = [kSecValueData as String: data,
-            kSecAttrLabel as String: "Stratovo · Windows-Einrichtung"]
+            kSecAttrLabel as String: L10n.text("Stratovo · Windows-Einrichtung")]
         var result = SecItemUpdate(base as CFDictionary, values as CFDictionary)
         if result == errSecItemNotFound {
             result = SecItemAdd(base.merging(values) { _, new in new } as CFDictionary, nil)
@@ -41,11 +42,11 @@ enum WindowsSetupKeychain {
     private static func failure(_ status: OSStatus) -> NSError {
         let message: String
         if status == errSecUserCanceled || status == errSecAuthFailed {
-            message = "Der macOS-Schlüsselbundzugriff wurde nicht freigegeben. Beim Laden das Kennwort deines Mac-Anmeldeschlüsselbunds verwenden (normalerweise dein Mac-Anmeldekennwort) und den Zugriff erlauben. Deine bisherigen Eingaben bleiben erhalten."
+            message = L10n.text("Der macOS-Schlüsselbundzugriff wurde nicht freigegeben. Beim Laden das Kennwort deines Mac-Anmeldeschlüsselbunds verwenden (normalerweise dein Mac-Anmeldekennwort) und den Zugriff erlauben. Deine bisherigen Eingaben bleiben erhalten.")
         } else if status == errSecInteractionNotAllowed {
-            message = "Gespeicherte Kontodaten benötigen eine macOS-Freigabe. Bitte „Aus Schlüsselbund laden“ wählen."
+            message = L10n.text("Gespeicherte Kontodaten benötigen eine macOS-Freigabe. Bitte „Aus Schlüsselbund laden“ wählen.")
         } else {
-            message = "Schlüsselbund: \(SecCopyErrorMessageString(status, nil) as String? ?? "Zugriff fehlgeschlagen")"
+            message = L10n.message("Schlüsselbund: \(SecCopyErrorMessageString(status, nil) as String? ?? "Zugriff fehlgeschlagen")")
         }
         return NSError(domain: NSOSStatusErrorDomain, code: Int(status), userInfo: [NSLocalizedDescriptionKey: message])
     }

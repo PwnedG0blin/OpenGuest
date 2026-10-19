@@ -28,22 +28,22 @@ struct WindowsPasteSheet: View {
             header
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("Prüfe oder bearbeite deinen Text. Er wird in das zuletzt angeklickte Eingabefeld in Windows geschrieben.")
+                    Text(L10n.text("Prüfe oder bearbeite deinen Text. Er wird in das zuletzt angeklickte Eingabefeld in Windows geschrieben."))
                         .font(.subheadline).foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                     editor
                     keyboardSettings
                     if hasLineBreaks {
                         VStack(alignment: .leading, spacing: 6) {
-                            Toggle("Zeilenumbrüche als Enter übertragen", isOn: $allowLineBreaks)
-                            Label("In einer Konsole können enthaltene Befehlszeilen dadurch ausgeführt werden.", systemImage: "exclamationmark.triangle.fill")
+                            Toggle(L10n.text("Zeilenumbrüche als Enter übertragen"), isOn: $allowLineBreaks)
+                            Label(L10n.text("In einer Konsole können enthaltene Befehlszeilen dadurch ausgeführt werden."), systemImage: "exclamationmark.triangle.fill")
                                 .font(.caption).foregroundStyle(.orange)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                         .padding(14)
                         .background(Color.orange.opacity(0.10), in: RoundedRectangle(cornerRadius: 12))
                     }
-                    Label("Kein zusätzliches Enter. Abschließende Zeilenumbrüche werden weggelassen.", systemImage: "return")
+                    Label(L10n.text("Kein zusätzliches Enter. Abschließende Zeilenumbrüche werden weggelassen."), systemImage: "return")
                         .font(.caption).foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                     validationStatus
@@ -66,8 +66,8 @@ struct WindowsPasteSheet: View {
             VStack(alignment: .leading, spacing: 5) {
                 Label("Stratovo · Windows Player", systemImage: "square.stack.3d.up.fill")
                     .font(.caption.weight(.semibold)).foregroundStyle(accent)
-                Text("Text einfügen").font(.title2.bold())
-                Text("Vom Mac direkt in Windows").font(.subheadline).foregroundStyle(.secondary)
+                Text(L10n.text("Text einfügen")).font(.title2.bold())
+                Text(L10n.text("Vom Mac direkt in Windows")).font(.subheadline).foregroundStyle(.secondary)
             }
             Spacer(minLength: 0)
         }
@@ -80,9 +80,9 @@ struct WindowsPasteSheet: View {
     private var editor: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Label("Dein Text", systemImage: "text.alignleft").font(.subheadline.bold())
+                Label(L10n.text("Dein Text"), systemImage: "text.alignleft").font(.subheadline.bold())
                 Spacer()
-                Text("Bearbeitbare Vorschau").font(.caption.weight(.medium)).foregroundStyle(accent)
+                Text(L10n.text("Bearbeitbare Vorschau")).font(.caption.weight(.medium)).foregroundStyle(accent)
             }
             TextEditor(text: $text)
                 .font(.system(size: 14, design: .monospaced))
@@ -93,7 +93,7 @@ struct WindowsPasteSheet: View {
                 .background(Color.teal.opacity(0.06), in: RoundedRectangle(cornerRadius: 9))
                 .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(Color.teal.opacity(editorFocused ? 0.85 : 0.35), lineWidth: editorFocused ? 2 : 1))
                 .focused($editorFocused)
-                .accessibilityLabel("Text für Windows")
+                .accessibilityLabel(L10n.text("Text für Windows"))
         }
         .padding(14)
         .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 14))
@@ -103,14 +103,14 @@ struct WindowsPasteSheet: View {
     private var keyboardSettings: some View {
         VStack(alignment: .leading, spacing: 9) {
             HStack(spacing: 12) {
-                Label("Windows-Tastatur", systemImage: "keyboard").font(.subheadline.bold())
+                Label(L10n.text("Windows-Tastatur"), systemImage: "keyboard").font(.subheadline.bold())
                 Spacer(minLength: 0)
-                Picker("Tastaturbelegung in Windows", selection: $model.windowsTextLayout) {
+                Picker(L10n.text("Tastaturbelegung in Windows"), selection: $model.windowsTextLayout) {
                     ForEach(WindowsTextLayout.allCases) { layout in Text(layout.title).tag(layout) }
                 }
                 .labelsHidden().frame(width: 220)
             }
-            Text("Wähle die Belegung in Windows, unabhängig von deiner Mac-Tastatur. Caps Lock muss in Windows ausgeschaltet sein.")
+            Text(L10n.text("Wähle die Belegung in Windows, unabhängig von deiner Mac-Tastatur. Caps Lock muss in Windows ausgeschaltet sein."))
                 .font(.caption).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -139,7 +139,7 @@ struct WindowsPasteSheet: View {
 
     private var footer: some View {
         HStack {
-            Button("Abbrechen") { text = ""; dismiss() }.keyboardShortcut(.cancelAction)
+            Button(L10n.text("Abbrechen")) { text = ""; dismiss() }.keyboardShortcut(.cancelAction)
             Spacer()
             Button {
                 guard case .success(let plan) = input else { return }
@@ -147,7 +147,7 @@ struct WindowsPasteSheet: View {
                 text = ""
                 dismiss()
             } label: {
-                Label("In Windows einfügen", systemImage: "arrow.right.doc.on.clipboard")
+                Label(L10n.text("In Windows einfügen"), systemImage: "arrow.right.doc.on.clipboard")
             }
             .buttonStyle(WindowsPasteActionStyle()).disabled(!canSend)
         }
