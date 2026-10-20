@@ -27,7 +27,7 @@ def v1_source(base):
     return base
 
 
-def repaired_cocoa(base, legacy_v2=False):
+def bridge_cocoa(base, legacy_v2=False):
     source = v1_source(base)
     shared = (HERE/'shared_frame.m.inc').read_text()
     source = replace_once(source, '#ifdef USE_METAL\n/*\n * The Metal scanout',
@@ -65,6 +65,15 @@ def repaired_cocoa(base, legacy_v2=False):
     return source
 
 
+def repaired_cocoa(base, legacy_v2=False, legacy_v3=False):
+    source = bridge_cocoa(base, legacy_v2=legacy_v2)
+    if legacy_v2 or legacy_v3: return source
+    import importlib.util
+    spec = importlib.util.spec_from_file_location('stratovo_native_display', HERE/'native_display.py')
+    native = importlib.util.module_from_spec(spec);spec.loader.exec_module(native)
+    return native.patch(source)
+
+
 def repaired_vnc(base):
     anchor = 'void vnc_display_init(const char *id, Error **errp)\n{'
     return replace_once(base, anchor, (HERE/'vnc_frame.c.inc').read_text()+'\n'+anchor)
@@ -87,7 +96,7 @@ def plan(qemu):
         actual = path.read_text()
         allowed = [base, desired]
         if relative == 'ui/cocoa.m':
-            allowed.extend([v1_source(base), repaired_cocoa(base, legacy_v2=True)])
+            allowed.extend([v1_source(base), repaired_cocoa(base, legacy_v2=True), repaired_cocoa(base, legacy_v3=True)])
         if actual not in allowed:
             raise RuntimeError('Andere Änderungen in '+relative+'; nichts wurde überschrieben.')
         if actual != desired:

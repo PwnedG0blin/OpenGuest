@@ -639,3 +639,10 @@
 "Zuerst Speicherort und QEMU-Werkzeuge unter Einrichtung prüfen." = "Zuerst Speicherort und QEMU-Werkzeuge unter Einrichtung prüfen.";
 
 "Dateiaustausch" = "Dateiaustausch";
+
+/* Beta 4: optional download responsiveness experiment. */
+"Steam-Download testen" = "Steam-Download testen";
+"Windows-Schreiblimit" = "Windows-Schreiblimit";
+"Aus · unbegrenzt (Standard)" = "Aus · unbegrenzt (Standard)";
+"Testoption · gilt ab dem nächsten Windows-Start für alle Schreibzugriffe auf die Windows-Festplatte. Downloads und Installationen können länger dauern. Ob die Oberfläche flüssiger bleibt, bitte vergleichen." = "Testoption · gilt ab dem nächsten Windows-Start für alle Schreibzugriffe auf die Windows-Festplatte. Downloads und Installationen können länger dauern. Ob die Oberfläche flüssiger bleibt, bitte vergleichen.";
+"1. Windows herunterfahren. 2. Zum Vergleich zunächst Aus verwenden. 3. Danach 40 MiB/s wählen, Windows starten und denselben Steam-Download fortsetzen. 4. Bei keiner Verbesserung wieder Aus wählen. Spieleleistung anschließend separat testen." = "1. Windows herunterfahren. 2. Zum Vergleich zunächst Aus verwenden. 3. Danach 40 MiB/s wählen, Windows starten und denselben Steam-Download fortsetzen. 4. Bei keiner Verbesserung wieder Aus wählen. Spieleleistung anschließend separat testen.";

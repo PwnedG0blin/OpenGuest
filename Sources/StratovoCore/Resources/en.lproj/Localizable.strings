@@ -731,3 +731,10 @@
 "In Stratovo Android-Dateien abholen anklicken. Der gesamte Inhalt dieses Android-Ordners wird zum Mac kopiert." = "In Stratovo, click Import Android files. The complete contents of this Android folder are copied to your Mac.";
 "Der Finder öffnet einen neuen Importordner unter Austausch → Android. Frühere Importe und Dateien bleiben erhalten." = "Finder opens a new import folder under Austausch → Android. Earlier imports and existing files are preserved.";
 "Android-Übertragungen erstellen Kopien. Es gibt keinen automatischen Abgleich und keine automatische Löschung. Für direkten SMB-Zugriff kann zusätzlich ein Android-Dateimanager mit SMB-Unterstützung verwendet werden." = "Android transfers create copies, with no automatic synchronization or deletion. An Android file manager with SMB support can optionally provide direct SMB access.";
+
+/* Beta 4: optional download responsiveness experiment. */
+"Steam-Download testen" = "Test Steam downloads";
+"Windows-Schreiblimit" = "Windows write limit";
+"Aus · unbegrenzt (Standard)" = "Off · unlimited (default)";
+"Testoption · gilt ab dem nächsten Windows-Start für alle Schreibzugriffe auf die Windows-Festplatte. Downloads und Installationen können länger dauern. Ob die Oberfläche flüssiger bleibt, bitte vergleichen." = "Test option · applies to all writes to the Windows disk on the next Windows start. Downloads and installations may take longer. Compare whether the interface stays responsive.";
+"1. Windows herunterfahren. 2. Zum Vergleich zunächst Aus verwenden. 3. Danach 40 MiB/s wählen, Windows starten und denselben Steam-Download fortsetzen. 4. Bei keiner Verbesserung wieder Aus wählen. Spieleleistung anschließend separat testen." = "1. Shut down Windows. 2. Start with Off for a baseline. 3. Then select 40 MiB/s, start Windows and resume the same Steam download. 4. Return to Off if there is no improvement. Test game performance separately afterwards.";
