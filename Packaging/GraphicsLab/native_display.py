@@ -2,7 +2,7 @@
 from pathlib import Path
 HERE = Path(__file__).resolve().parent
 
-def patch(source, legacy_v4=False):
+def patch(source, legacy_v4=False, legacy_v5=False, legacy_v6=False):
     def replace(before, after):
         nonlocal source
         if source.count(before) != 1:
@@ -142,4 +142,43 @@ def patch(source, legacy_v4=False):
             info.refresh_rate = (int64_t)stratovoHz * 1000;
         }
         info.width_mm = frameSize.width / screenSize.width * screenPhysicalSize.width;''')
+    if not legacy_v4 and not legacy_v5:
+        replace('typedef NS_ENUM(NSInteger, QemuCocoaViewScanout)',
+                (HERE/'window_state.m.inc').read_text()+'\n'
+                +'typedef NS_ENUM(NSInteger, QemuCocoaViewScanout)')
+        replace('        [window center];\n        [window setDelegate: self];',
+                '        [window center];\n'
+                '        if (stratovo_native()) { stratovo_restore_window(window); }\n'
+                '        [window setDelegate: self];')
+        replace('- (void)windowDidResize:(NSNotification *)notification\n{',
+                '- (void)windowDidResize:(NSNotification *)notification\n{\n'
+                '    if (stratovo_native()) { stratovo_save_window(window); }')
+        replace('    if (stratovo_native()) { [cocoaView updateUIInfo]; }\n}',
+                '    if (stratovo_native()) {\n'
+                '        [cocoaView updateUIInfo];\n'
+                '        stratovo_save_window(window);\n'
+                '    }\n}\n'
+                '- (void)windowDidMove:(NSNotification *)notification\n{\n'
+                '    if (stratovo_native()) { stratovo_save_window(window); }\n}')
+    if not legacy_v4 and not legacy_v5 and not legacy_v6:
+        old_callbacks = """- (void)windowDidResize:(NSNotification *)notification
+{
+    if (stratovo_native()) { stratovo_save_window(window); }
+    [cocoaView updateScale];
+    if (![cocoaView isSelfResizing] && !(stratovo_native() && cocoaView.inLiveResize)) {
+        [cocoaView updateUIInfo];
+    }
+}
+- (void)windowDidEndLiveResize:(NSNotification *)notification
+{
+    if (stratovo_native()) {
+        [cocoaView updateUIInfo];
+        stratovo_save_window(window);
+    }
+}
+- (void)windowDidMove:(NSNotification *)notification
+{
+    if (stratovo_native()) { stratovo_save_window(window); }
+}"""
+        replace(old_callbacks, (HERE/'window_callbacks.m.inc').read_text().rstrip())
     return source

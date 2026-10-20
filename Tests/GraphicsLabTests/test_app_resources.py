@@ -1,6 +1,8 @@
 """Exercise the exact resource copied by the app, not a separate terminal patch."""
 import importlib.util
+import ast
 from pathlib import Path
+import re
 import tempfile
 import unittest
 from unittest import mock
@@ -11,6 +13,23 @@ lab = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(lab)
 
 class AppResourceTests(unittest.TestCase):
+    def test_staged_app_resources_include_python_fragment_dependencies(self):
+        controller=(ROOT/'Sources/Stratovo/WindowsGraphicsLabView.swift').read_text()
+        arrays=re.findall(r'for name in \[(.*?)\]', controller, re.S)
+        staged={name for array in arrays for name in re.findall(r'"([^"]+)"', array)}
+        resources=ROOT/'Packaging/GraphicsLab'
+        self.assertIn('window_state.m.inc', staged)
+        for name in staged:
+            self.assertTrue((resources/name).is_file(), name)
+            if not name.endswith('.py'): continue
+            # Check the actual Python dependencies against the Swift copy list.
+            for node in ast.walk(ast.parse((resources/name).read_text())):
+                if (isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div)
+                    and isinstance(node.left, ast.Name) and node.left.id == 'HERE'
+                    and isinstance(node.right, ast.Constant)
+                    and isinstance(node.right.value, str)):
+                    self.assertIn(node.right.value, staged, name+' requires '+node.right.value)
+
     def test_launch_has_tpm_without_unsupported_ppi_and_keeps_3d(self):
         root=Path('/Volumes/ChosenSSD/Stratovo/GraphicsLab')
         args=lab.launch_arguments(root,root/'TestVM',Path('/tmp/tpm.sock'),Path('/tmp/qmp.sock'))
