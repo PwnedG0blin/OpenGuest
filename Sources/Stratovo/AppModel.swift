@@ -328,7 +328,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var apkBusy = false
     @Published private(set) var apkStatus = ""
     @Published private(set) var sessionName = L10n.text("Kein Gast gestartet")
-    @Published private(set) var log = L10n.text("Stratovo 1.0 Beta 1\nSystem prüfen, dann einen Gast auswählen.").replacingOccurrences(of: "1.0 Beta 1", with: "1.0 Beta 3")
+    @Published private(set) var log = L10n.text("Stratovo 1.0 Beta 1\nSystem prüfen, dann einen Gast auswählen.").replacingOccurrences(of: "1.0 Beta 1", with: "1.0 Beta 4")
     @Published private(set) var lastCommand = ""
     @Published var errorMessage: String? {
         didSet {
@@ -973,12 +973,20 @@ final class AppModel: ObservableObject {
                 throw StorageMigration.failure(L10n.text("Bitte zuerst unter Windows die 3D-Grafik vorbereiten."))
             }
             let bootFirmware = try await preparePCBootAppearance(firmware: firmware, root: storage.windows)
+            var bootArtworkPath: String?
+            if let artwork = windowsBootArtwork {
+                let target = URL(fileURLWithPath: files.qmpSocket).deletingLastPathComponent().appendingPathComponent("boot-artwork.json")
+                do {
+                    try JSONEncoder().encode(artwork).write(to: target, options: .atomic)
+                    bootArtworkPath = target.path
+                } catch { recordDiagnostic("Windows · Startdarstellung", error.localizedDescription) }
+            }
             windowsDiskBytes = Int64(capacity) * 1_073_741_824
             let spec = try LaunchPlan.windowsVM(qemu: qemu, firmware: bootFirmware, variables: files.variables, disk: files.disk,
                                                tpmSocket: files.socket, iso: settings.iso, driversISO: settings.driversISO,
                                                proISO: files.proISO, installing: installing, resources: resources,
                                                displaySocket: files.displaySocket, network: settings.windowsNetwork, qmpSocket: files.qmpSocket, identity: files.identity,
-                                               graphics: windowsGraphics, resolution: windowsResolution, metalRoot: storage.root+"/GraphicsLab", embeddedPlayer: windowsEmbeddedPlayer)
+                                               graphics: windowsGraphics, resolution: windowsResolution, metalRoot: storage.root+"/GraphicsLab", embeddedPlayer: windowsEmbeddedPlayer, bootArtwork: bootArtworkPath)
             recordDiagnostic("Windows · Grafik", windowsGraphics.title + " · bevorzugter Modus " + windowsResolution.title)
             windowsIdentity = files.identity
             windowsIdentityStatus = files.identity.summary
@@ -1438,6 +1446,8 @@ final class AppModel: ObservableObject {
         child.executableURL = URL(fileURLWithPath: spec.executable)
         child.arguments = spec.arguments
         var environment = ProcessInfo.processInfo.environment
+        environment.removeValue(forKey: "STRATOVO_NATIVE_PLAYER")
+        environment.removeValue(forKey: "STRATOVO_BOOT_ARTWORK")
         if kind == "windows", spec.environment["STRATOVO_EMBEDDED_V1"] == nil {
             environment.removeValue(forKey: "STRATOVO_EMBEDDED_V1")
         }

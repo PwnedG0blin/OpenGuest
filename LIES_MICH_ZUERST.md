@@ -1,4 +1,4 @@
-# Stratovo 1.0 Beta 3 einrichten
+# Stratovo 1.0 Beta 4 einrichten
 
 Entwickelt von **PwnedG0blin** · macOS 14+ · Apple Silicon.
 
@@ -104,3 +104,7 @@ Beta 3 ergänzt den klassischen OpenGL-Bildpfad und einen separaten CPU-Bildpuff
 ## Windows Arm: direkte Grafik als Standard
 
 Unter **Windows Arm → Windows-Bildausgabe** ist **Direktes Grafikfenster · Metal (Standard)** voreingestellt. Es öffnet dasselbe Windows im eigenen Grafikfenster ohne VNC-Bildkopien. Zum Einfügen von Text, zum Dateiaustausch und für UEFI-Tasten die Windows-Steuerung im Stratovo-Hauptfenster nutzen. Das Grafikfenster übernimmt seine eigene Maus-, Trackpad- und Vollbildsteuerung. Die eingebettete Ansicht bleibt eine experimentelle Option und kann bei ausgeschaltetem Windows gewählt werden. Vorhandene vollständige Grafikkonfigurationen benötigen für die direkte Ausgabe keinen erneuten Grafikbau.
+
+## Beta 4: direktes Windows-Fenster aktualisieren
+
+Windows herunterfahren und einmal **Windows Arm → 3D-Player vorbereiten / aktualisieren** wählen. Nur QEMU wird neu gebaut; ANGLE, LLVM und deine Gastsysteme bleiben erhalten. Danach lässt sich das direkte Fenster frei ziehen, maximieren und als Vollbild öffnen. Das Bild passt vollständig hinein; das Seitenverhältnis bleibt erhalten. Die Mausposition wird entsprechend umgerechnet. Das bekannte Firmware-Startlogo wird ausschließlich im Bild überdeckt.

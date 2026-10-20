@@ -40,7 +40,7 @@ final class WindowsGraphicsLabController: ObservableObject {
             guard let bundled = Bundle.main.resourceURL?.appendingPathComponent("GraphicsLab") else {
                 throw StorageMigration.failure("Grafiklabor-Ressourcen fehlen.")
             }
-            for name in ["lab.py", "sources.json", "INSTALL_GRAPHICS.ps1", "INSTALL_GRAPHICS.cmd", "ZUERST_AUF_MAC_LESEN.txt", "pkgconf-2.3.0.tar.xz", "boot_appearance.py", "embedded_display.py", "embedded_bridge.m.inc", "embedded_repair.py", "shared_frame.m.inc", "gl_frame.m.inc", "metal_frame.m.inc", "vnc_frame.c.inc", "legacy_embedded_bridge.m.inc", "legacy_v2_gl_frame.m.inc", "ubuntu_vm.py"] {
+            for name in ["lab.py", "sources.json", "INSTALL_GRAPHICS.ps1", "INSTALL_GRAPHICS.cmd", "ZUERST_AUF_MAC_LESEN.txt", "pkgconf-2.3.0.tar.xz", "boot_appearance.py", "embedded_display.py", "embedded_bridge.m.inc", "embedded_repair.py", "shared_frame.m.inc", "gl_frame.m.inc", "metal_frame.m.inc", "vnc_frame.c.inc", "legacy_embedded_bridge.m.inc", "legacy_v2_gl_frame.m.inc", "native_display.py", "native_geometry.h.inc", "native_view.m.inc", "native_methods.m.inc", "ubuntu_vm.py"] {
                 let bytes = try Data(contentsOf: bundled.appendingPathComponent(name))
                 try bytes.write(to: resources.appendingPathComponent(name), options: .atomic)
             }
@@ -105,7 +105,7 @@ final class WindowsGraphicsLabController: ObservableObject {
         guard let root = model.storage?.url.appendingPathComponent("GraphicsLab") else { runtimeReady = false; return }
         let receipt = try? Data(contentsOf: root.appendingPathComponent("runtime-ready.json"))
         let metadata = receipt.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }
-        let playerReady = !model.windowsEmbeddedPlayer || (metadata?["embeddedPlayer"] as? Int == 1 && metadata?["embeddedRevision"] as? Int == 3)
+        let playerReady = metadata?["embeddedPlayer"] as? Int == 1 && metadata?["embeddedRevision"] as? Int == 4
         runtimeReady = playerReady && ["runtime-ready.json", "Runtime/bin/qemu-system-aarch64", "Runtime/libexec/virgl_render_server", "Runtime/lib/libdxmt-native.dylib", "GraphicsDrivers.iso"].allSatisfy {
             FileManager.default.fileExists(atPath: root.appendingPathComponent($0).path)
         }

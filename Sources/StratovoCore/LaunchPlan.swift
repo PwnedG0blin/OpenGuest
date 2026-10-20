@@ -103,7 +103,7 @@ public enum LaunchPlan {
     public static func windowsVM(qemu: String, firmware: String, variables: String, disk: String,
                                  tpmSocket: String, iso: String?, driversISO: String?, proISO: String?,
                                  installing: Bool, resources: GuestResources, displaySocket: String, network: Bool, qmpSocket: String, identity: WindowsMachineIdentity = .legacy,
-                                 graphics: WindowsGraphics = .basic, resolution: WindowsDisplayMode = .fullHD, metalRoot: String? = nil, embeddedPlayer: Bool = false) throws -> CommandSpec {
+                                 graphics: WindowsGraphics = .basic, resolution: WindowsDisplayMode = .fullHD, metalRoot: String? = nil, embeddedPlayer: Bool = false, bootArtwork: String? = nil) throws -> CommandSpec {
         try resources.validate(windows: true)
         try identity.validate()
         guard displaySocket.hasPrefix("/tmp/og-"), !displaySocket.contains(","), !displaySocket.contains("\n") else { throw GuestError.invalidResources }
@@ -156,7 +156,7 @@ public enum LaunchPlan {
             args[device] = "virtio-ramfb-gl,hostmem=8G,blob=true,venus=false,neptune=true"
             args += ["-vga", "none"]
             let display = args.firstIndex(of: "-display")!
-            args[display+1] = "cocoa,gl=es"
+            args[display+1] = "cocoa,gl=es,zoom-to-fit=on"
             args += ["-blockdev", try block("graphics", driver: "raw", path: root+"/GraphicsDrivers.iso", readOnly: true),
                      "-device", "usb-bot,id=graphics-usb,bus=usb.0",
                      "-device", "scsi-cd,id=graphics-cd,drive=graphics,bus=graphics-usb.0,scsi-id=0,lun=0"]
@@ -166,6 +166,11 @@ public enum LaunchPlan {
             if embeddedPlayer {
                 environment["STRATOVO_EMBEDDED_V1"] = "1"
             } else {
+                environment["STRATOVO_NATIVE_PLAYER"] = "1"
+                if let bootArtwork {
+                    guard bootArtwork.hasPrefix("/tmp/og-"), !bootArtwork.contains("\n"), !bootArtwork.contains("\0") else { throw GuestError.invalidResources }
+                    environment["STRATOVO_BOOT_ARTWORK"] = bootArtwork
+                }
                 // Native Cocoa/Metal output: no GPU readback or VNC frame transport.
                 let vnc = args.firstIndex(of: "-vnc")!
                 args.removeSubrange(vnc...vnc+1)
