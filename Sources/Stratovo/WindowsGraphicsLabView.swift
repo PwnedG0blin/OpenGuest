@@ -105,7 +105,7 @@ final class WindowsGraphicsLabController: ObservableObject {
         guard let root = model.storage?.url.appendingPathComponent("GraphicsLab") else { runtimeReady = false; return }
         let receipt = try? Data(contentsOf: root.appendingPathComponent("runtime-ready.json"))
         let metadata = receipt.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }
-        runtimeReady = metadata?["embeddedPlayer"] as? Int == 1 && metadata?["embeddedRevision"] as? Int == 2 && ["runtime-ready.json", "Runtime/bin/qemu-system-aarch64", "Runtime/libexec/virgl_render_server", "Runtime/lib/libdxmt-native.dylib", "GraphicsDrivers.iso"].allSatisfy {
+        runtimeReady = metadata?["embeddedPlayer"] as? Int == 1 && metadata?["embeddedRevision"] as? Int == 3 && ["runtime-ready.json", "Runtime/bin/qemu-system-aarch64", "Runtime/libexec/virgl_render_server", "Runtime/lib/libdxmt-native.dylib", "GraphicsDrivers.iso"].allSatisfy {
             FileManager.default.fileExists(atPath: root.appendingPathComponent($0).path)
         }
     }

@@ -27,7 +27,7 @@ def v1_source(base):
     return base
 
 
-def repaired_cocoa(base):
+def repaired_cocoa(base, legacy_v2=False):
     source = v1_source(base)
     shared = (HERE/'shared_frame.m.inc').read_text()
     source = replace_once(source, '#ifdef USE_METAL\n/*\n * The Metal scanout',
@@ -35,7 +35,8 @@ def repaired_cocoa(base):
     source = replace_once(source, (HERE/'legacy_embedded_bridge.m.inc').read_text(),
                           (HERE/'metal_frame.m.inc').read_text())
     anchor = 'static void cocoa_gl_update(DisplayChangeListener *dcl,\n                            int x, int y, int w, int h)\n{'
-    source = replace_once(source, anchor, (HERE/'gl_frame.m.inc').read_text()+'\n'+anchor)
+    gl_fragment = 'legacy_v2_gl_frame.m.inc' if legacy_v2 else 'gl_frame.m.inc'
+    source = replace_once(source, anchor, (HERE/gl_fragment).read_text()+'\n'+anchor)
     source = replace_once(source, '    gl_scanout_y0_top = backing_y_0_top;',
         '    gl_scanout_y0_top = backing_y_0_top;\n'
         '    stratovo_gl_x = x; stratovo_gl_y = y;\n'
@@ -85,7 +86,8 @@ def plan(qemu):
         desired = transform(base)
         actual = path.read_text()
         allowed = [base, desired]
-        if relative == 'ui/cocoa.m': allowed.append(v1_source(base))
+        if relative == 'ui/cocoa.m':
+            allowed.extend([v1_source(base), repaired_cocoa(base, legacy_v2=True)])
         if actual not in allowed:
             raise RuntimeError('Andere Änderungen in '+relative+'; nichts wurde überschrieben.')
         if actual != desired:

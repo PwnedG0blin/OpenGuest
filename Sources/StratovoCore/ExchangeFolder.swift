@@ -9,7 +9,7 @@ public enum ExchangeFolder {
     public static func prepare(storage: GuestStorage) throws -> URL {
         try storage.validate()
         let url = storage.url.appendingPathComponent("Austausch", isDirectory: true)
-        guard url.standardizedFileURL == url.resolvingSymlinksInPath().standardizedFileURL else {
+        guard url.standardizedFileURL.path == url.resolvingSymlinksInPath().standardizedFileURL.path else {
             throw StorageMigration.failure("Austausch darf keine Verknüpfung sein.")
         }
         let fm = FileManager.default
@@ -23,7 +23,7 @@ public enum ExchangeFolder {
 
     public static func newAndroidImport(storage: GuestStorage) throws -> URL {
         let parent = try prepare(storage: storage).appendingPathComponent("Android", isDirectory: true)
-        guard parent.standardizedFileURL == parent.resolvingSymlinksInPath().standardizedFileURL else {
+        guard parent.standardizedFileURL.path == parent.resolvingSymlinksInPath().standardizedFileURL.path else {
             throw StorageMigration.failure("Android-Austausch darf keine Verknüpfung sein.")
         }
         try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: false)

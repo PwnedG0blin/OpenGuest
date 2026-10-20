@@ -1,6 +1,6 @@
 # Stratovo 1.0 Beta 3
 
-Repairs two code defects in the embedded Windows 3D display and adds file exchange
+Repairs code defects in the embedded Windows 3D display and adds file exchange
 for Android, Windows and Ubuntu. Existing guest disks, accounts and saved data
 remain in their selected data folder.
 
@@ -10,6 +10,7 @@ remain in their selected data folder.
   native Metal scanouts, which could leave a guest's GL output invisible.
 - Gives VNC its own CPU presentation surface. A GPU scanout is no longer resized
   or fed back through graphics callbacks when exporting a frame to the player.
+- Corrects the vertically inverted OpenGL image when exporting GPU rows to VNC.
 - Handles display size changes and VNC reconnects independently of the guest GPU.
 - Updates only the existing QEMU build. ANGLE, LLVM and guest images are reused.
   Existing Beta 2 runtimes need **3D-Player vorbereiten / aktualisieren** once.

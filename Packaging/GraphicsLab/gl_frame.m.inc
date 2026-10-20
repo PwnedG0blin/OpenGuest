@@ -61,13 +61,14 @@ static void stratovo_read_gl_frame(void)
     });
     static bool announced;
     if (complete) {
+        /* Match QEMU egl-headless: raw framebuffer rows flip when y_0_top is set. */
         stratovo_publish_pixels(stratovo_gl_pixels, (size_t)stratovo_gl_w * 4,
-            stratovo_gl_w, stratovo_gl_h, true, !gl_scanout_y0_top);
+            stratovo_gl_w, stratovo_gl_h, true, gl_scanout_y0_top);
         if (!announced) {
-            error_report("Stratovo embedded V2: OpenGL frame %ux%u", stratovo_gl_w, stratovo_gl_h);
+            error_report("Stratovo embedded V3: OpenGL frame %ux%u", stratovo_gl_w, stratovo_gl_h);
         }
     } else if (!announced) {
-        error_report("Stratovo embedded V2: OpenGL framebuffer readback failed");
+        error_report("Stratovo embedded V3: OpenGL framebuffer readback failed");
     }
     if (!complete) {
         qatomic_set(&gl_dirty, true);

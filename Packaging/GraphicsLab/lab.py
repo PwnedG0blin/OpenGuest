@@ -361,14 +361,14 @@ def upgrade_embedded_player(root, sources, env):
         raise
     receipt = json.loads(regular(root / "runtime-ready.json").read_text())
     receipt["embeddedPlayer"] = 1
-    receipt["embeddedRevision"] = 2
+    receipt["embeddedRevision"] = 3
     write_json(root / "runtime-ready.json", receipt)
 
 
 def build(root, sources, config, env):
     if runtime_ready(root):
         receipt = json.loads(regular(root / "runtime-ready.json").read_text())
-        if receipt.get("embeddedPlayer") != 1 or receipt.get("embeddedRevision") != 2:
+        if receipt.get("embeddedPlayer") != 1 or receipt.get("embeddedRevision") != 3:
             upgrade_embedded_player(root, sources, env)
         print("3D-Player bereit. Vorhandene Windows-Installation über Windows starten öffnen.", flush=True)
         return
@@ -464,7 +464,7 @@ def build(root, sources, config, env):
     models = run([prefix / "bin/qemu-system-aarch64", "-device", "help"], env=test_env, capture=True)
     if "virtio-ramfb-gl" not in models:
         raise RuntimeError("Gebautes QEMU enthält den benötigten Grafikmodus nicht.")
-    write_json(root / "runtime-ready.json", {"version": 1, "sources": sources, "backend": "dxmt", "embeddedPlayer": 1, "embeddedRevision": 2, "builtAt": time.time()})
+    write_json(root / "runtime-ready.json", {"version": 1, "sources": sources, "backend": "dxmt", "embeddedPlayer": 1, "embeddedRevision": 3, "builtAt": time.time()})
     print("Grafiklaufzeit fertig. In Stratovo öffnet anschließend die vorhandene oder einmalig erstellte Testkopie.", flush=True)
 
 
