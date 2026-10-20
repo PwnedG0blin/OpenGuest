@@ -40,7 +40,7 @@ final class WindowsGraphicsLabController: ObservableObject {
             guard let bundled = Bundle.main.resourceURL?.appendingPathComponent("GraphicsLab") else {
                 throw StorageMigration.failure("Grafiklabor-Ressourcen fehlen.")
             }
-            for name in ["lab.py", "sources.json", "INSTALL_GRAPHICS.ps1", "INSTALL_GRAPHICS.cmd", "ZUERST_AUF_MAC_LESEN.txt", "pkgconf-2.3.0.tar.xz", "boot_appearance.py", "embedded_display.py", "embedded_bridge.m.inc", "embedded_repair.py", "shared_frame.m.inc", "gl_frame.m.inc", "metal_frame.m.inc", "vnc_frame.c.inc", "legacy_embedded_bridge.m.inc", "legacy_v2_gl_frame.m.inc", "ubuntu_vm.py"] {
+            for name in ["lab.py", "sources.json", "INSTALL_GRAPHICS.ps1", "INSTALL_GRAPHICS.cmd", "ZUERST_AUF_MAC_LESEN.txt", "pkgconf-2.3.0.tar.xz", "boot_appearance.py", "embedded_display.py", "embedded_bridge.m.inc", "embedded_repair.py", "shared_frame.m.inc", "gl_frame.m.inc", "metal_frame.m.inc", "vnc_frame.c.inc", "legacy_embedded_bridge.m.inc", "legacy_v2_gl_frame.m.inc", "native_display.py", "native_geometry.h.inc", "native_view.m.inc", "native_methods.m.inc", "ubuntu_vm.py"] {
                 let bytes = try Data(contentsOf: bundled.appendingPathComponent(name))
                 try bytes.write(to: resources.appendingPathComponent(name), options: .atomic)
             }
@@ -105,7 +105,7 @@ final class WindowsGraphicsLabController: ObservableObject {
         guard let root = model.storage?.url.appendingPathComponent("GraphicsLab") else { runtimeReady = false; return }
         let receipt = try? Data(contentsOf: root.appendingPathComponent("runtime-ready.json"))
         let metadata = receipt.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }
-        let playerReady = !model.windowsEmbeddedPlayer || (metadata?["embeddedPlayer"] as? Int == 1 && metadata?["embeddedRevision"] as? Int == 3)
+        let playerReady = metadata?["embeddedPlayer"] as? Int == 1 && metadata?["embeddedRevision"] as? Int == 4
         runtimeReady = playerReady && ["runtime-ready.json", "Runtime/bin/qemu-system-aarch64", "Runtime/libexec/virgl_render_server", "Runtime/lib/libdxmt-native.dylib", "GraphicsDrivers.iso"].allSatisfy {
             FileManager.default.fileExists(atPath: root.appendingPathComponent($0).path)
         }
@@ -166,6 +166,19 @@ struct WindowsGraphicsLabView: View {
                     ? "Die Einbettung kopiert GPU-Bilder zur CPU und kann ruckeln oder hängen. Bei Problemen das direkte Grafikfenster wählen."
                     : "Das eigene Grafikfenster verwendet die direkte Ausgabe ohne VNC-Bildkopien. Text einfügen, Dateiaustausch und UEFI-Optionen bleiben hier verfügbar."))
                     .font(.callout).foregroundStyle(.secondary)
+                GroupBox(L10n.text("Steam-Download testen")) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Picker(L10n.text("Windows-Schreiblimit"), selection: $model.windowsWriteLimit) {
+                            ForEach(WindowsWriteLimit.allCases) { limit in
+                                Text(L10n.text(limit.title)).tag(limit)
+                            }
+                        }.disabled(model.running || model.busy || lab.active)
+                        Text(L10n.text("Testoption · gilt ab dem nächsten Windows-Start für alle Schreibzugriffe auf die Windows-Festplatte. Downloads und Installationen können länger dauern. Ob die Oberfläche flüssiger bleibt, bitte vergleichen."))
+                            .font(.callout).foregroundStyle(.secondary)
+                        Text(L10n.text("1. Windows herunterfahren. 2. Zum Vergleich zunächst Aus verwenden. 3. Danach 40 MiB/s wählen, Windows starten und denselben Steam-Download fortsetzen. 4. Bei keiner Verbesserung wieder Aus wählen. Spieleleistung anschließend separat testen."))
+                            .font(.callout).textSelection(.enabled)
+                    }.frame(maxWidth: .infinity, alignment: .leading)
+                }
                 if !lab.runtimeReady {
                     Button(L10n.text("3D-Player vorbereiten / aktualisieren")) { lab.start(action: "build", model: model) }
                         .buttonStyle(.borderedProminent).controlSize(.large)

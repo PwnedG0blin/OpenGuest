@@ -37,3 +37,5 @@ These components are developed by their respective upstream authors. Stratovo is
 The display source fragments under `Packaging/GraphicsLab` (`*_frame.*.inc`, `embedded_bridge.m.inc` and its legacy copy) is licensed under GPL-2.0-or-later for integration into QEMU. The patch helper applies it to the pinned upstream source on the user’s Mac; no compiled QEMU binary is bundled. When redistributing a modified QEMU runtime, retain the upstream notices and comply with its corresponding-source obligations.
 
 Ubuntu Desktop ARM64 is downloaded separately from Canonical. Ubuntu and its packages retain their upstream licenses: https://ubuntu.com/legal/intellectual-property-policy
+
+Native window geometry and boot-overlay adapters in Packaging/GraphicsLab are GPL-2.0-or-later. QEMU and firmware attribution remains in the distributed notices and source. Cosmetic overlays do not change the firmware binaries.
