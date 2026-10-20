@@ -477,6 +477,13 @@ final class AppModel: ObservableObject {
             recordDiagnostic(L10n.text("Windows · Schlüsselbund"), credentialStatus)
         } catch { credentialStatus = error.localizedDescription; errorMessage = error.localizedDescription }
     }
+    @Published var windowsEmbeddedPlayer = UserDefaults.standard.bool(forKey: "Stratovo.windowsEmbeddedPlayer") {
+        didSet {
+            UserDefaults.standard.set(windowsEmbeddedPlayer, forKey: "Stratovo.windowsEmbeddedPlayer")
+            graphicsLab.refresh(model: self)
+        }
+    }
+    @Published private(set) var windowsUsesDirectDisplay = false
     let windowsFrames = WindowsFrameStore()
     var playerImage: NSImage? { windowsFrames.image }
     @Published private(set) var playerSize = CGSize.zero
@@ -503,7 +510,24 @@ final class AppModel: ObservableObject {
     let installer = SetupInstaller()
     private let playerWindows = GuestPlayerWindows()
 
-    func showPlayer(kind: String) { playerWindows.show(kind: kind, model: self) }
+    func showPlayer(kind: String) {
+        if kind == "windows", windowsUsesDirectDisplay {
+            playerWindows.hide(kind: kind)
+            activateWindowsGraphics()
+        } else { playerWindows.show(kind: kind, model: self) }
+    }
+    private func activateWindowsGraphics() {
+        guard running, activeGuest == "windows", let child = process else { return }
+        let pid = child.processIdentifier
+        Task { [weak self] in
+            for _ in 0..<10 {
+                guard let self, self.running, self.process?.processIdentifier == pid else { return }
+                if let app = NSRunningApplication(processIdentifier: pid),
+                   app.activate(options: [.activateAllWindows, .activateIgnoringOtherApps]) { return }
+                try? await Task.sleep(nanoseconds: 200_000_000)
+            }
+        }
+    }
     func togglePlayerFullScreen(kind: String) { playerWindows.toggleFullScreen(kind: kind) }
     func fitAndroidPlayerWindow() {
         UserDefaults.standard.set(true, forKey: "Pixelkoje.playerFit.android")
@@ -954,7 +978,7 @@ final class AppModel: ObservableObject {
                                                tpmSocket: files.socket, iso: settings.iso, driversISO: settings.driversISO,
                                                proISO: files.proISO, installing: installing, resources: resources,
                                                displaySocket: files.displaySocket, network: settings.windowsNetwork, qmpSocket: files.qmpSocket, identity: files.identity,
-                                               graphics: windowsGraphics, resolution: windowsResolution, metalRoot: storage.root+"/GraphicsLab")
+                                               graphics: windowsGraphics, resolution: windowsResolution, metalRoot: storage.root+"/GraphicsLab", embeddedPlayer: windowsEmbeddedPlayer)
             recordDiagnostic("Windows · Grafik", windowsGraphics.title + " · bevorzugter Modus " + windowsResolution.title)
             windowsIdentity = files.identity
             windowsIdentityStatus = files.identity.summary
@@ -967,10 +991,17 @@ final class AppModel: ObservableObject {
                 ? L10n.text("Einmaliger DVD-Start; nächster Start von der gespeicherten Festplatte.")
                 : "Start von der gespeicherten Festplatte; keine Installations-DVD eingebunden.")
             activeGuest = "windows"
-            showPlayer(kind: "windows")
-            windowsDisplaySocket = files.displaySocket
+            windowsUsesDirectDisplay = !windowsEmbeddedPlayer
             qmpSocket = files.qmpSocket
-            connectWindowsPlayer(socket: files.displaySocket)
+            if windowsUsesDirectDisplay {
+                windowsDisplaySocket = nil
+                playerStatus = L10n.text("Windows Arm läuft im direkten Grafikfenster · Metal")
+                recordDiagnostic("Windows · Bildausgabe", "Direktes Cocoa/Metal-Fenster; keine VNC-Bildkopie")
+            } else {
+                windowsDisplaySocket = files.displaySocket
+                connectWindowsPlayer(socket: files.displaySocket)
+            }
+            showPlayer(kind: "windows")
             inspectWindowsBoot(socket: files.qmpSocket, installing: installing)
         } catch {
             await session.stop()
@@ -1118,7 +1149,7 @@ final class AppModel: ObservableObject {
     }
 
     var canReconnectWindowsDisplay: Bool {
-        running && ["windows", "ubuntu"].contains(activeGuest) && !busy && !windowsReconnectBusy && !windowsPasteBusy
+        running && !windowsUsesDirectDisplay && ["windows", "ubuntu"].contains(activeGuest) && !busy && !windowsReconnectBusy && !windowsPasteBusy
     }
     func reconnectWindowsDisplay() async {
         guard canReconnectWindowsDisplay, let socket = windowsDisplaySocket else { return }
@@ -1406,7 +1437,11 @@ final class AppModel: ObservableObject {
         let child = Process()
         child.executableURL = URL(fileURLWithPath: spec.executable)
         child.arguments = spec.arguments
-        child.environment = ProcessInfo.processInfo.environment.merging(spec.environment) { _, new in new }
+        var environment = ProcessInfo.processInfo.environment
+        if kind == "windows", spec.environment["STRATOVO_EMBEDDED_V1"] == nil {
+            environment.removeValue(forKey: "STRATOVO_EMBEDDED_V1")
+        }
+        child.environment = environment.merging(spec.environment) { _, new in new }
         child.standardInput = FileHandle.nullDevice
         child.standardOutput = handle
         child.standardError = handle
@@ -1494,6 +1529,7 @@ final class AppModel: ObservableObject {
         output = nil
         process = nil
         running = false
+        windowsUsesDirectDisplay = false
         if let guestActivity { ProcessInfo.processInfo.endActivity(guestActivity) }
         guestActivity = nil
         if let windowsSession { await windowsSession.stop() }

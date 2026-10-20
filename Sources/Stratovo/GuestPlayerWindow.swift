@@ -34,6 +34,8 @@ final class GuestPlayerWindows: NSObject, NSWindowDelegate {
         NSApplication.shared.activate(ignoringOtherApps: true)
     }
 
+    func hide(kind: String) { windows[kind]?.orderOut(nil) }
+
     func toggleFullScreen(kind: String) { windows[kind]?.toggleFullScreen(nil) }
 
     func fitAndroid(model: AppModel) {

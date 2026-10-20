@@ -40,7 +40,7 @@ final class WindowsGraphicsLabController: ObservableObject {
             guard let bundled = Bundle.main.resourceURL?.appendingPathComponent("GraphicsLab") else {
                 throw StorageMigration.failure("Grafiklabor-Ressourcen fehlen.")
             }
-            for name in ["lab.py", "sources.json", "INSTALL_GRAPHICS.ps1", "INSTALL_GRAPHICS.cmd", "ZUERST_AUF_MAC_LESEN.txt", "pkgconf-2.3.0.tar.xz", "boot_appearance.py", "embedded_display.py", "embedded_bridge.m.inc", "ubuntu_vm.py"] {
+            for name in ["lab.py", "sources.json", "INSTALL_GRAPHICS.ps1", "INSTALL_GRAPHICS.cmd", "ZUERST_AUF_MAC_LESEN.txt", "pkgconf-2.3.0.tar.xz", "boot_appearance.py", "embedded_display.py", "embedded_bridge.m.inc", "embedded_repair.py", "shared_frame.m.inc", "gl_frame.m.inc", "metal_frame.m.inc", "vnc_frame.c.inc", "legacy_embedded_bridge.m.inc", "legacy_v2_gl_frame.m.inc", "ubuntu_vm.py"] {
                 let bytes = try Data(contentsOf: bundled.appendingPathComponent(name))
                 try bytes.write(to: resources.appendingPathComponent(name), options: .atomic)
             }
@@ -105,7 +105,8 @@ final class WindowsGraphicsLabController: ObservableObject {
         guard let root = model.storage?.url.appendingPathComponent("GraphicsLab") else { runtimeReady = false; return }
         let receipt = try? Data(contentsOf: root.appendingPathComponent("runtime-ready.json"))
         let metadata = receipt.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }
-        runtimeReady = metadata?["embeddedPlayer"] as? Int == 1 && metadata?["embeddedRevision"] as? Int == 3 && ["runtime-ready.json", "Runtime/bin/qemu-system-aarch64", "Runtime/libexec/virgl_render_server", "Runtime/lib/libdxmt-native.dylib", "GraphicsDrivers.iso"].allSatisfy {
+        let playerReady = !model.windowsEmbeddedPlayer || (metadata?["embeddedPlayer"] as? Int == 1 && metadata?["embeddedRevision"] as? Int == 3)
+        runtimeReady = playerReady && ["runtime-ready.json", "Runtime/bin/qemu-system-aarch64", "Runtime/libexec/virgl_render_server", "Runtime/lib/libdxmt-native.dylib", "GraphicsDrivers.iso"].allSatisfy {
             FileManager.default.fileExists(atPath: root.appendingPathComponent($0).path)
         }
     }
@@ -149,13 +150,22 @@ struct WindowsGraphicsLabView: View {
     @State private var showLog = false
     @State private var paste = false
     @State private var draft = ""
+    @State private var exchangePresented = false
     var body: some View {
         GroupBox {
             VStack(alignment: .leading, spacing: 14) {
                 Label(L10n.text("Windows Arm"), systemImage: "desktopcomputer").font(.title2.bold())
-                Text(L10n.text("3D über Metal · im Stratovo-Player · deine vorhandene Installation"))
+                Text(L10n.text("3D über Metal · deine vorhandene Installation"))
                     .font(.headline).foregroundStyle(.teal)
                 Text(L10n.text("Konten, Programme, Dateien und Einstellungen bleiben in deiner bisherigen Windows-Festplatte. Es wird keine neue Windows-Kopie angelegt."))
+                Picker(L10n.text("Windows-Bildausgabe"), selection: $model.windowsEmbeddedPlayer) {
+                    Text(L10n.text("Direktes Grafikfenster · Metal (Standard)")).tag(false)
+                    Text(L10n.text("Eingebetteter Player · experimentell")).tag(true)
+                }.disabled(model.running || model.busy || lab.active)
+                Text(L10n.text(model.windowsEmbeddedPlayer
+                    ? "Die Einbettung kopiert GPU-Bilder zur CPU und kann ruckeln oder hängen. Bei Problemen das direkte Grafikfenster wählen."
+                    : "Das eigene Grafikfenster verwendet die direkte Ausgabe ohne VNC-Bildkopien. Text einfügen, Dateiaustausch und UEFI-Optionen bleiben hier verfügbar."))
+                    .font(.callout).foregroundStyle(.secondary)
                 if !lab.runtimeReady {
                     Button(L10n.text("3D-Player vorbereiten / aktualisieren")) { lab.start(action: "build", model: model) }
                         .buttonStyle(.borderedProminent).controlSize(.large)
@@ -184,10 +194,17 @@ struct WindowsGraphicsLabView: View {
         }
         .onAppear { lab.refresh(model: model) }
         .sheet(isPresented: $paste, onDismiss: { draft = "" }) { WindowsPasteSheet(model: model, text: $draft) }
+        .sheet(isPresented: $exchangePresented) {
+            VStack {
+                ScrollView { ExchangeFolderView(model: model, controller: model.exchange).padding(20) }
+                Button(L10n.text("Fertig")) { exchangePresented = false }.keyboardShortcut(.defaultAction).padding()
+            }.frame(width: 720, height: 700)
+        }
     }
     private var controls: some View {
         LazyVGrid(columns: [GridItem(.adaptive(minimum: 165))], alignment: .leading, spacing: 10) {
             Button(L10n.text("Windows-Fenster zeigen"), action: model.activateWindows)
+            Button(L10n.text("Dateiaustausch")) { exchangePresented = true }
             Button(L10n.text("Text einfügen …")) { draft = NSPasteboard.general.string(forType: .string) ?? ""; paste = true }
                 .disabled(model.windowsPasteBusy)
             Button(L10n.text("Anzeige-Einstellungen"), action: model.openWindowsDisplaySettings)

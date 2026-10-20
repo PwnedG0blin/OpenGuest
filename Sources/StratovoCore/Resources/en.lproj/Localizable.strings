@@ -693,3 +693,11 @@
 "Austausch im Datenordner · Windows · Ubuntu · Android" = "Exchange folder on your data drive · Windows · Ubuntu · Android";
 
 "Dateiaustausch öffnen" = "Open file exchange";
+
+"3D über Metal · deine vorhandene Installation" = "3D through Metal · your existing installation";
+"Windows-Bildausgabe" = "Windows display output";
+"Direktes Grafikfenster · Metal (Standard)" = "Direct graphics window · Metal (default)";
+"Eingebetteter Player · experimentell" = "Embedded player · experimental";
+"Die Einbettung kopiert GPU-Bilder zur CPU und kann ruckeln oder hängen. Bei Problemen das direkte Grafikfenster wählen." = "Embedding copies GPU frames to the CPU and can stutter or stall. Use the direct graphics window if this happens.";
+"Das eigene Grafikfenster verwendet die direkte Ausgabe ohne VNC-Bildkopien. Text einfügen, Dateiaustausch und UEFI-Optionen bleiben hier verfügbar." = "The separate graphics window uses direct output without VNC frame copies. Paste text, file exchange and UEFI options remain available here.";
+"Windows Arm läuft im direkten Grafikfenster · Metal" = "Windows Arm is running in the direct graphics window · Metal";

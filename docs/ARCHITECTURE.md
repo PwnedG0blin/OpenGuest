@@ -56,3 +56,11 @@ No automatic restart loop, data wiping, cloud reauthentication, privileged daemo
 - Windows online-account screen: https://learn.microsoft.com/en-us/windows-hardware/customize/desktop/unattend/microsoft-windows-shell-setup-oobe-hideonlineaccountscreens
 - Google cloud saves: https://support.google.com/googleplay/answer/9275812
 - Android backups: https://support.google.com/android/answer/2819582
+
+## Windows presentation choice
+
+The default Cocoa/Metal window has no VNC listener and no embedded readback flag.
+The app controls the same Windows session through QMP for text, firmware keys and
+shutdown. Embedded output is opt-in and adds VNC plus the CPU-frame adapter; it
+remains experimental because GPU readback can stall busy guests. Presentation
+selection does not change disk, TPM, firmware, identity or networking.

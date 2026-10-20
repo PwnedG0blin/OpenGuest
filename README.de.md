@@ -25,3 +25,5 @@ wird lokal signiert; Developer-ID-Signatur und Notarisierung sind noch nicht ent
 Copyright © 2026 PwnedG0blin und Mitwirkende · [Lizenz](LICENSE)
 
 [Dateiaustausch zwischen Mac, Windows, Ubuntu und Android einrichten](docs/DATEIAUSTAUSCH.md).
+
+Windows Arm startet standardmäßig im eigenen Cocoa-/Metal-Grafikfenster ohne VNC-Bildkopien. Die eingebettete Ansicht bleibt experimentell. Text einfügen und Dateiaustausch findest du in der Windows-Steuerung.

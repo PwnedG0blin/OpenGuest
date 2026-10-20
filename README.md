@@ -66,3 +66,5 @@ Contributions: [CONTRIBUTING.md](CONTRIBUTING.md) · Security and local data: [S
 Developed by **PwnedG0blin**. [GitHub Sponsors](https://github.com/sponsors/PwnedG0blin) · [Patreon](https://www.patreon.com/cw/PwnedG0blinApp) · [X](https://x.com/PwnedG0blin)
 
 Copyright (c) 2026 PwnedG0blin and contributors. [MIT license](LICENSE). Voluntary sponsorship supports development; Stratovo remains free and without a subscription.
+
+Windows Arm uses a direct Cocoa/Metal graphics window by default, avoiding embedded VNC readback. The embedded view is experimental. Paste and file exchange remain in the Windows controls.

@@ -100,3 +100,7 @@ Links **Dateiaustausch** wählen oder im Player oben auf **Dateiaustausch** klic
 ## Schwarzes Windows-Bild nach dem Startlogo
 
 Beta 3 ergänzt den klassischen OpenGL-Bildpfad und einen separaten CPU-Bildpuffer für VNC. Einmal **3D-Player vorbereiten / aktualisieren** ausführen. Es wird nur QEMU neu gebaut; die vorhandenen ANGLE-/LLVM-Bauten und Gastdatenträger bleiben erhalten. Falls der Fehler weiter auftritt, das aktuelle Windows-Startprotokoll beifügen. Ein erfolgreicher App-Bau allein bestätigt keinen funktionierenden Grafiktreiber im Gast.
+
+## Windows Arm: direkte Grafik als Standard
+
+Unter **Windows Arm → Windows-Bildausgabe** ist **Direktes Grafikfenster · Metal (Standard)** voreingestellt. Es öffnet dasselbe Windows im eigenen Grafikfenster ohne VNC-Bildkopien. Zum Einfügen von Text, zum Dateiaustausch und für UEFI-Tasten die Windows-Steuerung im Stratovo-Hauptfenster nutzen. Das Grafikfenster übernimmt seine eigene Maus-, Trackpad- und Vollbildsteuerung. Die eingebettete Ansicht bleibt eine experimentelle Option und kann bei ausgeschaltetem Windows gewählt werden. Vorhandene vollständige Grafikkonfigurationen benötigen für die direkte Ausgabe keinen erneuten Grafikbau.
