@@ -11,6 +11,7 @@ if ! xcrun --find swift >/dev/null 2>&1; then
 fi
 cd "$project_dir"
 python3 scripts/test-embedded-display.py
+python3 scripts/test-player-surfaces.py
 python3 -m unittest discover -s Tests/GraphicsLabTests -q
 python3 -m unittest discover -s Tests/AndroidDataTests -q
 xcrun swift test

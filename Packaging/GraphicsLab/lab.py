@@ -311,7 +311,7 @@ def prerequisites(root, env):
     free = shutil.disk_usage(root).free
     print("Freier Platz auf dem Datenlaufwerk: %.1f GiB" % (free / 1024**3), flush=True)
     if free < 30 * 1024**3:
-        issues.append("Mindestens 30 GiB freier Platz für die Grafiklaufzeit benötigt; die separate Windows-Kopie braucht zusätzlichen Platz.")
+        issues.append("Mindestens 30 GiB freier Platz für die Grafiklaufzeit benötigt. Die vorhandene Windows-Festplatte wird weiterverwendet.")
     if " " in str(root):
         issues.append("Die experimentellen Buildwerkzeuge benötigen einen Datenpfad ohne Leerzeichen.")
     if issues:
@@ -346,19 +346,29 @@ def upgrade_embedded_player(root, sources, env):
     commit = run(["/usr/bin/git", "rev-parse", "HEAD"], cwd=qemu, env=env, capture=True).strip()
     if commit != sources["qemu"]["commit"]:
         raise RuntimeError("QEMU-Quelle passt nicht zur vorbereiteten 3D-Laufzeit.")
+    backup = directory(root / "PlayerBackup-v1")
+    binary = regular(root / "Runtime/bin/qemu-system-aarch64")
+    if not (backup / binary.name).exists():
+        shutil.copy2(binary, backup / binary.name)
+    regular(backup / binary.name)
     prepare_embedded_player(qemu)
     build_env = dict(env, PATH=str(root / "BuildTools/bin") + ":" + str(root / "Runtime/bin") + ":" + env["PATH"])
     print("Aktualisiere den eingebetteten 3D-Player. Vorhandene ANGLE-/LLVM-Bauten bleiben erhalten.", flush=True)
-    run_logged(["make", "-j4", "install"], root / "Logs/Player-Build.log", cwd=qemu / "build", env=build_env)
+    try:
+        run_logged(["make", "-j4", "install"], root / "Logs/Player-Build.log", cwd=qemu / "build", env=build_env)
+    except BaseException:
+        shutil.copy2(backup / binary.name, binary)
+        raise
     receipt = json.loads(regular(root / "runtime-ready.json").read_text())
     receipt["embeddedPlayer"] = 1
+    receipt["embeddedRevision"] = 3
     write_json(root / "runtime-ready.json", receipt)
 
 
 def build(root, sources, config, env):
     if runtime_ready(root):
         receipt = json.loads(regular(root / "runtime-ready.json").read_text())
-        if receipt.get("embeddedPlayer") != 1:
+        if receipt.get("embeddedPlayer") != 1 or receipt.get("embeddedRevision") != 3:
             upgrade_embedded_player(root, sources, env)
         print("3D-Player bereit. Vorhandene Windows-Installation über Windows starten öffnen.", flush=True)
         return
@@ -454,7 +464,7 @@ def build(root, sources, config, env):
     models = run([prefix / "bin/qemu-system-aarch64", "-device", "help"], env=test_env, capture=True)
     if "virtio-ramfb-gl" not in models:
         raise RuntimeError("Gebautes QEMU enthält den benötigten Grafikmodus nicht.")
-    write_json(root / "runtime-ready.json", {"version": 1, "sources": sources, "backend": "dxmt", "embeddedPlayer": 1, "builtAt": time.time()})
+    write_json(root / "runtime-ready.json", {"version": 1, "sources": sources, "backend": "dxmt", "embeddedPlayer": 1, "embeddedRevision": 3, "builtAt": time.time()})
     print("Grafiklaufzeit fertig. In Stratovo öffnet anschließend die vorhandene oder einmalig erstellte Testkopie.", flush=True)
 
 

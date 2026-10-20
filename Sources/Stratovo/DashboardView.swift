@@ -69,11 +69,22 @@ struct DashboardView: View {
                     Text(L10n.text("Android: Im Bereich Android die Version auswählen und installieren. Android 16 ist der bewährte Ausgangspunkt. Android 17 nutzt ein separates Profil; Datenübernahme erstellt eine unabhängige Kopie ohne laufende Synchronisierung."))
                     Text(L10n.text("Windows: Windows-Ordner anlegen, Festplattengröße wählen und eine offizielle Windows-11-ARM64-ISO auswählen. Beim DVD-Start gegebenenfalls im Gast eine Taste drücken. Windows benötigt eine gültige Lizenz."))
                     Text(L10n.text("Bedienung: Erst Android starten bzw. Windows starten anklicken. Die Playerfenster sind frei skalierbar. Text einfügen überträgt Mac-Text in den Gast. Scrollgeschwindigkeit und Android-Touchscrollen findest du im Player."))
-                    Text(L10n.text("Windows: Die 3D-Grafik läuft im Stratovo-Player auf der bisherigen Windows-Festplatte. Einmalig den 3D-Player vorbereiten beziehungsweise aktualisieren. Bereits gebaute ANGLE-/LLVM-Werkzeuge werden wiederverwendet. In Windows die DVD PKGRAPHICS öffnen und INSTALL_GRAPHICS.cmd starten; danach herunterfahren und neu starten. 3D bleibt experimentell. Der Bau benötigt vollständiges Xcode mit Metal-Werkzeugen und derzeit einen Datenpfad ohne Leerzeichen."))
+                    Text(L10n.text("Windows: Die 3D-Grafik läuft standardmäßig im eigenen Metal-Grafikfenster auf der bisherigen Windows-Festplatte. Die eingebettete Ansicht ist experimentell. Einmalig den 3D-Player vorbereiten beziehungsweise aktualisieren. Bereits gebaute ANGLE-/LLVM-Werkzeuge werden wiederverwendet. In Windows die DVD PKGRAPHICS öffnen und INSTALL_GRAPHICS.cmd starten; danach herunterfahren und neu starten. 3D bleibt experimentell. Der Bau benötigt vollständiges Xcode mit Metal-Werkzeugen und derzeit einen Datenpfad ohne Leerzeichen."))
                     Text(L10n.text("Ubuntu: ARM64-LTS-Abbild herunterladen, Prüfsumme abwarten, installieren und anschließend Ubuntu starten wählen. Die eigene 64-GiB-Festplatte liegt unter Ubuntu im gewählten Datenordner. Ubuntu verwendet denselben Player mit Trackpad-Regler und Text einfügen."))
                     StorageBudgetView(windowsGiB: model.windowsCapacityGiB ?? 80)
                 }.padding(.top, 12)
             }.font(.body)
+            GroupBox {
+                HStack(spacing: 18) {
+                    Image(systemName: "folder.fill").font(.title).foregroundStyle(.teal)
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(L10n.text("Dateien zwischen Mac und Gästen austauschen")).font(.headline)
+                        Text(L10n.text("Austausch im Datenordner · Windows · Ubuntu · Android"))
+                    }
+                    Spacer()
+                    Button(L10n.text("Dateiaustausch öffnen")) { navigate(.exchange) }.buttonStyle(.borderedProminent)
+                }.padding(16)
+            }
         }
     }
     private func step(_ number: Int, _ text: String) -> some View {

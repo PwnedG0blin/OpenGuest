@@ -14,17 +14,33 @@ Google sign-in happens in Android. The app does not read account tokens, passwor
 
 ## Windows
 
-QEMU ARM `virt` + HVF, NVMe qcow2 disk, pflash code and persistent variables, swtpm 2.0 CRB, basic ramfb display. A per-VM advisory lock prevents concurrent use by two Stratovo instances. TPM storage is retained. The firmware must meet Windows' requirements; basic QEMU ARM firmware is not a substitute for a tested Secure-Boot-capable firmware pair.
+QEMU ARM `virt` + HVF, NVMe qcow2 disk, pflash code and persistent variables, swtpm 2.0 TIS and experimental VirtIO/Neptune/DXMT 3D through Metal. A per-VM advisory lock prevents concurrent use by two Stratovo instances. TPM storage is retained. The firmware must meet Windows' requirements; basic QEMU ARM firmware is not a substitute for a tested Secure-Boot-capable firmware pair.
 
-Display, QMP and TPM sockets live in a short random directory with mode 0700. No VNC TCP listener is created. The embedded RFB client requests raw pixels and desktop resizing; buffers and message sizes are bounded. A local QMP command asks the guest to power down. No native GPU acceleration or Windows audio device is configured yet.
+Display, QMP and TPM sockets live in a short random directory with mode 0700. No VNC TCP listener is created. The embedded RFB client requests raw pixels and desktop resizing; buffers and message sizes are bounded. A local QMP command asks the guest to power down. A patched Cocoa backend exports Metal or OpenGL frames into a VNC-owned CPU surface without replacing the GPU scanout. One native Metal read is in flight; GL reads are limited to 60 per second and coalesce updates. No Windows audio device is configured yet.
 
 A temporary setup ISO optionally selects the Pro image and provisions a user-chosen local administrator through supported Windows answer-file settings. Other first-run settings remain interactive. No static product key, automatic login, disk partition script or hardware-check bypass is included. The local password is in memory and the short-lived answer file; Windows' reversible answer-file encoding is not encryption. A private directory limits access. Normal cleanup removes the temporary medium, while Windows may retain its own setup files inside the guest. Unexpected process/system crashes can leave temporary files.
+
+## Ubuntu ARM
+
+Ubuntu Desktop ARM64 is downloaded from Canonical with pinned SHA-256 verification.
+Its own 64-GiB QCOW2 disk, NVRAM and lock live under `Ubuntu`. It uses QEMU/HVF and
+the same local RFB player, without attaching Android or Windows disks. Installation
+mode attaches the ISO; normal starts omit it.
+
+## File exchange
+
+`Austausch` lives inside the selected data root. Native macOS SMB can expose it to
+Windows and Ubuntu after user-controlled system setup; Stratovo does not enable
+SMB or store Mac passwords. Android uses explicit ADB send/import commands with a
+chosen emulator serial. Imports and sends use new subfolders, without destructive
+synchronization. The UI distinguishes copying to Android from direct SMB access.
+See [setup](DATEIAUSTAUSCH.md).
 
 ## Lifecycle
 
 Each player owns its launched processes. UI status distinguishes engine availability, process launch and Android boot readiness. Probe commands have timeouts; regular log files avoid output-pipe deadlocks. Guest shutdown is requested before app termination. The confirmed emergency process-termination action may lose guest data and is not the normal shutdown path.
 
-No automatic restart loop, data wiping, cloud reauthentication, privileged daemon, host folder sharing or public network server is implemented. Guest operating systems can access the internet when their network is enabled. Android's Google sync and Windows network settings remain OS-level decisions.
+No automatic restart loop, data wiping, cloud reauthentication, privileged daemon or custom public network server is implemented. Optional folder access uses the user’s native macOS SMB configuration. Guest operating systems can access the internet when their network is enabled. Android's Google sync and Windows network settings remain OS-level decisions.
 
 ## Primary references
 
@@ -40,3 +56,11 @@ No automatic restart loop, data wiping, cloud reauthentication, privileged daemo
 - Windows online-account screen: https://learn.microsoft.com/en-us/windows-hardware/customize/desktop/unattend/microsoft-windows-shell-setup-oobe-hideonlineaccountscreens
 - Google cloud saves: https://support.google.com/googleplay/answer/9275812
 - Android backups: https://support.google.com/android/answer/2819582
+
+## Windows presentation choice
+
+The default Cocoa/Metal window has no VNC listener and no embedded readback flag.
+The app controls the same Windows session through QMP for text, firmware keys and
+shutdown. Embedded output is opt-in and adds VNC plus the CPU-frame adapter; it
+remains experimental because GPU readback can stall busy guests. Presentation
+selection does not change disk, TPM, firmware, identity or networking.

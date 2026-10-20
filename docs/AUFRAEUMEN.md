@@ -18,6 +18,7 @@ Den Papierkorb erst nach einem weiteren erfolgreichen Start leeren.
 - GraphicsLab: insbesondere Runtime, ANGLE.xcarchive, GraphicsDrivers.iso, runtime-ready.json
   und zunächst auch Sources/BuildTools für gezielte Player-Aktualisierungen.
 - Ubuntu: die neue eigenständige Festplatte, NVRAM und Einstellungen.
+- Austausch: deine zwischen den Systemen geteilten oder kopierten Dateien.
 - Backups und die kleine interne Speicherort-Konfiguration.
 
 Eine frühere `GraphicsLab/TestVM` ist eine eigene Windows-Installation. Erst deren

@@ -6,9 +6,13 @@ Diese Seite beschreibt die derzeitige Umsetzung und ihre Grenzen. Automatisierte
 
 ## Gastdaten und Prozesse
 
-Android-Nutzerdaten sowie Windows-Datenträger, UEFI-Variablen und TPM-Zustand bleiben zwischen Sitzungen gespeichert. Die App setzt diese Daten beim normalen Start nicht zurück. Reguläres Herunterfahren reduziert das Risiko ungespeicherter Änderungen; erzwungenes Beenden oder ein Host-/Gastabsturz kann Daten verlieren. Automatische vollständige Gast-Backups sind nicht enthalten.
+Android-Nutzerdaten, Windows-Datenträger mit UEFI-Variablen und TPM-Zustand sowie Ubuntu-Festplatte und UEFI-Zustand bleiben zwischen Sitzungen gespeichert. Die App setzt diese Daten beim normalen Start nicht zurück. Reguläres Herunterfahren reduziert das Risiko ungespeicherter Änderungen; erzwungenes Beenden oder ein Host-/Gastabsturz kann Daten verlieren. Automatische vollständige Gast-Backups sind nicht enthalten.
 
-Die Prozesse laufen mit den Rechten des angemeldeten Mac-Benutzers. Ein privilegierter Hilfsdienst, automatische Host-Ordnerfreigaben, Telemetrie und ein öffentlicher VNC-Listener sind nicht implementiert. Der Windows-Player verwendet eine lokale Verbindung. APKs werden im ausdrücklich ausgewählten Gast installiert.
+Die Prozesse laufen mit den Rechten des angemeldeten Mac-Benutzers. Ein privilegierter Hilfsdienst, automatische Host-Ordnerfreigaben, Telemetrie und ein öffentlicher VNC-Listener sind nicht implementiert. Die Windows- und Ubuntu-Player verwenden lokale Verbindungen. APKs werden im ausdrücklich ausgewählten Gast installiert.
+
+## Dateiaustausch
+
+Der Ordner `Austausch` liegt auf dem gewählten Datenträger. Optionaler SMB-Zugriff für Windows und Ubuntu wird vom Benutzer in macOS eingerichtet; Freigaben können im lokalen Netzwerk erreichbar sein. Stratovo speichert kein Mac-Passwort und aktiviert keine Freigabe automatisch. Android-Übertragungen verwenden die bestehende ADB-Verbindung, kopieren in neue Unterordner und führen keinen Löschabgleich durch.
 
 ## Konten, Zwischenablage und Einrichtung
 

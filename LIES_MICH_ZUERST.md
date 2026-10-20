@@ -1,4 +1,4 @@
-# Stratovo 1.0 Beta 2 einrichten
+# Stratovo 1.0 Beta 3 einrichten
 
 Entwickelt von **PwnedG0blin** · macOS 14+ · Apple Silicon.
 
@@ -92,3 +92,15 @@ Die App ist lokal signiert, noch nicht Developer-ID-signiert oder notarisiert:
 automatische Tests ersetzen keine längere Prüfung von Gast, Spielen und FPS auf dem M4.
 
 [Projekt](README.md) · [Entwickler](AUTHORS.md) · [Fehler melden](https://github.com/PwnedG0blin/OpenGuest/issues/new/choose)
+
+## Dateiaustausch · alle drei Gäste
+
+Links **Dateiaustausch** wählen oder im Player oben auf **Dateiaustausch** klicken. Der Ordner **Austausch** liegt im gewählten Datenordner. Windows und Ubuntu nutzen nach einmaliger macOS-SMB-Freigabe denselben Ordner. Android kann ausgewählte Dateien senden und Dateien aus Downloads/Stratovo-Austausch in neue Importordner auf dem Mac abholen. Anleitung: [Dateiaustausch](docs/DATEIAUSTAUSCH.md).
+
+## Schwarzes Windows-Bild nach dem Startlogo
+
+Beta 3 ergänzt den klassischen OpenGL-Bildpfad und einen separaten CPU-Bildpuffer für VNC. Einmal **3D-Player vorbereiten / aktualisieren** ausführen. Es wird nur QEMU neu gebaut; die vorhandenen ANGLE-/LLVM-Bauten und Gastdatenträger bleiben erhalten. Falls der Fehler weiter auftritt, das aktuelle Windows-Startprotokoll beifügen. Ein erfolgreicher App-Bau allein bestätigt keinen funktionierenden Grafiktreiber im Gast.
+
+## Windows Arm: direkte Grafik als Standard
+
+Unter **Windows Arm → Windows-Bildausgabe** ist **Direktes Grafikfenster · Metal (Standard)** voreingestellt. Es öffnet dasselbe Windows im eigenen Grafikfenster ohne VNC-Bildkopien. Zum Einfügen von Text, zum Dateiaustausch und für UEFI-Tasten die Windows-Steuerung im Stratovo-Hauptfenster nutzen. Das Grafikfenster übernimmt seine eigene Maus-, Trackpad- und Vollbildsteuerung. Die eingebettete Ansicht bleibt eine experimentelle Option und kann bei ausgeschaltetem Windows gewählt werden. Vorhandene vollständige Grafikkonfigurationen benötigen für die direkte Ausgabe keinen erneuten Grafikbau.

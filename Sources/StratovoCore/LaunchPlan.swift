@@ -103,13 +103,13 @@ public enum LaunchPlan {
     public static func windowsVM(qemu: String, firmware: String, variables: String, disk: String,
                                  tpmSocket: String, iso: String?, driversISO: String?, proISO: String?,
                                  installing: Bool, resources: GuestResources, displaySocket: String, network: Bool, qmpSocket: String, identity: WindowsMachineIdentity = .legacy,
-                                 graphics: WindowsGraphics = .basic, resolution: WindowsDisplayMode = .fullHD, metalRoot: String? = nil) throws -> CommandSpec {
+                                 graphics: WindowsGraphics = .basic, resolution: WindowsDisplayMode = .fullHD, metalRoot: String? = nil, embeddedPlayer: Bool = false) throws -> CommandSpec {
         try resources.validate(windows: true)
         try identity.validate()
         guard displaySocket.hasPrefix("/tmp/og-"), !displaySocket.contains(","), !displaySocket.contains("\n") else { throw GuestError.invalidResources }
         guard qmpSocket.hasPrefix("/tmp/og-"), !qmpSocket.contains(","), !qmpSocket.contains("\n") else { throw GuestError.invalidResources }
         let metal = metalRoot != nil
-        var args = ["-name", "Windows", "-nodefaults",
+        var args = ["-name", "Windows Arm", "-nodefaults",
                     "-machine", metal ? "virt,pflash0=uefi-code,pflash1=uefi-vars,gic-version=3" : "virt,pflash0=uefi-code,pflash1=uefi-vars", "-accel", metal ? "hvf,ipa-granule-size=0x1000" : "hvf", "-cpu", "host",
                     "-smp", String(resources.cores), "-m", String(resources.memoryMiB),
                     "-blockdev", try block("uefi-code", driver: "raw", path: firmware, readOnly: true),
@@ -160,10 +160,18 @@ public enum LaunchPlan {
             args += ["-blockdev", try block("graphics", driver: "raw", path: root+"/GraphicsDrivers.iso", readOnly: true),
                      "-device", "usb-bot,id=graphics-usb,bus=usb.0",
                      "-device", "scsi-cd,id=graphics-cd,drive=graphics,bus=graphics-usb.0,scsi-id=0,lun=0"]
+            var environment = ["NPT_BACKEND": "dxmt", "ANGLE_DEFAULT_PLATFORM": "metal",
+                "RENDER_SERVER_EXEC_PATH": root+"/Runtime/libexec/virgl_render_server",
+                "DYLD_FALLBACK_LIBRARY_PATH": root+"/Runtime/lib:"+root+"/ANGLE.xcarchive/Products/usr/local/lib"]
+            if embeddedPlayer {
+                environment["STRATOVO_EMBEDDED_V1"] = "1"
+            } else {
+                // Native Cocoa/Metal output: no GPU readback or VNC frame transport.
+                let vnc = args.firstIndex(of: "-vnc")!
+                args.removeSubrange(vnc...vnc+1)
+            }
             return CommandSpec(executable: root+"/Runtime/bin/qemu-system-aarch64", arguments: args,
-                environment: ["STRATOVO_EMBEDDED_V1": "1", "NPT_BACKEND": "dxmt", "ANGLE_DEFAULT_PLATFORM": "metal",
-                    "RENDER_SERVER_EXEC_PATH": root+"/Runtime/libexec/virgl_render_server",
-                    "DYLD_FALLBACK_LIBRARY_PATH": root+"/Runtime/lib:"+root+"/ANGLE.xcarchive/Products/usr/local/lib"])
+                               environment: environment)
         }
         return CommandSpec(executable: qemu, arguments: args)
     }
