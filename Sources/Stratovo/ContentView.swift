@@ -262,6 +262,14 @@ struct ContentView: View {
                     if let issue = model.windowsCapacityIssue { Text(issue).font(.subheadline).foregroundStyle(.orange) }
                     Text(L10n.text("64–4096 GB frei eingeben. Die Datei wächst mit deinen Daten; die maximale Größe wird nicht sofort auf der SSD belegt. Änderungen werden über „Größe anwenden“ oder beim nächsten Windows-Start übernommen. Vergrößern ist bei ausgeschaltetem Windows möglich; vorhandene Festplatten werden nicht verkleinert. Zusätzlichen Speicher anschließend in Windows zuordnen."))
                         .font(.subheadline).foregroundStyle(.secondary)
+                    DisclosureGroup(L10n.text("Zusätzlichen Speicher in Windows zuordnen")) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(L10n.text("„Größe anwenden“ prüft die Kapazität der virtuellen Festplatte. Die Größe des Windows-Laufwerks C: wird dadurch noch nicht geändert."))
+                            Text(L10n.text("1. Windows starten. 2. Win + R drücken und diskmgmt.msc öffnen. 3. Unten den Datenträger mit C: und den nicht zugeordneten Platz prüfen."))
+                            Text(L10n.text("Nur wenn der freie Platz direkt rechts neben C: liegt: Rechtsklick auf C: → Volume erweitern. Ist die Option ausgegraut oder liegt eine Wiederherstellungspartition dazwischen, zuerst die Aufteilung prüfen lassen. Keine Partition löschen oder formatieren."))
+                            Text("diskmgmt.msc").font(.system(.body, design: .monospaced)).textSelection(.enabled)
+                        }.font(.callout).padding(.top, 6)
+                    }
                     DisclosureGroup(L10n.text("Voraussetzungen und Entwicklungsstand")) {
                         Text(L10n.text("Windows verwendet die 3D-Laufzeit auf deiner bestehenden Festplatte. Die Grafiktreiber werden in Windows installiert; Metal und die Mac-Laufzeit werden wiederverwendet."))
                             .font(.subheadline).foregroundStyle(.secondary).padding(.top, 6)

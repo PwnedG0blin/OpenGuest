@@ -27,8 +27,17 @@
 - (void)stratovoBootLogo:(NSRect)rect
 {
     if (!stratovo_native()) { return; }
-    stratovo_logo_rect = rect;
-    bool visible = self.scanout == QemuCocoaViewScanoutNone && rect.size.width > 0 && rect.size.height > 0;
+    if (rect.size.width > 0 && rect.size.height > 0 && !stratovo_boot_complete) {
+        stratovo_logo_rect = rect;
+        if (!stratovo_boot_started) {
+            stratovo_boot_started = CACurrentMediaTime();
+            /* A failed guest must never be hidden behind an endless logo. */
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+                [self stratovoBootFinished];
+            });
+        }
+    }
+    bool visible = !stratovo_boot_complete && stratovo_boot_started > 0;
     if (!stratovo_boot_layer && visible) {
         stratovo_boot_layer = [[CALayer alloc] init];
         stratovo_boot_layer.backgroundColor = CGColorGetConstantColor(kCGColorBlack);
@@ -39,7 +48,7 @@
         }
         [self.layer addSublayer:stratovo_boot_layer];
         stratovo_boot_hint = [[CATextLayer alloc] init];
-        stratovo_boot_hint.string = @"Esc beim Einschalten: UEFI / BIOS";
+        stratovo_boot_hint.string = @"";
         stratovo_boot_hint.fontSize = 14;
         stratovo_boot_hint.alignmentMode = kCAAlignmentCenter;
         stratovo_boot_hint.foregroundColor = CGColorGetConstantColor(kCGColorWhite);
@@ -47,20 +56,28 @@
         [self.layer addSublayer:stratovo_boot_hint];
     }
     [CATransaction begin]; [CATransaction setDisableActions:YES];
-    stratovo_boot_layer.hidden = !visible; stratovo_boot_hint.hidden = !visible;
+    stratovo_boot_layer.hidden = !visible; stratovo_boot_hint.hidden = YES;
     if (visible) {
-        NSRect image = [self stratovoViewport];
-        double scale = image.size.width / screen.width;
-        stratovo_boot_layer.frame = CGRectMake(image.origin.x + rect.origin.x*scale,
-            image.origin.y + rect.origin.y*scale, rect.size.width*scale, rect.size.height*scale);
-        CGFloat side = fmin(rect.size.width,rect.size.height)*scale*0.5;
-        CGFloat x=(rect.size.width*scale-side)/2, y=(rect.size.height*scale-side)/2, gap=fmax(1,side/24);
+        /* One full opaque cover avoids source-logo edges and firmware text.
+         * It also bridges RAMFB -> 3D without showing QEMU's placeholder. */
+        stratovo_boot_layer.frame = self.bounds;
+        stratovo_boot_layer.zPosition = 1000;
+        CGFloat side = fmin(self.bounds.size.width,self.bounds.size.height)*0.12;
+        CGFloat x=(self.bounds.size.width-side)/2, y=(self.bounds.size.height-side)/2, gap=fmax(1,side/24);
+        CGFloat pixel = fmax(1,self.window.backingScaleFactor);
         for (int i=0;i<4;i++) {
-            stratovo_boot_layer.sublayers[i].frame = CGRectMake(x+(i%2)*(side/2+gap/2),
-                y+(i/2)*(side/2+gap/2), side/2-gap/2, side/2-gap/2);
+            stratovo_boot_layer.sublayers[i].frame = CGRectMake(round((x+(i%2)*(side/2+gap/2))*pixel)/pixel,
+                round((y+(i/2)*(side/2+gap/2))*pixel)/pixel,
+                round((side/2-gap/2)*pixel)/pixel, round((side/2-gap/2)*pixel)/pixel);
         }
         stratovo_boot_hint.frame = CGRectMake(0, 12, self.bounds.size.width, 22);
         stratovo_boot_hint.contentsScale = self.window.backingScaleFactor;
     }
     [CATransaction commit];
+}
+- (void)stratovoBootFinished
+{
+    if (!stratovo_native()) { return; }
+    stratovo_boot_complete = true;
+    [self stratovoBootLogo:NSZeroRect];
 }

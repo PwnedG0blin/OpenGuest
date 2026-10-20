@@ -21,6 +21,13 @@ import time
 import urllib.request
 import zipfile
 
+def prepare_runtime_dependencies(root):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location('stratovo_runtime_dependencies', Path(__file__).with_name('runtime_dependencies.py'))
+    helper = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(helper)
+    helper.prepare(root)
+
 
 def regular(path):
     path = Path(path)
@@ -346,7 +353,7 @@ def upgrade_embedded_player(root, sources, env):
     commit = run(["/usr/bin/git", "rev-parse", "HEAD"], cwd=qemu, env=env, capture=True).strip()
     if commit != sources["qemu"]["commit"]:
         raise RuntimeError("QEMU-Quelle passt nicht zur vorbereiteten 3D-Laufzeit.")
-    backup = directory(root / "PlayerBackup-v1")
+    backup = directory(root / "PlayerBackup-before-v5")
     binary = regular(root / "Runtime/bin/qemu-system-aarch64")
     if not (backup / binary.name).exists():
         shutil.copy2(binary, backup / binary.name)
@@ -361,15 +368,19 @@ def upgrade_embedded_player(root, sources, env):
         raise
     receipt = json.loads(regular(root / "runtime-ready.json").read_text())
     receipt["embeddedPlayer"] = 1
-    receipt["embeddedRevision"] = 4
+    receipt["embeddedRevision"] = 5
     write_json(root / "runtime-ready.json", receipt)
 
 
 def build(root, sources, config, env):
     if runtime_ready(root):
+        prepare_runtime_dependencies(root)
         receipt = json.loads(regular(root / "runtime-ready.json").read_text())
-        if receipt.get("embeddedPlayer") != 1 or receipt.get("embeddedRevision") != 4:
+        if receipt.get("embeddedPlayer") != 1 or receipt.get("embeddedRevision") != 5:
             upgrade_embedded_player(root, sources, env)
+        receipt = json.loads(regular(root / "runtime-ready.json").read_text())
+        receipt["runtimeDependencies"] = 1
+        write_json(root / "runtime-ready.json", receipt)
         print("3D-Player bereit. Vorhandene Windows-Installation über Windows starten öffnen.", flush=True)
         return
     if " " in str(root):
@@ -464,7 +475,8 @@ def build(root, sources, config, env):
     models = run([prefix / "bin/qemu-system-aarch64", "-device", "help"], env=test_env, capture=True)
     if "virtio-ramfb-gl" not in models:
         raise RuntimeError("Gebautes QEMU enthält den benötigten Grafikmodus nicht.")
-    write_json(root / "runtime-ready.json", {"version": 1, "sources": sources, "backend": "dxmt", "embeddedPlayer": 1, "embeddedRevision": 4, "builtAt": time.time()})
+    prepare_runtime_dependencies(root)
+    write_json(root / "runtime-ready.json", {"version": 1, "sources": sources, "backend": "dxmt", "embeddedPlayer": 1, "embeddedRevision": 5, "runtimeDependencies": 1, "builtAt": time.time()})
     print("Grafiklaufzeit fertig. In Stratovo öffnet anschließend die vorhandene oder einmalig erstellte Testkopie.", flush=True)
 
 

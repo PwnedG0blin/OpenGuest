@@ -2,16 +2,20 @@
 from pathlib import Path
 HERE = Path(__file__).resolve().parent
 
-def patch(source):
+def patch(source, legacy_v4=False):
     def replace(before, after):
         nonlocal source
         if source.count(before) != 1:
             raise RuntimeError('Unbekannte native Fensterquelle: '+before[:90])
         source = source.replace(before,after)
-    code = '#include <math.h>\n'+(HERE/'native_geometry.h.inc').read_text()+'\n'+(HERE/'native_view.m.inc').read_text()
+    view_fragment = 'legacy_v4_native_view.m.inc' if legacy_v4 else 'native_view.m.inc'
+    methods_fragment = 'legacy_v4_native_methods.m.inc' if legacy_v4 else 'native_methods.m.inc'
+    code = '#include <math.h>\n'+(HERE/'native_geometry.h.inc').read_text()+'\n'+(HERE/view_fragment).read_text()
+    if not legacy_v4:
+        code += '\n'+(HERE/'display_rate.h.inc').read_text()
     replace('typedef NS_ENUM(NSInteger, QemuCocoaViewScanout)', code+'\ntypedef NS_ENUM(NSInteger, QemuCocoaViewScanout)')
     replace('- (void) setScanout:(QemuCocoaViewScanout)scanout;', '- (void) setScanout:(QemuCocoaViewScanout)scanout;\n- (NSRect)stratovoViewport;\n- (void)stratovoLayout;\n- (void)stratovoBootLogo:(NSRect)rect;')
-    replace('- (void)updateCursorLayout\n{', (HERE/'native_methods.m.inc').read_text()+'\n- (void)updateCursorLayout\n{')
+    replace('- (void)updateCursorLayout\n{', (HERE/methods_fragment).read_text()+'\n- (void)updateCursorLayout\n{')
     replace('    [[self window] setContentAspectRatio:NSMakeSize(screen.width, screen.height)];', '''    if (stratovo_native()) {
         [[self window] setStyleMask:[[self window] styleMask] | NSWindowStyleMaskResizable];
         [[self window] setContentMinSize:NSMakeSize(480, 320)];
@@ -97,4 +101,45 @@ def patch(source):
     for old,new in [('About QEMU','About Stratovo Windows Player'),('Hide QEMU','Hide Windows Arm'),('Quit QEMU','Quit Windows Arm')]:
         source=source.replace('initWithTitle:@"'+old+'"','initWithTitle:(stratovo_native() ? @"'+new+'" : @"'+old+'")')
         source=source.replace('addItemWithTitle:@"'+old+'"','addItemWithTitle:(stratovo_native() ? @"'+new+'" : @"'+old+'")')
+    if not legacy_v4:
+        source = source.replace('@"Windows Arm · Stratovo — Esc: UEFI / BIOS"', '@"Windows Arm · Stratovo"')
+        replace('''- (void)applicationDidFinishLaunching: (NSNotification *) note
+{''', '''- (void)applicationDidFinishLaunching: (NSNotification *) note
+{
+    if (stratovo_native()) {
+        [[NSProcessInfo processInfo] setProcessName:@"Stratovo Windows"];
+        const char *iconPath = getenv("STRATOVO_APP_ICON");
+        if (iconPath) {
+            NSImage *icon = [[NSImage alloc] initWithContentsOfFile:[NSString stringWithUTF8String:iconPath]];
+            if (icon) { [NSApp setApplicationIconImage:icon]; [icon release]; }
+        }
+    }''')
+        replace('- (void)stratovoBootLogo:(NSRect)rect;', '- (void)stratovoBootLogo:(NSRect)rect;\n- (void)stratovoBootFinished;')
+        replace('''        if (scanout != QemuCocoaViewScanoutNone) { [self stratovoBootLogo:NSZeroRect]; }''', '''        /* Retain the startup cover until a real GPU frame has completed. */
+        [self stratovoBootLogo:NSZeroRect];''')
+        replace('''            cocoa_gl_read_done(read);
+        }];''', '''            if (cb.status == MTLCommandBufferStatusCompleted && stratovo_native()) {
+                dispatch_async(dispatch_get_main_queue(), ^{ [self stratovoBootFinished]; });
+            }
+            cocoa_gl_read_done(read);
+        }];''')
+        replace('''- (bool) handleEvent:(NSEvent *)event
+{''', '''- (bool) handleEvent:(NSEvent *)event
+{
+    /* Esc exposes the real firmware UI immediately, before forwarding the key. */
+    if (stratovo_native() && event.type == NSEventTypeKeyDown && event.keyCode == 53) {
+        [self stratovoBootFinished];
+    }''')
+        replace('''                eglSwapBuffers(qemu_egl_display, egl_surface);''', '''                eglSwapBuffers(qemu_egl_display, egl_surface);
+                if (gl_scanout_id && stratovo_native()) {
+                    dispatch_async(dispatch_get_main_queue(), ^{ [cocoaView stratovoBootFinished]; });
+                }''')
+        replace('''        info.width_mm = frameSize.width / screenSize.width * screenPhysicalSize.width;''', '''        /* The signed guest driver uses this EDID rate for every resolution.
+         * Keep monitor timing independent of the game's own FPS limiter. */
+        int stratovoHz = stratovo_refresh_hz(getenv("STRATOVO_DISPLAY_HZ"));
+        if (stratovoHz) {
+            update_displaychangelistener(&dcl, 1000 / stratovoHz);
+            info.refresh_rate = (int64_t)stratovoHz * 1000;
+        }
+        info.width_mm = frameSize.width / screenSize.width * screenPhysicalSize.width;''')
     return source

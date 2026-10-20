@@ -3,6 +3,8 @@ static bool stratovo_native(void) { return getenv("STRATOVO_NATIVE_PLAYER") != N
 static CALayer *stratovo_boot_layer;
 static CATextLayer *stratovo_boot_hint;
 static NSRect stratovo_logo_rect;
+static bool stratovo_boot_complete;
+static CFTimeInterval stratovo_boot_started;
 
 /* Read only a small fingerprint generated from the selected firmware. */
 static NSRect stratovo_boot_match(DisplaySurface *source)

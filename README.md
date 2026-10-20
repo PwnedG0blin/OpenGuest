@@ -1,14 +1,14 @@
 # Stratovo · Android, Windows & Ubuntu for Mac
 
-**1.0 Beta 5**
+**1.0 Beta 6**
 
-Public Apple Silicon beta with a guided dashboard, a user-selected data drive, experimental Windows 3D and verified GitHub app updates. See the [Beta 5 release guide](docs/RELEASE_1.0_BETA5.md). Existing guest data locations are preserved.
+Public Apple Silicon beta with a guided dashboard, a user-selected data drive, experimental Windows 3D and verified GitHub app updates. See the [Beta 6 release guide](docs/RELEASE_1.0_BETA6.md) for automatic graphics-library repair, virtual monitor timing and the improved native startup view. Existing guest data locations are preserved.
 
 ## Android, Windows and Ubuntu for Mac
 
 **Free, open-source macOS app for Android emulation, Windows ARM64 and Ubuntu ARM virtual machines on Apple silicon.**
 
-Developed by **PwnedG0blin** · macOS **14+** · **MIT license** · **1.0 Beta 5**
+Developed by **PwnedG0blin** · macOS **14+** · **MIT license** · **1.0 Beta 6**
 
 [Deutsch: vollständige Anleitung](README.de.md) · [Setup](LIES_MICH_ZUERST.md) · [Mac test builds](https://github.com/PwnedG0blin/OpenGuest/actions/workflows/macos.yml) · [Report an issue](https://github.com/PwnedG0blin/OpenGuest/issues)
 
@@ -37,7 +37,7 @@ Stratovo follows your preferred macOS language at launch. Override it under Setu
 - Independent 64-GiB disk and UEFI state on the selected data drive.
 - Same Stratovo player, keyboard, paste and trackpad controls. Plan about 80 GiB storage and 6–8 GiB guest RAM.
 
-[What changed](docs/RELEASE_1.0_BETA5.md) · [Safe cleanup after updating](docs/AUFRAEUMEN.md)
+[What changed](docs/RELEASE_1.0_BETA6.md) · [Safe cleanup after updating](docs/AUFRAEUMEN.md)
 
 ## File exchange
 
