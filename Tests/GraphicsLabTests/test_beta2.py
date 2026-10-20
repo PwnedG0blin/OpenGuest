@@ -70,6 +70,8 @@ class Beta2Tests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp);(root/'Sources/qemu/ui').mkdir(parents=True)
             (root/'Sources/qemu/ui/cocoa.m').write_text('fixture')
+            (root/'Runtime/bin').mkdir(parents=True)
+            (root/'Runtime/bin/qemu-system-aarch64').write_bytes(b'existing engine')
             (root/'runtime-ready.json').write_text('{"version":1}')
             commands=[]
             with mock.patch.object(lab,'prepare_embedded_player') as patch, \
@@ -79,3 +81,4 @@ class Beta2Tests(unittest.TestCase):
             self.assertEqual(commands,[['make','-j4','install']])
             self.assertEqual(json.loads((root/'runtime-ready.json').read_text())['embeddedPlayer'],1)
             patch.assert_called_once()
+            self.assertEqual((root/'PlayerBackup-v1/qemu-system-aarch64').read_bytes(),b'existing engine')

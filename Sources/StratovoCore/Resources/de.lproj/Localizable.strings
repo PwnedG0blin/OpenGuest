@@ -637,3 +637,5 @@
 "3D-Player wird auf dem gewählten Laufwerk vorbereitet …" = "3D-Player wird auf dem gewählten Laufwerk vorbereitet …";
 "Bitte zuerst unter Windows die 3D-Grafik vorbereiten." = "Bitte zuerst unter Windows die 3D-Grafik vorbereiten.";
 "Zuerst Speicherort und QEMU-Werkzeuge unter Einrichtung prüfen." = "Zuerst Speicherort und QEMU-Werkzeuge unter Einrichtung prüfen.";
+
+"Dateiaustausch" = "Dateiaustausch";

@@ -637,3 +637,59 @@
 "3D-Player wird auf dem gewählten Laufwerk vorbereitet …" = "Preparing the 3D player on the selected drive …";
 "Bitte zuerst unter Windows die 3D-Grafik vorbereiten." = "Please prepare the 3D graphics under Windows first.";
 "Zuerst Speicherort und QEMU-Werkzeuge unter Einrichtung prüfen." = "Check the data location and QEMU tools under Setup first.";
+
+"Dateiaustausch" = "File exchange";
+
+"Adresse kopiert" = "Address copied";
+
+"Ein Austauschordner für deine Systeme" = "One exchange folder for your systems";
+
+"Der Ordner liegt neben Android, Windows und Ubuntu auf deinem gewählten Datenträger. Deine VM-Festplatten werden nicht als Austauschordner freigegeben." = "The folder sits alongside Android, Windows and Ubuntu on your selected drive. Your VM disks are not shared as the exchange folder.";
+
+"Austausch im Finder öffnen" = "Open exchange folder in Finder";
+
+"Windows und Ubuntu · gemeinsamer Ordner über SMB" = "Windows and Ubuntu · shared folder over SMB";
+
+"Einmalig auf dem Mac: Systemeinstellungen → Allgemein → Teilen → Dateifreigabe. Nur den Ordner Austausch hinzufügen und deinem Mac-Benutzer Lesen & Schreiben erlauben. Unter Optionen SMB und den gewünschten Benutzer aktivieren." = "One-time Mac setup: System Settings → General → Sharing → File Sharing. Add only the Austausch folder and allow your Mac user Read & Write. Under Options, enable SMB and the intended user.";
+
+"Freigaben können im lokalen Netzwerk erreichbar sein. Die App aktiviert keine Freigabe automatisch und speichert kein Mac-Passwort." = "Shares may also be accessible on your local network. The app does not enable sharing automatically or store your Mac password.";
+
+"macOS-Freigabeeinstellungen öffnen" = "Open macOS Sharing settings";
+
+"Windows-Adresse kopieren" = "Copy Windows address";
+
+"Ordner in Windows öffnen" = "Open folder in Windows";
+
+"Windows: mit deinem freigegebenen Mac-Benutzer anmelden. Unter Dieser PC → Netzlaufwerk verbinden kannst du den Ordner dauerhaft als Laufwerk einbinden." = "Windows: sign in with your enabled Mac user. Under This PC → Map network drive, you can optionally keep the folder as a drive.";
+
+"Ubuntu-Adresse kopieren" = "Copy Ubuntu address";
+
+"Ubuntu: Dateien → Andere Orte → Mit Server verbinden. Die SMB-Adresse einfügen und mit deinem Mac-Benutzer anmelden. Die VM-Netzwerkverbindung muss eingeschaltet sein." = "Ubuntu: Files → Other Locations → Connect to Server. Enter the SMB address and sign in with your Mac user. Guest networking must be enabled.";
+
+"Apple-Anleitung zur Dateifreigabe" = "Apple file sharing guide";
+
+"Android · Dateien senden und abholen" = "Android · send and import files";
+
+"Ohne zusätzliche Android-App: Dateien landen unter Downloads/Stratovo-Austausch. Zum Abholen dort Dateien ablegen. Übertragungen kopieren ausdrücklich ausgewählte Dateien; es gibt keinen automatischen Löschabgleich." = "No additional Android app needed: files go to Downloads/Stratovo-Austausch. Place files there to import them. Transfers copy explicitly chosen files; there is no automatic deletion sync.";
+
+"Datei zu Android senden" = "Send file to Android";
+
+"Android-Dateien abholen" = "Import Android files";
+
+"Abgeholte Dateien liegen in Austausch/Android in einem neuen Importordner. Für direkten SMB-Zugriff kann zusätzlich ein Android-Dateimanager mit SMB-Unterstützung verwendet werden." = "Imported files go into a new folder under Austausch/Android. Direct SMB access is also possible with an Android file manager that supports SMB.";
+
+"Datei wird zu Android kopiert …" = "Copying file to Android …";
+
+"Datei kopiert: Android → Downloads → Stratovo-Austausch. Jede Übertragung erhält einen eigenen Unterordner." = "File copied: Android → Downloads → Stratovo-Austausch. Each transfer uses a new subfolder.";
+
+"Android-Dateien werden abgeholt …" = "Importing Android files …";
+
+"Android-Dateien in einen neuen Importordner kopiert. Vorhandene Dateien bleiben erhalten." = "Android files copied to a new import folder. Existing files are preserved.";
+
+"Austauschordner angefordert. Die SMB-Freigabe muss auf dem Mac eingerichtet sein." = "Exchange folder requested. SMB sharing must be configured on the Mac.";
+
+"Dateien zwischen Mac und Gästen austauschen" = "Exchange files between Mac and guests";
+
+"Austausch im Datenordner · Windows · Ubuntu · Android" = "Exchange folder on your data drive · Windows · Ubuntu · Android";
+
+"Dateiaustausch öffnen" = "Open file exchange";

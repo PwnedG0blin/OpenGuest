@@ -92,3 +92,11 @@ Die App ist lokal signiert, noch nicht Developer-ID-signiert oder notarisiert:
 automatische Tests ersetzen keine längere Prüfung von Gast, Spielen und FPS auf dem M4.
 
 [Projekt](README.md) · [Entwickler](AUTHORS.md) · [Fehler melden](https://github.com/PwnedG0blin/OpenGuest/issues/new/choose)
+
+## Dateiaustausch · alle drei Gäste
+
+Links **Dateiaustausch** wählen oder im Player oben auf **Dateiaustausch** klicken. Der Ordner **Austausch** liegt im gewählten Datenordner. Windows und Ubuntu nutzen nach einmaliger macOS-SMB-Freigabe denselben Ordner. Android kann ausgewählte Dateien senden und Dateien aus Downloads/Stratovo-Austausch in neue Importordner auf dem Mac abholen. Anleitung: [Dateiaustausch](docs/DATEIAUSTAUSCH.md).
+
+## Schwarzes Windows-Bild nach dem Startlogo
+
+Beta 3 ergänzt den klassischen OpenGL-Bildpfad und einen separaten CPU-Bildpuffer für VNC. Einmal **3D-Player vorbereiten / aktualisieren** ausführen. Es wird nur QEMU neu gebaut; die vorhandenen ANGLE-/LLVM-Bauten und Gastdatenträger bleiben erhalten. Falls der Fehler weiter auftritt, das aktuelle Windows-Startprotokoll beifügen. Ein erfolgreicher App-Bau allein bestätigt keinen funktionierenden Grafiktreiber im Gast.

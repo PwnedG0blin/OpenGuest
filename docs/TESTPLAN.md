@@ -1,3 +1,29 @@
+# Validation status – 2026-10-20
+
+Beta 2 passed 133 Swift tests, 25 graphics/Ubuntu Python tests, 11 Android data tests
+and 6 Android setup tests on macOS CI, plus adapter SDK syntax, TPM/DVD and app smoke
+checks. The hosted runner cannot create an HVF VM; these are not end-to-end guest tests.
+
+Beta 3 adds executable ASan/UBSan checks of the actual CPU/VNC frame adapters,
+separate Metal and OpenGL SDK checks, and exchange-folder preservation tests.
+Current CI output is the authority for this version’s build/test result.
+
+## Hardware acceptance checks still required
+
+- Windows on M4: firmware logo → Windows logo → desktop; verify both Metal and
+  classic GL output, display size changes, reconnects and a sustained workload.
+- Ubuntu: complete the official ARM64 desktop installation, restart without its ISO,
+  and test keyboard, paste, scrolling and persistent files.
+- Android: APK installation, Play sign-in/download, long sessions and persistence.
+- File exchange: macOS SMB authentication and read/write from Windows and Ubuntu;
+  Android explicit send/import, transfer interruption and no overwrite of older copies.
+- Review old test-copy files before any cleanup. Never remove TPM/NVRAM to repair a boot.
+
+The previous detailed plan below is retained as historical guidance. Its old test
+counts and descriptions do not describe the current build.
+
+---
+
 # Validation status – 2026-10-15
 
 ## Performed in the authoring environment

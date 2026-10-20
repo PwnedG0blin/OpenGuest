@@ -1,12 +1,14 @@
-# Stratovo · 1.0 Beta 2
+# Stratovo · Android, Windows & Ubuntu for Mac
 
-Public Apple Silicon beta with a guided dashboard, a user-selected data drive, experimental Windows 3D and verified GitHub app updates. See the [release guide and per-VM storage budget](docs/RELEASE_1.0_BETA2.md). Existing guest data locations are preserved.
+**1.0 Beta 3**
+
+Public Apple Silicon beta with a guided dashboard, a user-selected data drive, experimental Windows 3D and verified GitHub app updates. See the [release guide and per-VM storage budget](docs/RELEASE_1.0_BETA3.md). Existing guest data locations are preserved.
 
 ## Android, Windows and Ubuntu for Mac
 
 **Free, open-source macOS app for Android emulation, Windows ARM64 and Ubuntu ARM virtual machines on Apple silicon.**
 
-Developed by **PwnedG0blin** · macOS **14+** · **MIT license** · **1.0 Beta 2**
+Developed by **PwnedG0blin** · macOS **14+** · **MIT license** · **1.0 Beta 3**
 
 [Deutsch: vollständige Anleitung](README.de.md) · [Setup](LIES_MICH_ZUERST.md) · [Mac test builds](https://github.com/PwnedG0blin/OpenGuest/actions/workflows/macos.yml) · [Report an issue](https://github.com/PwnedG0blin/OpenGuest/issues)
 
@@ -35,7 +37,11 @@ Stratovo follows your preferred macOS language at launch. Override it under Setu
 - Independent 64-GiB disk and UEFI state on the selected data drive.
 - Same Stratovo player, keyboard, paste and trackpad controls. Plan about 80 GiB storage and 6–8 GiB guest RAM.
 
-[What changed](docs/RELEASE_1.0_BETA2.md) · [Safe cleanup after updating](docs/AUFRAEUMEN.md)
+[What changed](docs/RELEASE_1.0_BETA3.md) · [Safe cleanup after updating](docs/AUFRAEUMEN.md)
+
+## File exchange
+
+The **File exchange / Dateiaustausch** workspace keeps `Austausch` inside the selected guest data folder. Windows and Ubuntu can access it through native macOS SMB file sharing after one-time setup. Android has explicit send/import actions over its existing ADB connection, without another Android app. Copies use new subfolders to preserve existing files. See [setup and addresses](docs/DATEIAUSTAUSCH.md).
 
 ## Install or build
 

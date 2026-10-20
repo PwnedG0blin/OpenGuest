@@ -76,6 +76,7 @@ private struct GuestPlayerView: View {
     @AppStorage private var scrollMomentum: Bool
     @AppStorage private var zoomPercent: Double
     @State private var androidDisplayPresented = false
+    @State private var exchangePresented = false
     private var safeZoom: Double { zoomPercent.isFinite ? max(25, min(300, zoomPercent)) : 100 }
 
     init(model: AppModel, kind: String) {
@@ -97,6 +98,8 @@ private struct GuestPlayerView: View {
             HStack(spacing: 12) {
                 Text(kind == "android" ? "Android" : (kind == "ubuntu" ? "Ubuntu ARM" : "Windows")).font(.headline)
                 Spacer(minLength: 0)
+                Button(L10n.text("Dateiaustausch")) { exchangePresented = true }
+                    .disabled(!model.storageReady)
                 if active && kind == "android" {
                     Text("Stream \(Int(model.streamFPS.rounded())) · Decoder \(Int(model.decoderFPS.rounded())) FPS")
                         .font(.system(size: 13, weight: .semibold).monospacedDigit())
@@ -282,5 +285,11 @@ private struct GuestPlayerView: View {
             else { WindowsPasteSheet(model: model, text: $pasteDraft) }
         }
         .sheet(isPresented: $androidDisplayPresented) { AndroidDisplaySheet(model: model) }
+        .sheet(isPresented: $exchangePresented) {
+            VStack(alignment: .trailing) {
+                Button(L10n.text("Fertig")) { exchangePresented = false }
+                ScrollView { ExchangeFolderView(model: model, controller: model.exchange) }
+            }.padding(18).frame(width: 700, height: 720)
+        }
     }
 }

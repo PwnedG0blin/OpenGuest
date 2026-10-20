@@ -76,6 +76,17 @@ struct DashboardView: View {
             }.font(.body)
         }
     }
+            GroupBox {
+                HStack(spacing: 18) {
+                    Image(systemName: "folder.fill").font(.title).foregroundStyle(.teal)
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(L10n.text("Dateien zwischen Mac und Gästen austauschen")).font(.headline)
+                        Text(L10n.text("Austausch im Datenordner · Windows · Ubuntu · Android"))
+                    }
+                    Spacer()
+                    Button(L10n.text("Dateiaustausch öffnen")) { navigate(.exchange) }.buttonStyle(.borderedProminent)
+                }.padding(16)
+            }
     private func step(_ number: Int, _ text: String) -> some View {
         HStack(spacing: 12) {
             Text(String(number)).font(.headline).frame(width: 34, height: 34)

@@ -112,6 +112,8 @@ final class AppModel: ObservableObject {
     let graphicsLab = WindowsGraphicsLabController()
     @Published var windowsLabSelected = true
     let ubuntu = UbuntuController()
+    let exchange = ExchangeController()
+    var androidExchangePort: Int? { androidPort }
     func setGraphicsLabBusy(_ active: Bool) { busy = active }
     func recordGraphicsLabEvent(_ text: String) { recordDiagnostic("Experimentelles Grafiklabor", text) }
     @Published private(set) var firmware: String?
@@ -1221,6 +1223,24 @@ final class AppModel: ObservableObject {
         playerStatus = L10n.text("Windows + I gesendet · Unter System → Anzeige Auflösung und Windows-Skalierung wählen.")
     }
 
+    func openWindowsExchangeFolder() {
+        guard running, activeGuest == "windows", settings.windowsNetwork,
+              !windowsPasteBusy, let socket = qmpSocket else { return }
+        windowsPasteBusy = true
+        Task {
+            defer { windowsPasteBusy = false }
+            do {
+                let address = try WindowsTextInput(text: ExchangeFolder.windowsAddress, layout: windowsTextLayout)
+                try await QMPClient.sendKeys(["meta_l", "r"], socket: socket)
+                try await Task.sleep(nanoseconds: 600_000_000)
+                try await QMPClient.sendKeys(["ctrl", "a"], socket: socket)
+                try await QMPClient.typeText(address, socket: socket) { _ in }
+                try await QMPClient.sendKeys(["ret"], socket: socket)
+                windowsPasteStatus = L10n.text("Austauschordner angefordert. Die SMB-Freigabe muss auf dem Mac eingerichtet sein.")
+            } catch { windowsPasteStatus = error.localizedDescription }
+        }
+    }
+
     func keyboard(code: UInt16, text: String, down: Bool) {
         if ["windows", "ubuntu"].contains(activeGuest), windowsPasteBusy { return }
         if activeGuest == "android" {
@@ -1449,6 +1469,7 @@ final class AppModel: ObservableObject {
         recordDiagnostic(L10n.text("Gast beendet"), "\(sessionName) · Exit-Code \(code) · Beenden angefordert: \(stopRequested)")
         busy = true
         defer { busy = false }
+        exchange.cancelTransfer()
         bootTask?.cancel()
         bootTask = nil
         displayTask?.cancel(); displayTask = nil

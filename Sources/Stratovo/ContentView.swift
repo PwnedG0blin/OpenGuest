@@ -7,6 +7,7 @@ enum WorkspaceTab: String, CaseIterable, Identifiable {
     case android = "Android"
     case windows = "Windows"
     case ubuntu = "Ubuntu ARM"
+    case exchange = "Dateiaustausch"
     case setup = "Einrichtung"
     var id: String { rawValue }
     var title: String { L10n.text(rawValue) }
@@ -17,6 +18,7 @@ enum WorkspaceTab: String, CaseIterable, Identifiable {
         case .android: return "apps.iphone"
         case .windows: return "desktopcomputer"
         case .ubuntu: return "terminal"
+        case .exchange: return "folder.badge.person.crop"
         case .setup: return "slider.horizontal.3"
         }
     }
@@ -50,6 +52,7 @@ struct ContentView: View {
                     case .android: android
                     case .windows: windows
                     case .ubuntu: UbuntuView(model: model, controller: model.ubuntu)
+                    case .exchange: ExchangeFolderView(model: model, controller: model.exchange)
                     case .setup: setup
                     }
                     logPanel
@@ -79,7 +82,7 @@ struct ContentView: View {
                 Image(systemName: "square.stack.3d.up.fill").font(.title).foregroundStyle(.teal)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Stratovo").font(.headline)
-                    Text("1.0 BETA 2").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
+                    Text("1.0 BETA 3").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
                 }
             }
             ForEach(WorkspaceTab.allCases) { tab in
