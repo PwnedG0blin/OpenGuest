@@ -15,7 +15,7 @@
 	<key>CFBundleShortVersionString</key>
 	<string>1.0.0</string>
 	<key>CFBundleVersion</key>
-	<string>1001</string>
+	<string>1003</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>14.0</string>
 	<key>NSHighResolutionCapable</key>
@@ -25,7 +25,7 @@
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright (c) 2026 PwnedG0blin and Stratovo contributors</string>
 	<key>StratovoReleaseVersion</key>
-	<string>1.0.0-beta.1</string>
+	<string>1.0.0-beta.2</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleLocalizations</key>

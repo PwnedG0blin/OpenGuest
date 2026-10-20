@@ -1,93 +1,94 @@
-# Stratovo 1.0 Beta 1 – zuerst im Dashboard beginnen
+# Stratovo 1.0 Beta 2 einrichten
 
-Beim ersten Start SSD oder Datenordner auswählen. Kein bestimmter Laufwerksname ist nötig. Danach im Dashboard Android oder Windows einrichten. Details und Speicherbedarf: docs/RELEASE_1.0_BETA1.md.
+Entwickelt von **PwnedG0blin** · macOS 14+ · Apple Silicon.
 
-# Stratovo einrichten
+## App und Datenordner
 
-**Anleitung zur Testversion 0.3.19** · macOS 14 oder neuer · Apple Silicon
+1. Alle Gäste herunterfahren und die bisherige App schließen.
+2. Die neue Stratovo.app unter Programme installieren und dort starten.
+3. Beim ersten Start SSD oder Datenordner wählen. Bestehende Installationen verwenden
+   denselben Ordner weiter; ein Update verschiebt oder löscht keine Gastdaten.
+4. Der gewählte Datenträger muss während der Nutzung angeschlossen bleiben.
 
-Entwickelt von **PwnedG0blin** · [Projektübersicht](README.md) · [Fehler melden](https://github.com/PwnedG0blin/OpenGuest/issues/new/choose)
+Kleine Einstellungen, der Speicherort-Verweis und der Schlüsselbund bleiben intern.
+SDKs, Gastdatenträger, Grafikwerkzeuge und Ubuntu liegen im gewählten Datenordner.
+Homebrew, Xcode und macOS können zusätzlich internen Speicher benötigen.
 
-## 1. App und Datenordner vorbereiten
+## Android
 
-1. Laufende Android- oder Windows-Gäste regulär herunterfahren und die bisherige App schließen.
-2. Die neue `Stratovo.app` nach **Programme / Applications** kopieren und dort öffnen. Die DMG danach auswerfen.
-3. Beim ersten Start den Datenordner wählen. Auf einer externen SSD einen eigenen Ordner verwenden. Eine vorhandene Installation kann zum Beispiel `/Volumes/Extern/OpenGuest` weiterverwenden; für ein Update muss der Ordner nicht umbenannt werden.
-4. Den gewählten Datenträger während der Nutzung angeschlossen lassen. Fehlt er, sperrt die App Gaststarts und Downloads.
+Unter **Android** die Werkzeuge und den Videostream einrichten, Google-Lizenzen
+bestätigen und Android 16 installieren oder ein bestehendes ARM64-Profil wählen.
+Android 17 ist ein getrenntes optionales Profil. Android starten öffnet den Player.
 
-SDK, Systemabbilder, Android-Nutzerdaten, Windows-Datenträger, Streaming-Komponenten, Protokolle und ausgewählte Installationsmedien liegen im eingerichteten Datenordner. Kleine App-Einstellungen und der gespeicherte Pfad bleiben intern; macOS verwaltet außerdem seine eigenen Caches und Auslagerungsdateien. Die Auswahl verlegt nicht automatisch Android Studio oder Homebrew.
+Im Player findest du Auflösung, Dichte, Bildrate bis 90 FPS, Scrolltempo,
+Touch-Wischen und Text einfügen. Apps, Konten und lokale Spielstände bleiben gespeichert.
+Android-17-Datenübernahme erstellt eine eigene Kopie; es gibt keine laufende Synchronisierung.
+Google-Beta-Programme für physische Pixel-Geräte sind davon getrennt.
 
-Die Test-App ist noch nicht mit Apple Developer ID signiert oder notarisiert. Hinweise zu einer gezielten macOS-Startfreigabe stehen in [SIGNIERUNG.md](SIGNIERUNG.md).
+## Windows – jetzt mit 3D im bisherigen Player
 
-## 2. Android 16 einrichten
+1. QEMU, qemu-img und swtpm einrichten; **System prüfen** verwenden.
+2. Unter **Windows → 3D-Player vorbereiten / aktualisieren** die Grafiklaufzeit vorbereiten.
+   Der erste Bau benötigt vollständiges Xcode mit Metal-Werkzeugen und weitere
+   angezeigte Bibliotheken. Der Grafikbau unterstützt derzeit Datenpfade ohne Leerzeichen.
+3. Eine bereits funktionierende Grafiklaufzeit wird gezielt um den eingebetteten Player
+   ergänzt. ANGLE und LLVM werden dabei weiterverwendet; es entsteht keine Windows-Kopie.
+4. **Vorhandenes Windows starten** verwendet dieselbe bisherige Windows-Festplatte,
+   Konten, Dateien, NVRAM, TPM und Gerätekennung. Der Grafikmodus ist nun 3D über Metal.
+5. Falls der Grafiktreiber noch fehlt: **Explorer → Dieser PC → DVD PKGRAPHICS →
+   INSTALL_GRAPHICS.cmd** innerhalb von Windows ausführen, herunterfahren und erneut starten.
 
-1. **Downloads und Einrichtung** öffnen. Die angebotenen Android-Werkzeuge im gewählten Datenordner einrichten und die erforderlichen SDK-Lizenzen selbst bestätigen.
-2. **Android 16 mit Google Play** vorbereiten. Ein passendes bestehendes Profil wird wiederverwendet; ein neues Profil erhält **64 GiB** virtuellen Datenspeicher.
-3. Den angebotenen **Android-Videostream** einrichten.
-4. **System prüfen**, das gewünschte Android-Profil wählen und Android ausdrücklich starten. Der Player öffnet sich in einem eigenen Fenster.
-5. Im Android-Gast bei Google anmelden, danach Apps über Google Play oder **APK installieren …** installieren. Einzelne APKs werden unterstützt; XAPK/APKS gehören noch nicht dazu.
+Für eine neue Installation den Windows-Ordner anlegen, eine offizielle ARM64-ISO wählen,
+Festplattengröße und RAM/CPU einstellen und **Nächster Start: Windows von DVD einrichten**
+aktivieren. Pro-Vorauswahl, lokales Konto und Netzwerk bleiben verfügbar. Eine passende
+Windows-Lizenz ist erforderlich. Die Installations- und Treiber-ISOs sind verschiedene Dateien.
 
-Apps, Konten und Spielstände bleiben lokal gespeichert. Eine zusätzliche Google-Sicherung oder Spielstandsynchronisierung funktioniert, soweit das jeweilige Spiel, die App und das Systemabbild sie unterstützen. Der externe Google-Login im Mac-Browser überträgt keine Anmeldung in den Android-Gast.
+Im Player bleiben **Text einfügen / ⌘V**, Tastaturbelegung, Scrolltempo, Vollbild,
+Ansicht und Einrichtungskonsole verfügbar. Auflösung und Windows-Skalierung unter
+**System → Anzeige** ändern. **Esc beim Einschalten** öffnet das **UEFI-/BIOS-Menü**.
+Das erkannte Firmwarelogo wird ausschließlich im Player ersetzt; die Firmware bleibt unverändert.
 
-### Android 17 und Updates
+Die frühere GraphicsLab/TestVM bleibt erhalten. Sie wird nicht automatisch mit der
+bisherigen Hauptinstallation zusammengeführt. Vor deren Entfernung eigene Dateien prüfen.
 
-Android 17 lässt sich unter **Downloads und Einrichtung** als **separates Profil** installieren. Dieses Profil hat eigene Apps und Konten; der Wechsel ist kein Upgrade des bestehenden Android-16-Datenträgers.
+## Ubuntu ARM
 
-**Stable** ist der voreingestellte SDK-Kanal. Beta, Dev und Canary beziehen zusätzliche von Google angebotene SDK-Revisionen ein. Die tägliche Prüfung beim Öffnen lädt nichts herunter. Eine Aktualisierung vor dem Android-Start ist optional und erfolgt nur bei ausgeschalteten Gästen, anschließend mit Kaltstart. Das ist keine Registrierung im Pixel-Betaprogramm.
+1. **Ubuntu ARM → 1 · Ubuntu ARM herunterladen** wählen. Das offizielle Ubuntu
+   26.04.1-LTS-ARM64-Abbild wird geladen und mit der festen SHA-256-Prüfsumme geprüft.
+2. **2 · Ubuntu installieren** wählen. Der Installer läuft im Stratovo-Player.
+3. Im Installer ausschließlich die virtuelle 64-GiB-Festplatte verwenden. Sie liegt
+   im eigenen Unterordner Ubuntu; Android und Windows sind nicht mit dieser VM verbunden.
+4. Nach der Installation Ubuntu herunterfahren und **Ubuntu starten** wählen.
+   Dieser Start verwendet die Festplatte ohne Installations-ISO.
+5. Auflösung und Skalierung unter Ubuntu **Einstellungen → Anzeigegeräte** ändern.
+   Text einfügen und Scrolltempo findest du im Player. Die gewählte Tastaturbelegung
+   für Texteingaben muss mit der im Gast übereinstimmen.
 
-### Android-Anzeige und Trackpad
+## Speicherbedarf
 
-- **Bild einpassen** nutzt die verfügbare Playerfläche. **Telefonfenster** passt das Fenster an Seitenverhältnis und Bildschirmhöhe an.
-- Unter **Android-Auflösung …** Breite, Höhe und Dichte wählen. Das S26-Ultra-Displayprofil nutzt 1440 × 3120 Pixel mit anpassbaren 500 dpi. Es verändert die Anzeige, nicht die Gerätefirmware. Größere dpi machen Bedienelemente bei gleicher Auflösung größer.
-- **Scrolltempo** und **Trackpad-Nachlauf** lassen sich im Player ändern und werden getrennt von Windows gespeichert. **Wischen wie am Handy** überträgt Zwei-Finger-Bewegungen als Touch-Wischen im Android-Gast.
-- Zum Einfügen Text am Mac kopieren, im Gast das Ziel antippen und **Text einfügen …** oder **⌘V** verwenden. Die Vorschau prüfen und bestätigen. Innere Zeilenumbrüche erfordern eine eigene Freigabe; es wird kein zusätzliches Enter angehängt.
+| System / Werkzeuge | Einplanen |
+| --- | --- |
+| Android 16 | etwa 80 GiB |
+| Android 17 | zusätzlich etwa 80 GiB |
+| Windows | gewählte Festplattengröße + etwa 20 GiB |
+| 3D-Werkzeuge | mindestens 30 GiB einmalig; keine zweite Windows-Festplatte |
+| Ubuntu ARM | etwa 80 GiB; mindestens 40 GiB vor Installation, 6–8 GiB RAM |
 
-### Bei Ruckeln oder Verbindungsproblemen
+Spiele, Sicherungen und Downloads benötigen zusätzlichen Platz. Virtuelle Festplatten
+wachsen mit ihren Daten. Jeweils ein Gastsystem starten.
 
-Zuerst **Bild einpassen** und ein kleineres Streaming-/Leistungsprofil testen. Hohe Gastauflösung und Software-Rendering können die Last erhöhen. Im ausgeschalteten Zustand lässt sich **Mac-GPU bevorzugen** wählen und Vulkan für einen OpenGL-ES-Kompatibilitätstest ausschalten. Änderungen am Renderer gelten beim nächsten Start.
+## Update, Aufräumen und Diagnose
 
-**Anzeige neu verbinden** startet nur den Videostream neu; Android und laufende Downloads bleiben aktiv. Bei `device offline` den Gast herunterfahren und **Android-Verbindung reparieren** verwenden. Die Aktion startet ADB neu und aktiviert den Kaltstart; dadurch werden auch andere ADB-Debugverbindungen auf dem Mac getrennt.
+Updates werden unter **Updates** ausdrücklich über GitHub geprüft und installiert.
+Gäste vorher herunterfahren. Datenordner und Schlüsselbund bleiben erhalten.
+[Aufräumliste](docs/AUFRAEUMEN.md) · [Änderungen](docs/RELEASE_1.0_BETA2.md)
 
-## 3. Windows ARM64 einrichten
+Das Schließen des Players beendet den Gast nicht. Erst im Gast herunterfahren;
+Prozess beenden ist eine Notlösung. Bei Problemen das Gesamtprotokoll exportieren
+und vor Veröffentlichung auf persönliche Inhalte prüfen.
 
-1. QEMU, `qemu-img` und `swtpm` auf dem Mac installieren. Bei bereits eingerichtetem Homebrew ist dies beispielsweise mit `brew install qemu swtpm` möglich.
-2. In Stratovo **System prüfen** und die fehlenden Komponenten ergänzen. Für Windows 11 werden geeignete ARM64-UEFI-Firmware und passende UEFI-Variablen benötigt. Eine gewöhnliche `edk2-aarch64-code.fd` ist nicht automatisch ein geeigneter Secure-Boot-Build.
-3. Im Windows-Speicherbereich einen Ordner anlegen und die gewünschte virtuelle Kapazität wählen. Die QCOW2-Datei wächst mit der Nutzung. Bestehende Datenträger können bei ausgeschaltetem Gast vergrößert, aber nicht verkleinert werden; zusätzlichen Platz anschließend in Windows zuordnen.
-4. **DVD-ISO manuell auswählen …** anklicken und eine eigene offizielle **Windows-ARM64-ISO** wählen. Den angezeigten vollständigen Pfad prüfen. Die Dateiprüfung allein bestätigt weder Architektur noch Bootfähigkeit.
-5. Unter **Downloads und Einrichtung** die Windows-Treiber beziehen und deren eigene ISO als **ARM64-Treiber-ISO** auswählen. Windows- und Treiber-ISO sind unterschiedliche Dateien. Treiber werden anschließend im Gast installiert.
-6. Die gewünschte Einrichtung wählen. Die Option **Lokales Windows-Konto** bereitet ein lokales Konto vor; das tatsächliche Verhalten hängt vom gewählten Windows-Installationsabbild und Setup ab. Die vollständige Windows-Ersteinrichtung erfolgt im Player. Eine passende Windows-Lizenz ist separat erforderlich.
-7. Den ausdrücklich gewählten DVD-Start ausführen. Nach dem Prozessstart wird für den nächsten Start wieder der gespeicherte Datenträger vorgemerkt; die ISO-Auswahl bleibt erhalten. Nach der Installation **Vorhandenes Windows starten** verwenden.
+Die App ist lokal signiert, noch nicht Developer-ID-signiert oder notarisiert:
+[SIGNIERUNG.md](SIGNIERUNG.md). Der neue eingebettete 3D-Pfad bleibt experimentell;
+automatische Tests ersetzen keine längere Prüfung von Gast, Spielen und FPS auf dem M4.
 
-Die App prüft nach dem Start den QEMU-Zustand und die tatsächlich verbundene Installations-DVD. Eine erfolgreiche Geräteprüfung ist noch kein Nachweis, dass die komplette Installation auf dem Ziel-Mac funktioniert.
-
-### Windows-Anzeige und Eingabe
-
-Zunächst die **Basisgrafik** verwenden. Für die optionale **Virtio-GPU** zuerst passende ARM64-Grafiktreiber von der Treiber-CD in Windows installieren, dann Windows herunterfahren und den Grafikmodus ändern. Auflösung und Skalierung hängen von den angebotenen Gasttreibermodi ab. Bei schwarzem Bild ausgeschaltet wieder Basisgrafik wählen. Beschleunigte Windows-3D-Grafik ist nicht enthalten.
-
-Das **Scrolltempo** ist im Windows-Player separat einstellbar. Der aktuelle Windows-Pfad überträgt vertikale Mausradschritte. Zum Einfügen das Ziel im Gast anklicken, **Text einfügen …** oder **⌘V** wählen und die tatsächliche Windows-Tastaturbelegung angeben. Nicht unterstützte Zeichen werden vor der Übertragung abgelehnt. Ein kopierter Befehl wird nicht durch ein zusätzliches Enter ausgeführt.
-
-Mit **Benutzername und Kennwort sicher merken** speichert die App ihre Einrichtungshilfe im macOS-Schlüsselbund. Falls macOS eine Freigabe verlangt, **Aus Schlüsselbund laden** verwenden. Diese Einstellung ändert kein bereits bestehendes Windows-Konto. Temporäre Einrichtungsmedien werden nach regulärem Sitzungsende entfernt; nach einem Absturz können Reste zurückbleiben. Details stehen in [SECURITY.md](SECURITY.md).
-
-## 4. Bestehende Daten auf eine externe SSD übernehmen
-
-1. Gäste, Stratovo, Android Studio und laufende Einrichtungsskripte beenden.
-2. In der Speicherorteinrichtung den gewünschten SSD-Ordner wählen und **Speicherort einrichten und Daten übernehmen** ausführen. Die Inhaltsprüfung bei großen Datenbeständen abwarten.
-3. Die App übernimmt erkannte Standardordner und ausdrücklich ausgewählte Installationsmedien. Quellen werden beim Kopieren nicht gelöscht. Konflikte oder geänderte Dateien werden gemeldet.
-4. Android und gegebenenfalls Windows im neuen Datenordner testen, anschließend wieder herunterfahren.
-5. Unter **Daten und Speicherplatz** die erkannten internen Sicherungen prüfen. Erst nach Bestätigung des Funktionstests **Geprüfte interne Kopien endgültig entfernen …** verwenden. Geänderte Sicherungen oder fehlende Ziele blockieren die Bereinigung.
-
-Dateien außerhalb der erkannten Standardpfade benötigen eine gesonderte Übernahme. Keine pauschale Löschung von Downloads, Homebrew, Xcode oder anderen App-Daten durchführen.
-
-### Alte Android-Profile entfernen
-
-Das funktionierende Android 16 auswählen und alle Gäste beenden. Unter **Alte Android-Profile und Daten bereinigen** zuerst die Liste erstellen und prüfen. Entfernt werden nur die aufgelisteten anderen Profile, nicht mehr benötigte Systemabbilder im gewählten Datenordner und erkannte alte Android-15-Sicherungen aus der Speichervergrößerung.
-
-**Apps, Konten und Spielstände dieser alten Profile sowie die gelisteten Sicherungen werden endgültig gelöscht.** Das ausgewählte Android 16, Windows und Installationsmedien bleiben erhalten. Beim App-Start erfolgt keine automatische Löschung.
-
-## 5. Aktualisieren, beenden und Fehler melden
-
-Vor einem App-Update Gäste regulär herunterfahren und Stratovo schließen. Die App ersetzen und denselben Datenordner weiterverwenden. Das Schließen eines Playerfensters beendet den Gast nicht. **Prozess beenden** ist eine Notlösung; ungespeicherte Änderungen können verloren gehen.
-
-Bei einem Fehler **Gesamtprotokoll exportieren** verwenden. Vor dem Teilen Namen, E-Mail-Adressen und Gerätekennungen entfernen. Im [Fehlerbericht](https://github.com/PwnedG0blin/OpenGuest/issues/new/choose) App-/macOS-Version, Gastsystem, Schritte und erwartetes Verhalten angeben. Bildschirmbilder und Passwörter gehören nicht automatisch zum Diagnoseexport; eigene Anhänge trotzdem auf private Inhalte prüfen.
-
-[Historische Anleitungen](docs/ANLEITUNGEN_ARCHIV.md) · [Versionsarchiv](docs/CHANGELOG_ARCHIVE.md) · [Lizenz](LICENSE) · [Entwickler](AUTHORS.md)
+[Projekt](README.md) · [Entwickler](AUTHORS.md) · [Fehler melden](https://github.com/PwnedG0blin/OpenGuest/issues/new/choose)

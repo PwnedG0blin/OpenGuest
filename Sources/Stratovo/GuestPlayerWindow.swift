@@ -8,7 +8,7 @@ final class GuestPlayerWindows: NSObject, NSWindowDelegate {
     private var windows: [String: NSWindow] = [:]
 
     func show(kind: String, model: AppModel) {
-        guard kind == "android" || kind == "windows" else { return }
+        guard ["android", "windows", "ubuntu"].contains(kind) else { return }
         let window: NSWindow
         if let existing = windows[kind] {
             window = existing
@@ -17,7 +17,7 @@ final class GuestPlayerWindows: NSObject, NSWindowDelegate {
             window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: android ? 520 : 1100, height: 780),
                               styleMask: [.titled, .closable, .miniaturizable, .resizable],
                               backing: .buffered, defer: false)
-            window.title = android ? "Android Player · Stratovo" : "Windows Player · Stratovo"
+            window.title = android ? "Android Player · Stratovo" : (kind == "ubuntu" ? "Ubuntu Player · Stratovo" : "Windows Player · Stratovo")
             window.isReleasedWhenClosed = false
             window.isRestorable = false
             window.contentMinSize = NSSize(width: 360, height: 480)
@@ -95,7 +95,7 @@ private struct GuestPlayerView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
-                Text(kind == "android" ? "Android" : "Windows Arm").font(.headline)
+                Text(kind == "android" ? "Android" : (kind == "ubuntu" ? "Ubuntu ARM" : "Windows")).font(.headline)
                 Spacer(minLength: 0)
                 if active && kind == "android" {
                     Text("Stream \(Int(model.streamFPS.rounded())) · Decoder \(Int(model.decoderFPS.rounded())) FPS")
@@ -110,7 +110,7 @@ private struct GuestPlayerView: View {
                 Color.black
                 // Only the active guest owns the video layer and receives input.
                 if active {
-                    PlayerSurface(image: kind == "windows" ? model.playerImage : nil,
+                    PlayerSurface(image: kind != "android" ? model.playerImage : nil,
                                   videoLayer: kind == "android" ? model.h264Player.layer : nil,
                                   sourceSize: model.playerSize,
                                   pointer: { model.pointer(x: $0, y: $1, mask: $2) },
@@ -121,13 +121,13 @@ private struct GuestPlayerView: View {
                                   allowsScrollMomentum: scrollMomentum,
                                   touchScroll: kind == "android" && androidTouchScroll ? { x,y,h,v,phase in
                                       model.swipeAndroid(x: x, y: y, horizontal: h, vertical: v, phase: phase)
-                                  } : nil, windowsFrames: kind == "windows" ? model.windowsFrames : nil)
+                                  } : nil, windowsFrames: kind != "android" ? model.windowsFrames : nil)
                 }
                 if !active || model.playerSize == .zero {
                     VStack(spacing: 12) {
                         Image(systemName: kind == "android" ? "apps.iphone" : "desktopcomputer")
                             .font(.system(size: 42))
-                        Text(active ? (kind == "windows" ? model.playerStatus : "System startet …") : L10n.text("Gastsystem ist ausgeschaltet"))
+                        Text(active ? (kind != "android" ? model.playerStatus : "System startet …") : L10n.text("Gastsystem ist ausgeschaltet"))
                             .multilineTextAlignment(.center)
                         if active && kind == "windows" {
                             Text(model.windowsBootMediaStatus).font(.caption).multilineTextAlignment(.center)
@@ -161,7 +161,7 @@ private struct GuestPlayerView: View {
                     Spacer(minLength: 4)
                     if kind == "android" {
                         Button(L10n.text("Android-Auflösung …")) { androidDisplayPresented = true }
-                    } else {
+                    } else if kind == "windows" {
                         Button(L10n.text("Windows-Einstellungen …"), action: model.openWindowsDisplaySettings)
                             .disabled(!active || model.playerSize == .zero || model.windowsPasteBusy)
                             .help(L10n.text("Windows + I; danach System → Anzeige für die vom Gast unterstützten Auflösungen und Skalierungen."))
@@ -178,15 +178,17 @@ private struct GuestPlayerView: View {
                 HStack {
                     Text(L10n.text("Scrolltempo")).font(.system(size: 13))
                     Slider(value: Binding(get: {
-                        kind == "android" ? model.androidScrollSpeed : model.windowsScrollSpeed
+                        kind == "android" ? model.androidScrollSpeed : (kind == "ubuntu" ? model.ubuntuScrollSpeed : model.windowsScrollSpeed)
                     }, set: { value in
                         if kind == "android" { model.androidScrollSpeed = value }
+                        else if kind == "ubuntu" { model.ubuntuScrollSpeed = value }
                         else { model.windowsScrollSpeed = value }
                     }), in: 10...200, step: 5)
-                    Text("\(Int(kind == "android" ? model.androidScrollSpeed : model.windowsScrollSpeed)) %")
+                    Text("\(Int(kind == "android" ? model.androidScrollSpeed : (kind == "ubuntu" ? model.ubuntuScrollSpeed : model.windowsScrollSpeed))) %")
                         .font(.system(size: 13, weight: .medium).monospacedDigit()).frame(width: 44, alignment: .trailing)
                     Button("100 %") {
                         if kind == "android" { model.androidScrollSpeed = 100 }
+                        else if kind == "ubuntu" { model.ubuntuScrollSpeed = 100 }
                         else { model.windowsScrollSpeed = 100 }
                     }.controlSize(.small)
                 }.help(L10n.text("Trackpad und Mausrad · 50 % = halbes bisheriges Tempo. Pro Gastsystem gespeichert; wirkt sofort."))
@@ -204,7 +206,16 @@ private struct GuestPlayerView: View {
                     Text(L10n.text("Auflösung und Textgröße in Windows: System → Anzeige. Die verfügbaren Modi hängen vom Gasttreiber ab; „Ansicht“ vergrößert nur das Playerbild."))
                         .font(.system(size: 13)).foregroundStyle(.primary).fixedSize(horizontal: false, vertical: true)
                 }
+                if kind == "ubuntu" {
+                    HStack {
+                        Button(L10n.text("Anzeige neu verbinden")) { Task { await model.reconnectWindowsDisplay() } }
+                        Button(L10n.text("Text einfügen …"), action: beginPaste)
+                        Button(L10n.text("UEFI / BIOS · Esc"), action: model.openWindowsFirmwareMenu)
+                    }.disabled(!active || model.windowsPasteBusy)
+                    Text(L10n.text("Ubuntu: Auflösung und Skalierung unter Einstellungen → Anzeigegeräte ändern."))
+                }
                 if kind == "windows" {
+                    Text(L10n.text("Esc beim Einschalten: UEFI / BIOS")).font(.system(size: 14, weight: .semibold))
                     HStack {
                         Button(L10n.text("Anzeige neu verbinden")) { Task { await model.reconnectWindowsDisplay() } }
                             .disabled(!active || !model.canReconnectWindowsDisplay)
@@ -255,6 +266,7 @@ private struct GuestPlayerView: View {
                     .font(.system(size: 14, weight: .semibold))
                     .fixedSize(horizontal: false, vertical: true)
                     .textSelection(.enabled)
+                if kind != "android" { Text(L10n.text("Esc beim Einschalten: UEFI / BIOS")).font(.system(size: 14, weight: .semibold)) }
                 Text(L10n.text("Fenster schließen: Das Gastsystem läuft weiter."))
                     .font(.system(size: 13, weight: .medium))
             }

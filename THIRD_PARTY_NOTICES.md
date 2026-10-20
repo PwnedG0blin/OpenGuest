@@ -1,6 +1,6 @@
 # External components
 
-Stratovo's own source is MIT licensed. Engines and operating systems are installed separately and are not relicensed by Stratovo.
+Stratovo's app source is MIT licensed, except the QEMU integration fragment described below. Engines and operating systems are installed separately and are not relicensed by Stratovo.
 
 | Component | Role | Upstream / terms |
 | --- | --- | --- |
@@ -33,3 +33,5 @@ The optional graphics lab downloads and builds upstream sources pinned in `Packa
 The small `pkgconf-2.3.0.tar.xz` source archive is included to bootstrap pkg-config when needed. Its original `COPYING` file is retained inside that unmodified archive. Source: https://distfiles.ariadne.space/pkgconf/pkgconf-2.3.0.tar.xz
 
 These components are developed by their respective upstream authors. Stratovo is an independent integration and is not affiliated with or endorsed by UTM, Microsoft, Google or Apple.
+
+The source fragment `Packaging/GraphicsLab/embedded_bridge.m.inc` is licensed under GPL-2.0-or-later for integration into QEMU. The patch helper applies it to the pinned upstream source on the user’s Mac; no compiled QEMU binary is bundled. When redistributing a modified QEMU runtime, retain the upstream notices and comply with its corresponding-source obligations.

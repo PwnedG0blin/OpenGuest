@@ -3,6 +3,15 @@ import StratovoCore
 
 @MainActor
 enum QMPClient {
+    static func sendKeys(_ keys: [String], socket: String) async throws {
+        let stream = LocalStream(socket: socket)
+        let timeout = watchdog(stream)
+        defer { timeout.cancel(); stream.close() }
+        _ = try await line(stream)
+        _ = try await command("qmp_capabilities", id: 1, stream: stream)
+        _ = try await command("send-key", id: 2, stream: stream,
+            arguments: ["keys": keys.map { ["type": "qcode", "data": $0] }, "hold-time": 80])
+    }
     static func shutdown(socket: String) async throws {
         let stream = LocalStream(socket: socket)
         let timeout = watchdog(stream)

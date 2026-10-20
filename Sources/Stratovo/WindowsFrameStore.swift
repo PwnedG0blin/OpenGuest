@@ -13,6 +13,8 @@ struct RenderedWindowsFrame: @unchecked Sendable { let image: CGImage }
 
 actor WindowsFrameRenderer {
     private var framebuffer = RawFramebuffer()
+    private let bootArtwork: BootArtwork?
+    init(bootArtwork: BootArtwork? = nil) { self.bootArtwork = bootArtwork }
     private var dirty = false
     private let colorSpace = CGColorSpaceCreateDeviceRGB()
     func resize(width: Int, height: Int) throws { try framebuffer.resize(width: width, height: height); dirty = true }
@@ -20,7 +22,7 @@ actor WindowsFrameRenderer {
         try framebuffer.apply(x: x, y: y, width: width, height: height, data: data); dirty = true
     }
     func takeFrame() -> RenderedWindowsFrame? {
-        guard dirty, framebuffer.width > 0, let provider = CGDataProvider(data: framebuffer.bytes as CFData),
+        guard dirty, framebuffer.width > 0, let provider = CGDataProvider(data: (bootArtwork?.displayBytes(framebuffer.bytes, frameWidth: framebuffer.width, frameHeight: framebuffer.height) ?? framebuffer.bytes) as CFData),
               let image = CGImage(width: framebuffer.width, height: framebuffer.height, bitsPerComponent: 8, bitsPerPixel: 32,
                                   bytesPerRow: framebuffer.width * 4, space: colorSpace,
                                   bitmapInfo: CGBitmapInfo.byteOrder32Little.union(CGBitmapInfo(rawValue: CGImageAlphaInfo.noneSkipFirst.rawValue)),

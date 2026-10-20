@@ -123,3 +123,8 @@
 "Wo sollen deine Systeme gespeichert werden?" = "システムの保存先を選んでください";
 "Wähle ein Laufwerk oder einen Ordner. Stratovo erstellt dort einen eigenen Ordner „Stratovo“ für Android, Windows und die benötigten Dateien." = "ドライブまたはフォルダを選択してください。Android、Windows、必要なファイルを保存する Stratovo フォルダを作成します。";
 "Zurück" = "戻る";
+"1 · Ubuntu ARM herunterladen" = "1 · Ubuntu ARM をダウンロード";
+"2 · Ubuntu installieren" = "2 · Ubuntu をインストール";
+"Ubuntu starten" = "Ubuntu を起動";
+"3D-Player vorbereiten / aktualisieren" = "3D プレイヤーを準備 / 更新";
+"Esc beim Einschalten: UEFI / BIOS" = "起動時に Esc：UEFI / BIOS";

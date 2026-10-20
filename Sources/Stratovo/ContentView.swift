@@ -5,7 +5,8 @@ enum WorkspaceTab: String, CaseIterable, Identifiable {
     case dashboard = "Dashboard"
     case updates = "Updates"
     case android = "Android"
-    case windows = "Windows Arm"
+    case windows = "Windows"
+    case ubuntu = "Ubuntu ARM"
     case setup = "Einrichtung"
     var id: String { rawValue }
     var title: String { L10n.text(rawValue) }
@@ -15,6 +16,7 @@ enum WorkspaceTab: String, CaseIterable, Identifiable {
         case .updates: return "arrow.triangle.2.circlepath"
         case .android: return "apps.iphone"
         case .windows: return "desktopcomputer"
+        case .ubuntu: return "terminal"
         case .setup: return "slider.horizontal.3"
         }
     }
@@ -47,6 +49,7 @@ struct ContentView: View {
                     case .updates: GitHubUpdatesView(model: model)
                     case .android: android
                     case .windows: windows
+                    case .ubuntu: UbuntuView(model: model, controller: model.ubuntu)
                     case .setup: setup
                     }
                     logPanel
@@ -76,7 +79,7 @@ struct ContentView: View {
                 Image(systemName: "square.stack.3d.up.fill").font(.title).foregroundStyle(.teal)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Stratovo").font(.headline)
-                    Text("1.0 BETA 1").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
+                    Text("1.0 BETA 2").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
                 }
             }
             ForEach(WorkspaceTab.allCases) { tab in
@@ -225,8 +228,7 @@ struct ContentView: View {
     private var windows: some View {
         VStack(alignment: .leading, spacing: 18) {
             WindowsGraphicsLabView(model: model, lab: model.graphicsLab)
-            if !model.windowsLabSelected {
-            playerPane(kind: "windows", title: "Windows Player")
+
             windowsIdentityCard
             card {
                 VStack(alignment: .leading, spacing: 12) {
@@ -258,7 +260,7 @@ struct ContentView: View {
                     Text(L10n.text("64–4096 GB frei eingeben. Die Datei wächst mit deinen Daten; die maximale Größe wird nicht sofort auf der SSD belegt. Änderungen werden über „Größe anwenden“ oder beim nächsten Windows-Start übernommen. Vergrößern ist bei ausgeschaltetem Windows möglich; vorhandene Festplatten werden nicht verkleinert. Zusätzlichen Speicher anschließend in Windows zuordnen."))
                         .font(.subheadline).foregroundStyle(.secondary)
                     DisclosureGroup(L10n.text("Voraussetzungen und Entwicklungsstand")) {
-                        Text(L10n.text("Der normale Player verwendet eine 2D-Anzeige. Den experimentellen 3D-Modus mit eigener Windows-Testkopie findest du oben unter Windows-Modus."))
+                        Text(L10n.text("Windows verwendet die 3D-Laufzeit auf deiner bestehenden Festplatte. Die Grafiktreiber werden in Windows installiert; Metal und die Mac-Laufzeit werden wiederverwendet."))
                             .font(.subheadline).foregroundStyle(.secondary).padding(.top, 6)
                     }
                 }
@@ -269,7 +271,7 @@ struct ContentView: View {
                         Image(systemName: "desktopcomputer").font(.system(size: 32)).foregroundStyle(.blue)
                         VStack(alignment: .leading, spacing: 3) {
                             Text("Windows 11 Pro Arm64").font(.title2.bold())
-                            Text(L10n.text("QEMU · HVF · einfacher Framebuffer")).foregroundStyle(.secondary)
+                            Text(L10n.text("QEMU · HVF · 3D über Metal")).foregroundStyle(.secondary)
                         }
                         Spacer()
                         status(model.windowsReady && model.firmware != nil ? L10n.text("Engine bereit") : L10n.text("Einrichtung nötig"), ready: model.windowsReady && model.firmware != nil)
@@ -283,18 +285,8 @@ struct ContentView: View {
                     windowsDVDControls
                     VStack(alignment: .leading, spacing: 10) {
                         Text(L10n.text("Windows-Grafik und Auflösung")).font(.headline)
-                        Picker(L10n.text("Grafikadapter"), selection: $model.windowsGraphics) {
-                            ForEach(WindowsGraphics.allCases, id: \.rawValue) { Text($0.title).tag($0) }
-                        }.disabled(model.running || model.busy)
-                        if model.windowsGraphics == .virtio {
-                            Picker(L10n.text("Bevorzugter Modus"), selection: $model.windowsResolution) {
-                                ForEach(WindowsDisplayMode.allCases, id: \.rawValue) { Text($0.title).tag($0) }
-                            }.disabled(model.running || model.busy)
-                        }
-                        Text(L10n.text("Zusätzliche Windows-Auflösungen benötigen passende ARM64-Gasttreiber. Der bevorzugte Modus ist eine Monitorvorgabe; der Gasttreiber aktiviert passende Windows-Modi."))
-                            .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                        Text(L10n.text("Virtio hier ist 2D-Anzeige, keine 3D-Beschleunigung. Anzeigeoptionen werden pro Windows-Datenordner gemerkt."))
-                            .font(.caption).foregroundStyle(.secondary)
+                        Text(L10n.text("VirtIO / Neptune / DXMT → Metal. Auflösung und Skalierung stellst du unter Windows → System → Anzeige ein."))
+                            .font(.subheadline)
                         Button(L10n.text("Treiber-CD in Windows suchen"), action: model.openWindowsDriverDisc)
                             .disabled(model.activeGuest != "windows" || !model.running || model.windowsPasteBusy)
                     }
@@ -355,7 +347,6 @@ struct ContentView: View {
                         model.revealWindowsFolder()
                     }.disabled(model.busy)
                 }
-            }
             }
         }
     }

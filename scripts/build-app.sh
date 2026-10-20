@@ -10,6 +10,7 @@ if ! xcrun --find swift >/dev/null 2>&1; then
     exit 1
 fi
 cd "$project_dir"
+python3 scripts/test-embedded-display.py
 python3 -m unittest discover -s Tests/GraphicsLabTests -q
 python3 -m unittest discover -s Tests/AndroidDataTests -q
 xcrun swift test
