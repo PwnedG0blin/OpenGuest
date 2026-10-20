@@ -16,6 +16,7 @@ python3 scripts/test-native-geometry.py
 python3 scripts/test-native-window.py
 python3 -m unittest discover -s Tests/GraphicsLabTests -q
 python3 -m unittest discover -s Tests/AndroidDataTests -q
+python3 scripts/test-storage-cleanup.py
 xcrun swift test
 xcrun swift build -c release --arch arm64
 binary_dir="$(xcrun swift build -c release --arch arm64 --show-bin-path)"
@@ -30,6 +31,10 @@ cp "$project_dir/LIES_MICH_ZUERST.md" "$app_path/Contents/Resources/"
 cp "$project_dir/Android_Daten_uebernehmen.py" "$app_path/Contents/Resources/"
 cp "$project_dir/Packaging/install-update.sh" "$app_path/Contents/Resources/"
 /usr/bin/ditto "$project_dir/Packaging/GraphicsLab" "$app_path/Contents/Resources/GraphicsLab"
+mkdir -p "$app_path/Contents/Resources/scripts"
+cp "$project_dir/Aufraeumen.command" "$app_path/Contents/Resources/"
+cp "$project_dir/scripts/storage-cleanup.py" "$project_dir/scripts/trash-packages.swift" "$app_path/Contents/Resources/scripts/"
+bash scripts/build-icon.sh
 # Local development signature only. It is not Developer ID signing or notarization.
 /usr/bin/codesign --force --sign - "$app_path"
 /usr/bin/codesign --verify --strict "$app_path"
