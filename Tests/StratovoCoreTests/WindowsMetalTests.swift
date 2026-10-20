@@ -46,7 +46,7 @@ final class WindowsMetalTests: XCTestCase {
         XCTAssertEqual(direct, try plan(embedded: false))
         XCTAssertNil(direct.environment["STRATOVO_EMBEDDED_V1"])
         XCTAssertFalse(direct.arguments.contains("-vnc"))
-        XCTAssertTrue(direct.arguments.contains("cocoa,gl=es"))
+        XCTAssertTrue(direct.arguments.contains("cocoa,gl=es,zoom-to-fit=on"))
         XCTAssertEqual(direct.environment["ANGLE_DEFAULT_PLATFORM"], "metal")
         XCTAssertEqual(direct.environment["NPT_BACKEND"], "dxmt")
         // Choosing presentation must not change the guest disk, firmware, TPM,
@@ -57,6 +57,7 @@ final class WindowsMetalTests: XCTestCase {
         XCTAssertEqual(direct.arguments, expectedArgs)
         var expectedEnv = embedded.environment
         expectedEnv.removeValue(forKey: "STRATOVO_EMBEDDED_V1")
+        expectedEnv["STRATOVO_NATIVE_PLAYER"] = "1"
         XCTAssertEqual(direct.environment, expectedEnv)
     }
     func testBootArtworkLeavesGuestContentAndSourceBytesUntouched() {

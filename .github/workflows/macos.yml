@@ -43,14 +43,14 @@ jobs:
           mkdir -p dist/installer
           /usr/bin/ditto dist/Stratovo.app dist/installer/Stratovo.app
           ln -s /Applications dist/installer/Applications
-          /usr/bin/hdiutil create -volname Stratovo -srcfolder dist/installer -ov -format UDZO dist/Stratovo_1.0.0-beta.3_AppleSilicon.dmg
+          /usr/bin/hdiutil create -volname Stratovo -srcfolder dist/installer -ov -format UDZO dist/Stratovo_1.0.0-beta.4_AppleSilicon.dmg
       - name: Upload compiled app
         uses: actions/upload-artifact@v7
         with:
           name: Stratovo-macOS-AppleSilicon-test-app
           path: |
             dist/Stratovo-macOS-AppleSilicon.app.zip
-            dist/Stratovo_1.0.0-beta.3_AppleSilicon.dmg
+            dist/Stratovo_1.0.0-beta.4_AppleSilicon.dmg
           if-no-files-found: error
           retention-days: 14
 
@@ -66,22 +66,22 @@ jobs:
         with:
           name: Stratovo-macOS-AppleSilicon-test-app
           path: release-assets
-      - name: Publish official 1.0 Beta 3 after successful tests
+      - name: Publish official 1.0 Beta 4 after successful tests
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           RELEASE_COMMIT: ${{ github.sha }}
         run: |
-          tag=v1.0.0-beta.3
+          tag=v1.0.0-beta.4
           if gh release view "$tag" >/dev/null 2>&1; then
             echo "Release already exists; preserving published assets."
             exit 0
           fi
           cd release-assets
-          sha256sum Stratovo-macOS-AppleSilicon.app.zip Stratovo_1.0.0-beta.3_AppleSilicon.dmg > SHA256SUMS
+          sha256sum Stratovo-macOS-AppleSilicon.app.zip Stratovo_1.0.0-beta.4_AppleSilicon.dmg > SHA256SUMS
           cd ..
           gh release create "$tag" --target "$RELEASE_COMMIT" --prerelease \
-            --title "Stratovo 1.0 Beta 3" --notes-file docs/RELEASE_1.0_BETA3.md \
+            --title "Stratovo 1.0 Beta 4" --notes-file docs/RELEASE_1.0_BETA4.md \
             release-assets/Stratovo-macOS-AppleSilicon.app.zip \
-            release-assets/Stratovo_1.0.0-beta.3_AppleSilicon.dmg \
+            release-assets/Stratovo_1.0.0-beta.4_AppleSilicon.dmg \
             release-assets/SHA256SUMS
