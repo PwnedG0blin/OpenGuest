@@ -74,8 +74,6 @@ struct DashboardView: View {
                     StorageBudgetView(windowsGiB: model.windowsCapacityGiB ?? 80)
                 }.padding(.top, 12)
             }.font(.body)
-        }
-    }
             GroupBox {
                 HStack(spacing: 18) {
                     Image(systemName: "folder.fill").font(.title).foregroundStyle(.teal)
@@ -87,6 +85,8 @@ struct DashboardView: View {
                     Button(L10n.text("Dateiaustausch öffnen")) { navigate(.exchange) }.buttonStyle(.borderedProminent)
                 }.padding(16)
             }
+        }
+    }
     private func step(_ number: Int, _ text: String) -> some View {
         HStack(spacing: 12) {
             Text(String(number)).font(.headline).frame(width: 34, height: 34)

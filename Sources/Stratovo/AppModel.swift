@@ -328,7 +328,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var apkBusy = false
     @Published private(set) var apkStatus = ""
     @Published private(set) var sessionName = L10n.text("Kein Gast gestartet")
-    @Published private(set) var log = L10n.text("Stratovo 1.0 Beta 1\nSystem prüfen, dann einen Gast auswählen.")
+    @Published private(set) var log = L10n.text("Stratovo 1.0 Beta 1\nSystem prüfen, dann einen Gast auswählen.").replacingOccurrences(of: "1.0 Beta 1", with: "1.0 Beta 3")
     @Published private(set) var lastCommand = ""
     @Published var errorMessage: String? {
         didSet {

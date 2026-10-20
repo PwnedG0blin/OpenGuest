@@ -16,7 +16,7 @@ Für eine Funktionsidee beschreiben, welches konkrete Problem sie löst und in w
 4. Betroffene Funktionen im Gast prüfen, soweit möglich. Im Pull Request klar trennen, was automatisiert geprüft und was auf einem echten Mac getestet wurde.
 5. Im Pull Request Problem, resultierendes Verhalten und relevante Prüfung knapp beschreiben. Ungeprüfte Gast- oder Leistungszusagen vermeiden.
 
-CI-Builds und isolierte Tests ersetzen keine vollständige Windows-Installation, Google-Anmeldung oder Spieleprüfung. Eine reine Dokumentationsänderung benötigt keinen zusätzlichen Gasttest.
+CI-Builds und isolierte Tests ersetzen keine vollständige Windows- oder Ubuntu-Installation, Google-Anmeldung oder Spieleprüfung. Eine reine Dokumentationsänderung benötigt keinen zusätzlichen Gasttest.
 
 ## Urheberrecht und Abhängigkeiten
 
