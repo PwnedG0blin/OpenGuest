@@ -82,7 +82,7 @@ struct ContentView: View {
                 Image(systemName: "square.stack.3d.up.fill").font(.title).foregroundStyle(.teal)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Stratovo").font(.headline)
-                    Text("1.0 BETA 4").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
+                    Text("1.0 BETA 5").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
                 }
             }
             ForEach(WorkspaceTab.allCases) { tab in
@@ -500,6 +500,9 @@ struct ContentView: View {
                     if model.storage == nil { Button(L10n.text("Speicherort wählen …")) { model.showStorageSetup = true } }
                     Button(L10n.text("Datenordner öffnen"), action: model.revealStorage).disabled(!model.storageReady)
                 }
+                Button(L10n.text("Alte App-Pakete aufräumen …")) { model.openSetupScript("Aufraeumen.command") }
+                Text(L10n.text("Zeigt ältere Installer und Baupakete an. Nach dem Test und Schließen von Stratovo nur mit Bestätigung in den Papierkorb verschieben. VM-Daten bleiben erhalten."))
+                    .font(.caption).foregroundStyle(.secondary)
                 if !model.backupPaths.isEmpty {
                     Divider()
                     Text(L10n.text("Diese internen Kopien können nach dem Test entfernt werden:")).font(.subheadline.bold())
