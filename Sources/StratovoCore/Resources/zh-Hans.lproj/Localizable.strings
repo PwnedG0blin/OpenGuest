@@ -123,3 +123,8 @@
 "Wo sollen deine Systeme gespeichert werden?" = "将系统存储在哪里？";
 "Wähle ein Laufwerk oder einen Ordner. Stratovo erstellt dort einen eigenen Ordner „Stratovo“ für Android, Windows und die benötigten Dateien." = "选择磁盘或文件夹。Stratovo 将在其中创建 Stratovo 文件夹，用于保存 Android、Windows 及所需文件。";
 "Zurück" = "返回";
+"1 · Ubuntu ARM herunterladen" = "1 · 下载 Ubuntu ARM";
+"2 · Ubuntu installieren" = "2 · 安装 Ubuntu";
+"Ubuntu starten" = "启动 Ubuntu";
+"3D-Player vorbereiten / aktualisieren" = "准备 / 更新 3D 播放器";
+"Esc beim Einschalten: UEFI / BIOS" = "启动时按 Esc：UEFI / BIOS";

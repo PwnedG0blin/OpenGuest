@@ -486,6 +486,9 @@ final class AppModel: ObservableObject {
     @Published var androidScrollSpeed = GuestScrollSpeed.percent(UserDefaults.standard.object(forKey: "Pixelkoje.scrollSpeed.android") as? Double ?? 50) {
         didSet { UserDefaults.standard.set(GuestScrollSpeed.percent(androidScrollSpeed), forKey: "Pixelkoje.scrollSpeed.android"); resetScroll() }
     }
+    @Published var ubuntuScrollSpeed = GuestScrollSpeed.percent(UserDefaults.standard.object(forKey: "Stratovo.scrollSpeed.ubuntu") as? Double ?? 50) {
+        didSet { UserDefaults.standard.set(GuestScrollSpeed.percent(ubuntuScrollSpeed), forKey: "Stratovo.scrollSpeed.ubuntu"); resetScroll() }
+    }
     @Published var windowsScrollSpeed = GuestScrollSpeed.percent(UserDefaults.standard.object(forKey: "Pixelkoje.scrollSpeed.windows") as? Double ?? 50) {
         didSet { UserDefaults.standard.set(GuestScrollSpeed.percent(windowsScrollSpeed), forKey: "Pixelkoje.scrollSpeed.windows"); resetScroll() }
     }
@@ -1122,7 +1125,7 @@ final class AppModel: ObservableObject {
         let previous = displayTask
         previous?.cancel(); windowsPlayer?.stop()
         await previous?.value
-        guard running, activeGuest == "windows", windowsDisplaySocket == socket else { return }
+        guard running, ["windows", "ubuntu"].contains(activeGuest), windowsDisplaySocket == socket else { return }
         displayTask = nil; windowsPlayer = nil
         connectWindowsPlayer(socket: socket)
         recordDiagnostic("Windows · Anzeige", L10n.text("Bildverbindung neu angefordert; Windows läuft weiter"))
@@ -1197,7 +1200,7 @@ final class AppModel: ObservableObject {
     }
 
     func scroll(x: Int, y: Int, horizontal: Double, vertical: Double, mask: UInt8) {
-        let speed = activeGuest == "windows" ? windowsScrollSpeed : androidScrollSpeed
+        let speed = activeGuest == "android" ? androidScrollSpeed : (activeGuest == "ubuntu" ? ubuntuScrollSpeed : windowsScrollSpeed)
         let h = GuestScrollSpeed.scale(horizontal, percent: speed)
         let v = GuestScrollSpeed.scale(vertical, percent: speed)
         if ["windows", "ubuntu"].contains(activeGuest), !windowsPasteBusy { windowsPlayer?.scroll(x: x, y: y, vertical: v, mask: mask) }

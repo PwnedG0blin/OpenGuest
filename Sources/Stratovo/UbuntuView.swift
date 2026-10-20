@@ -80,6 +80,6 @@ struct UbuntuView: View {
                 Link("Ubuntu ↗", destination: URL(string: "https://ubuntu.com/download/desktop")!)
             }.padding(16).frame(maxWidth: .infinity, alignment: .leading)
         }.onAppear { controller.refresh(model: model) }
-         .onChange(of: model.running) { _ in controller.refresh(model: model) }
+         .onChange(of: model.running) { _, _ in controller.refresh(model: model) }
     }
 }

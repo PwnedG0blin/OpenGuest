@@ -80,7 +80,7 @@ final class WindowsGraphicsLabController: ObservableObject {
             do { try child.run() } catch { try? handle.close(); throw error }
             self.root = root; process = child; output = handle
             active = true; failed = false; building = action != "launch"; model.setGraphicsLabBusy(true)
-            status = action == "check" ? L10n.text("Mac-Voraussetzungen werden geprüft …") : (building ? L10n.text("Grafik wird auf dem gewählten Laufwerk vorbereitet · noch kein Test-Windows geöffnet …") : L10n.text("Testkopie wird im eigenen Grafikfenster gestartet …"))
+            status = action == "check" ? L10n.text("Mac-Voraussetzungen werden geprüft …") : (building ? L10n.text("3D-Player wird auf dem gewählten Laufwerk vorbereitet …") : L10n.text("Testkopie wird im eigenen Grafikfenster gestartet …"))
             progress = "Protokoll: " + logURL.path
             model.recordGraphicsLabEvent(status + " · " + logURL.path)
             timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in

@@ -161,7 +161,7 @@ private struct GuestPlayerView: View {
                     Spacer(minLength: 4)
                     if kind == "android" {
                         Button(L10n.text("Android-Auflösung …")) { androidDisplayPresented = true }
-                    } else {
+                    } else if kind == "windows" {
                         Button(L10n.text("Windows-Einstellungen …"), action: model.openWindowsDisplaySettings)
                             .disabled(!active || model.playerSize == .zero || model.windowsPasteBusy)
                             .help(L10n.text("Windows + I; danach System → Anzeige für die vom Gast unterstützten Auflösungen und Skalierungen."))
@@ -178,15 +178,17 @@ private struct GuestPlayerView: View {
                 HStack {
                     Text(L10n.text("Scrolltempo")).font(.system(size: 13))
                     Slider(value: Binding(get: {
-                        kind == "android" ? model.androidScrollSpeed : model.windowsScrollSpeed
+                        kind == "android" ? model.androidScrollSpeed : (kind == "ubuntu" ? model.ubuntuScrollSpeed : model.windowsScrollSpeed)
                     }, set: { value in
                         if kind == "android" { model.androidScrollSpeed = value }
+                        else if kind == "ubuntu" { model.ubuntuScrollSpeed = value }
                         else { model.windowsScrollSpeed = value }
                     }), in: 10...200, step: 5)
-                    Text("\(Int(kind == "android" ? model.androidScrollSpeed : model.windowsScrollSpeed)) %")
+                    Text("\(Int(kind == "android" ? model.androidScrollSpeed : (kind == "ubuntu" ? model.ubuntuScrollSpeed : model.windowsScrollSpeed))) %")
                         .font(.system(size: 13, weight: .medium).monospacedDigit()).frame(width: 44, alignment: .trailing)
                     Button("100 %") {
                         if kind == "android" { model.androidScrollSpeed = 100 }
+                        else if kind == "ubuntu" { model.ubuntuScrollSpeed = 100 }
                         else { model.windowsScrollSpeed = 100 }
                     }.controlSize(.small)
                 }.help(L10n.text("Trackpad und Mausrad · 50 % = halbes bisheriges Tempo. Pro Gastsystem gespeichert; wirkt sofort."))
@@ -264,6 +266,7 @@ private struct GuestPlayerView: View {
                     .font(.system(size: 14, weight: .semibold))
                     .fixedSize(horizontal: false, vertical: true)
                     .textSelection(.enabled)
+                if kind != "android" { Text(L10n.text("Esc beim Einschalten: UEFI / BIOS")).font(.system(size: 14, weight: .semibold)) }
                 Text(L10n.text("Fenster schließen: Das Gastsystem läuft weiter."))
                     .font(.system(size: 13, weight: .medium))
             }
