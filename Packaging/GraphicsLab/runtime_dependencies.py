@@ -40,7 +40,7 @@ def prepare(root, run=subprocess.run):
         original = (source / name).resolve()
         if original.parent != source:
             raise RuntimeError('LLVM-Bibliothek verweist außerhalb ihres Bibliotheksordners: ' + name)
-        run(['/usr/bin/lipo', '-verify_arch', 'arm64', str(original)], check=True, capture_output=True)
+        run(['/usr/bin/lipo', str(original), '-verify_arch', 'arm64'], check=True, capture_output=True)
         planned.append((original, target))
     for original, target in planned:
         fd, temporary = tempfile.mkstemp(prefix='.stratovo-lib-', dir=runtime)
