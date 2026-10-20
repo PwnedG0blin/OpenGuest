@@ -5,7 +5,7 @@ enum WorkspaceTab: String, CaseIterable, Identifiable {
     case dashboard = "Dashboard"
     case updates = "Updates"
     case android = "Android"
-    case windows = "Windows"
+    case windows = "Windows Arm"
     case ubuntu = "Ubuntu ARM"
     case exchange = "Dateiaustausch"
     case setup = "Einrichtung"

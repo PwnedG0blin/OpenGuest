@@ -68,7 +68,7 @@ class Beta2Tests(unittest.TestCase):
 
     def test_existing_runtime_upgrade_only_rebuilds_qemu(self):
         with tempfile.TemporaryDirectory() as tmp:
-            root=Path(tmp);(root/'Sources/qemu/ui').mkdir(parents=True)
+            root=Path(tmp).resolve();(root/'Sources/qemu/ui').mkdir(parents=True)
             (root/'Sources/qemu/ui/cocoa.m').write_text('fixture')
             (root/'Runtime/bin').mkdir(parents=True)
             (root/'Runtime/bin/qemu-system-aarch64').write_bytes(b'existing engine')

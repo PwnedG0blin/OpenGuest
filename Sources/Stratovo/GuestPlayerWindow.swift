@@ -17,7 +17,7 @@ final class GuestPlayerWindows: NSObject, NSWindowDelegate {
             window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: android ? 520 : 1100, height: 780),
                               styleMask: [.titled, .closable, .miniaturizable, .resizable],
                               backing: .buffered, defer: false)
-            window.title = android ? "Android Player · Stratovo" : (kind == "ubuntu" ? "Ubuntu Player · Stratovo" : "Windows Player · Stratovo")
+            window.title = android ? "Android Player · Stratovo" : (kind == "ubuntu" ? "Ubuntu Player · Stratovo" : "Windows Arm Player · Stratovo")
             window.isReleasedWhenClosed = false
             window.isRestorable = false
             window.contentMinSize = NSSize(width: 360, height: 480)
@@ -96,7 +96,7 @@ private struct GuestPlayerView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
-                Text(kind == "android" ? "Android" : (kind == "ubuntu" ? "Ubuntu ARM" : "Windows")).font(.headline)
+                Text(kind == "android" ? "Android" : (kind == "ubuntu" ? "Ubuntu ARM" : "Windows Arm")).font(.headline)
                 Spacer(minLength: 0)
                 Button(L10n.text("Dateiaustausch")) { exchangePresented = true }
                     .disabled(!model.storageReady)

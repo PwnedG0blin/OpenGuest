@@ -152,7 +152,7 @@ struct WindowsGraphicsLabView: View {
     var body: some View {
         GroupBox {
             VStack(alignment: .leading, spacing: 14) {
-                Label(L10n.text("Windows"), systemImage: "desktopcomputer").font(.title2.bold())
+                Label(L10n.text("Windows Arm"), systemImage: "desktopcomputer").font(.title2.bold())
                 Text(L10n.text("3D über Metal · im Stratovo-Player · deine vorhandene Installation"))
                     .font(.headline).foregroundStyle(.teal)
                 Text(L10n.text("Konten, Programme, Dateien und Einstellungen bleiben in deiner bisherigen Windows-Festplatte. Es wird keine neue Windows-Kopie angelegt."))
