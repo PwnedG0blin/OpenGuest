@@ -44,6 +44,10 @@ final class WindowsGraphicsLabController: ObservableObject {
                 let bytes = try Data(contentsOf: bundled.appendingPathComponent(name))
                 try bytes.write(to: resources.appendingPathComponent(name), options: .atomic)
             }
+            for name in ["runtime_dependencies.py", "display_rate.h.inc", "legacy_v4_native_view.m.inc", "legacy_v4_native_methods.m.inc"] {
+                let bytes = try Data(contentsOf: bundled.appendingPathComponent(name))
+                try bytes.write(to: resources.appendingPathComponent(name), options: .atomic)
+            }
             let config: [String: String] = ["root": storage.root, "storageID": storage.id,
                                            "qemuImg": image, "swtpm": swtpm, "firmware": firmware]
             let configURL = resources.appendingPathComponent("config.json")
@@ -105,7 +109,7 @@ final class WindowsGraphicsLabController: ObservableObject {
         guard let root = model.storage?.url.appendingPathComponent("GraphicsLab") else { runtimeReady = false; return }
         let receipt = try? Data(contentsOf: root.appendingPathComponent("runtime-ready.json"))
         let metadata = receipt.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }
-        let playerReady = metadata?["embeddedPlayer"] as? Int == 1 && metadata?["embeddedRevision"] as? Int == 4
+        let playerReady = metadata?["embeddedPlayer"] as? Int == 1 && metadata?["embeddedRevision"] as? Int == 5 && metadata?["runtimeDependencies"] as? Int == 1
         runtimeReady = playerReady && ["runtime-ready.json", "Runtime/bin/qemu-system-aarch64", "Runtime/libexec/virgl_render_server", "Runtime/lib/libdxmt-native.dylib", "GraphicsDrivers.iso"].allSatisfy {
             FileManager.default.fileExists(atPath: root.appendingPathComponent($0).path)
         }
@@ -158,6 +162,13 @@ struct WindowsGraphicsLabView: View {
                 Text(L10n.text("3D über Metal · deine vorhandene Installation"))
                     .font(.headline).foregroundStyle(.teal)
                 Text(L10n.text("Konten, Programme, Dateien und Einstellungen bleiben in deiner bisherigen Windows-Festplatte. Es wird keine neue Windows-Kopie angelegt."))
+                Picker(L10n.text("Windows-Bildwiederholrate"), selection: $model.windowsRefreshRate) {
+                    ForEach(WindowsRefreshRate.allCases) { rate in
+                        Text(L10n.text(rate.title)).tag(rate)
+                    }
+                }.disabled(model.running || model.busy || lab.active)
+                Text(L10n.text("Gilt nach vollständigem Herunterfahren beim nächsten Windows-Start. Windows übernimmt die gewählte Frequenz für seine Auflösungen. Das FPS-Limit stellst du separat im Spiel ein; hohe Hz-Werte garantieren keine entsprechende Spieleleistung."))
+                    .font(.callout).foregroundStyle(.secondary)
                 Picker(L10n.text("Windows-Bildausgabe"), selection: $model.windowsEmbeddedPlayer) {
                     Text(L10n.text("Direktes Grafikfenster · Metal (Standard)")).tag(false)
                     Text(L10n.text("Eingebetteter Player · experimentell")).tag(true)

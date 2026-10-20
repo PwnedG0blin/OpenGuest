@@ -103,7 +103,7 @@ public enum LaunchPlan {
     public static func windowsVM(qemu: String, firmware: String, variables: String, disk: String,
                                  tpmSocket: String, iso: String?, driversISO: String?, proISO: String?,
                                  installing: Bool, resources: GuestResources, displaySocket: String, network: Bool, qmpSocket: String, identity: WindowsMachineIdentity = .legacy,
-                                 graphics: WindowsGraphics = .basic, resolution: WindowsDisplayMode = .fullHD, metalRoot: String? = nil, embeddedPlayer: Bool = false, bootArtwork: String? = nil, writeLimit: WindowsWriteLimit = .off) throws -> CommandSpec {
+                                 graphics: WindowsGraphics = .basic, resolution: WindowsDisplayMode = .fullHD, metalRoot: String? = nil, embeddedPlayer: Bool = false, bootArtwork: String? = nil, writeLimit: WindowsWriteLimit = .off, refreshRate: WindowsRefreshRate = .automatic) throws -> CommandSpec {
         try resources.validate(windows: true)
         try identity.validate()
         guard displaySocket.hasPrefix("/tmp/og-"), !displaySocket.contains(","), !displaySocket.contains("\n") else { throw GuestError.invalidResources }
@@ -175,6 +175,9 @@ public enum LaunchPlan {
             var environment = ["NPT_BACKEND": "dxmt", "ANGLE_DEFAULT_PLATFORM": "metal",
                 "RENDER_SERVER_EXEC_PATH": root+"/Runtime/libexec/virgl_render_server",
                 "DYLD_FALLBACK_LIBRARY_PATH": root+"/Runtime/lib:"+root+"/ANGLE.xcarchive/Products/usr/local/lib"]
+            if refreshRate != .automatic {
+                environment["STRATOVO_DISPLAY_HZ"] = String(refreshRate.rawValue)
+            }
             if embeddedPlayer {
                 environment["STRATOVO_EMBEDDED_V1"] = "1"
             } else {

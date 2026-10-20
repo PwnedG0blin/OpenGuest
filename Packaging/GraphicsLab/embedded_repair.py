@@ -65,13 +65,13 @@ def bridge_cocoa(base, legacy_v2=False):
     return source
 
 
-def repaired_cocoa(base, legacy_v2=False, legacy_v3=False):
+def repaired_cocoa(base, legacy_v2=False, legacy_v3=False, legacy_v4=False):
     source = bridge_cocoa(base, legacy_v2=legacy_v2)
     if legacy_v2 or legacy_v3: return source
     import importlib.util
     spec = importlib.util.spec_from_file_location('stratovo_native_display', HERE/'native_display.py')
     native = importlib.util.module_from_spec(spec);spec.loader.exec_module(native)
-    return native.patch(source)
+    return native.patch(source, legacy_v4=legacy_v4)
 
 
 def repaired_vnc(base):
@@ -96,7 +96,7 @@ def plan(qemu):
         actual = path.read_text()
         allowed = [base, desired]
         if relative == 'ui/cocoa.m':
-            allowed.extend([v1_source(base), repaired_cocoa(base, legacy_v2=True), repaired_cocoa(base, legacy_v3=True)])
+            allowed.extend([v1_source(base), repaired_cocoa(base, legacy_v2=True), repaired_cocoa(base, legacy_v3=True), repaired_cocoa(base, legacy_v4=True)])
         if actual not in allowed:
             raise RuntimeError('Andere Änderungen in '+relative+'; nichts wurde überschrieben.')
         if actual != desired:

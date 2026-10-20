@@ -14,6 +14,7 @@ python3 scripts/test-embedded-display.py
 python3 scripts/test-player-surfaces.py
 python3 scripts/test-native-geometry.py
 python3 scripts/test-native-window.py
+python3 scripts/test-display-rate.py
 python3 -m unittest discover -s Tests/GraphicsLabTests -q
 python3 -m unittest discover -s Tests/AndroidDataTests -q
 python3 scripts/test-storage-cleanup.py

@@ -328,7 +328,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var apkBusy = false
     @Published private(set) var apkStatus = ""
     @Published private(set) var sessionName = L10n.text("Kein Gast gestartet")
-    @Published private(set) var log = L10n.text("Stratovo 1.0 Beta 1\nSystem prüfen, dann einen Gast auswählen.").replacingOccurrences(of: "1.0 Beta 1", with: "1.0 Beta 5")
+    @Published private(set) var log = L10n.text("Stratovo 1.0 Beta 1\nSystem prüfen, dann einen Gast auswählen.").replacingOccurrences(of: "1.0 Beta 1", with: "1.0 Beta 6")
     @Published private(set) var lastCommand = ""
     @Published var errorMessage: String? {
         didSet {
@@ -485,6 +485,9 @@ final class AppModel: ObservableObject {
     }
     @Published var windowsWriteLimit = WindowsWriteLimit(rawValue: UserDefaults.standard.integer(forKey: "Stratovo.windowsWriteLimit")) ?? .off {
         didSet { UserDefaults.standard.set(windowsWriteLimit.rawValue, forKey: "Stratovo.windowsWriteLimit") }
+    }
+    @Published var windowsRefreshRate = WindowsRefreshRate(rawValue: UserDefaults.standard.integer(forKey: "Stratovo.windowsRefreshRate")) ?? .automatic {
+        didSet { UserDefaults.standard.set(windowsRefreshRate.rawValue, forKey: "Stratovo.windowsRefreshRate") }
     }
     @Published private(set) var windowsUsesDirectDisplay = false
     let windowsFrames = WindowsFrameStore()
@@ -975,6 +978,17 @@ final class AppModel: ObservableObject {
             guard graphicsLab.runtimeReady, let storage else {
                 throw StorageMigration.failure(L10n.text("Bitte zuerst unter Windows die 3D-Grafik vorbereiten."))
             }
+            guard let dependencyHelper = Bundle.main.resourceURL?.appendingPathComponent("GraphicsLab/runtime_dependencies.py") else {
+                throw GuestError.missingFile("runtime_dependencies.py")
+            }
+            let graphicsRoot = storage.root + "/GraphicsLab"
+            let dependencyCheck = try await Task.detached {
+                try CommandCapture.run(CommandSpec(executable: "/usr/bin/python3", arguments: [dependencyHelper.path, graphicsRoot]), timeout: 30)
+            }.value
+            recordDiagnostic("Windows · Grafikbibliotheken", dependencyCheck.output)
+            guard dependencyCheck.status == 0 else {
+                throw GuestError.commandFailed(dependencyCheck.status, dependencyCheck.output)
+            }
             let bootFirmware = try await preparePCBootAppearance(firmware: firmware, root: storage.windows)
             var bootArtworkPath: String?
             if let artwork = windowsBootArtwork {
@@ -989,9 +1003,10 @@ final class AppModel: ObservableObject {
                                                tpmSocket: files.socket, iso: settings.iso, driversISO: settings.driversISO,
                                                proISO: files.proISO, installing: installing, resources: resources,
                                                displaySocket: files.displaySocket, network: settings.windowsNetwork, qmpSocket: files.qmpSocket, identity: files.identity,
-                                               graphics: windowsGraphics, resolution: windowsResolution, metalRoot: storage.root+"/GraphicsLab", embeddedPlayer: windowsEmbeddedPlayer, bootArtwork: bootArtworkPath, writeLimit: windowsWriteLimit)
+                                               graphics: windowsGraphics, resolution: windowsResolution, metalRoot: storage.root+"/GraphicsLab", embeddedPlayer: windowsEmbeddedPlayer, bootArtwork: bootArtworkPath, writeLimit: windowsWriteLimit, refreshRate: windowsRefreshRate)
             recordDiagnostic("Windows · Grafik", windowsGraphics.title + " · bevorzugter Modus " + windowsResolution.title)
             recordDiagnostic("Windows · Schreiblimit", windowsWriteLimit.title)
+            recordDiagnostic("Windows · Bildwiederholrate", windowsRefreshRate.title)
             windowsIdentity = files.identity
             windowsIdentityStatus = files.identity.summary
             recordDiagnostic("Windows · Gerätekennung", files.identity.summary)
@@ -1452,6 +1467,12 @@ final class AppModel: ObservableObject {
         var environment = ProcessInfo.processInfo.environment
         environment.removeValue(forKey: "STRATOVO_NATIVE_PLAYER")
         environment.removeValue(forKey: "STRATOVO_BOOT_ARTWORK")
+        environment.removeValue(forKey: "STRATOVO_DISPLAY_HZ")
+        environment.removeValue(forKey: "STRATOVO_APP_ICON")
+        if kind == "windows", spec.environment["STRATOVO_NATIVE_PLAYER"] == "1",
+           let icon = Bundle.main.url(forResource: "Stratovo", withExtension: "icns") {
+            environment["STRATOVO_APP_ICON"] = icon.path
+        }
         if kind == "windows", spec.environment["STRATOVO_EMBEDDED_V1"] == nil {
             environment.removeValue(forKey: "STRATOVO_EMBEDDED_V1")
         }

@@ -36,6 +36,7 @@ typedef NS_ENUM(NSInteger,QemuCocoaViewScanout) { QemuCocoaViewScanoutNone, Qemu
 - (NSRect)stratovoViewport;
 - (void)stratovoLayout;
 - (void)stratovoBootLogo:(NSRect)rect;
+- (void)stratovoBootFinished;
 @end
 @implementation QemuCocoaView
 '''
@@ -73,13 +74,16 @@ int main(int argc,char **argv) { @autoreleasepool {
     assert(NSEqualRects(logo,NSMakeRect(32,44,64,40)));
     view->screen.width=128;view->screen.height=128;
     view.scanout=QemuCocoaViewScanoutNone;[view stratovoBootLogo:logo];
-    assert(!stratovo_boot_layer.hidden && !stratovo_boot_hint.hidden);
+    assert(!stratovo_boot_layer.hidden && stratovo_boot_hint.hidden);
+    assert(NSEqualRects(stratovo_boot_layer.frame,view.bounds));
     assert(!memcmp(original,pixels,sizeof(pixels))); /* Source firmware framebuffer unchanged. */
     memset(pixels,255,sizeof(pixels));
     assert(NSEqualRects(stratovo_boot_match(&surface),NSZeroRect));
-    [view stratovoBootLogo:NSZeroRect];assert(stratovo_boot_layer.hidden);
+    [view stratovoBootLogo:NSZeroRect];assert(!stratovo_boot_layer.hidden);
     view.scanout=QemuCocoaViewScanoutMetal;[view stratovoBootLogo:logo];
-    assert(stratovo_boot_layer.hidden); /* Never cover a GPU desktop. */
+    assert(!stratovo_boot_layer.hidden); /* Cover survives until the first completed frame. */
+    [view stratovoBootFinished];assert(stratovo_boot_layer.hidden);
+    [view stratovoBootLogo:logo];assert(stratovo_boot_layer.hidden); /* Never cover a GPU desktop. */
     [window close];
     return 0;
 } }

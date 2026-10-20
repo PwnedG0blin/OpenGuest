@@ -9,7 +9,7 @@ import re
 import subprocess
 import sys
 
-CURRENT = '1.0.0-beta.5'
+CURRENT = '1.0.0-beta.6'
 BUNDLE = 'org.pwnedg0blin.openguest'
 PROTECTED = {'Android', 'Windows', 'GraphicsLab', 'Ubuntu', 'Runtime',
              'Installationsmedien', 'Backups', 'Austausch', 'Temp', 'Updates'}
@@ -58,7 +58,7 @@ def check_install(app=Path('/Applications/Stratovo.app')):
         raise RuntimeError('Zuerst die neue Stratovo-App in Programme installieren und testen.')
     info = plistlib.loads((app / 'Contents/Info.plist').read_bytes())
     if info.get('CFBundleIdentifier') != BUNDLE or info.get('StratovoReleaseVersion') != CURRENT:
-        raise RuntimeError('Zuerst Stratovo 1.0 Beta 5 in Programme installieren und testen.')
+        raise RuntimeError('Zuerst Stratovo 1.0 Beta 6 in Programme installieren und testen.')
 
 def running():
     lines = subprocess.check_output(['/bin/ps', '-axo', 'comm='], text=True).splitlines()
@@ -87,9 +87,9 @@ def main():
     if not items:
         print('Keine passenden alten Pakete gefunden. Nichts geändert.')
         return
-    print('\nEigene Quellcodeänderungen vorher sichern. Zuerst Beta 5 mit deinen Gästen testen.')
+    print('\nEigene Quellcodeänderungen vorher sichern. Zuerst Beta 6 mit deinen Gästen testen.')
     print('Rückkehr: im Papierkorb „Zurücklegen“. Den Papierkorb erst nach weiteren erfolgreichen Starts leeren.')
-    if input('Nach erfolgreichem Test zum Fortfahren BETA5 GETESTET eingeben; sonst Enter: ').strip() != 'BETA5 GETESTET':
+    if input('Nach erfolgreichem Test zum Fortfahren BETA6 GETESTET eingeben; sonst Enter: ').strip() != 'BETA6 GETESTET':
         print('Abgebrochen. Nichts verschoben.')
         return
     check_install()
