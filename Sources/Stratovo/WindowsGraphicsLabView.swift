@@ -44,7 +44,7 @@ final class WindowsGraphicsLabController: ObservableObject {
                 let bytes = try Data(contentsOf: bundled.appendingPathComponent(name))
                 try bytes.write(to: resources.appendingPathComponent(name), options: .atomic)
             }
-            for name in ["runtime_dependencies.py", "display_rate.h.inc", "legacy_v4_native_view.m.inc", "legacy_v4_native_methods.m.inc"] {
+            for name in ["window_callbacks.m.inc", "window_state.m.inc", "runtime_dependencies.py", "display_rate.h.inc", "legacy_v4_native_view.m.inc", "legacy_v4_native_methods.m.inc"] {
                 let bytes = try Data(contentsOf: bundled.appendingPathComponent(name))
                 try bytes.write(to: resources.appendingPathComponent(name), options: .atomic)
             }
@@ -90,7 +90,12 @@ final class WindowsGraphicsLabController: ObservableObject {
             timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
                 Task { @MainActor in self?.readProgress(logURL) }
             }
-        } catch { status = error.localizedDescription; failed = true }
+        } catch {
+            status = error.localizedDescription
+            progress = status
+            failed = true
+            model.recordGraphicsLabEvent("Grafikvorbereitung angehalten: " + status)
+        }
     }
 
     private func readProgress(_ url: URL) {
@@ -109,7 +114,7 @@ final class WindowsGraphicsLabController: ObservableObject {
         guard let root = model.storage?.url.appendingPathComponent("GraphicsLab") else { runtimeReady = false; return }
         let receipt = try? Data(contentsOf: root.appendingPathComponent("runtime-ready.json"))
         let metadata = receipt.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }
-        let playerReady = metadata?["embeddedPlayer"] as? Int == 1 && metadata?["embeddedRevision"] as? Int == 5 && metadata?["runtimeDependencies"] as? Int == 1
+        let playerReady = metadata?["embeddedPlayer"] as? Int == 1 && metadata?["embeddedRevision"] as? Int == 6 && metadata?["runtimeDependencies"] as? Int == 1
         runtimeReady = playerReady && ["runtime-ready.json", "Runtime/bin/qemu-system-aarch64", "Runtime/libexec/virgl_render_server", "Runtime/lib/libdxmt-native.dylib", "GraphicsDrivers.iso"].allSatisfy {
             FileManager.default.fileExists(atPath: root.appendingPathComponent($0).path)
         }
@@ -207,6 +212,7 @@ struct WindowsGraphicsLabView: View {
                 }
                 DisclosureGroup(L10n.text("Grafikvorbereitung und Protokoll"), isExpanded: $showLog) {
                     Text(lab.status).textSelection(.enabled)
+                    Button(L10n.text("Protokoll öffnen")) { lab.openBuildLog(model: model) }
                     Button(L10n.text("Mac-Voraussetzungen prüfen")) { lab.start(action: "check", model: model) }
                         .disabled(model.running || model.busy || lab.active)
                     if lab.building { Button(L10n.text("Grafikbuild abbrechen"), action: lab.cancelBuild) }
@@ -217,6 +223,12 @@ struct WindowsGraphicsLabView: View {
             }.padding(12).frame(maxWidth: .infinity, alignment: .leading)
         }
         .onAppear { lab.refresh(model: model) }
+        .onChange(of: lab.active) { _, active in
+            if active { showLog = true }
+        }
+        .onChange(of: lab.failed) { _, failed in
+            if failed { showLog = true }
+        }
         .sheet(isPresented: $paste, onDismiss: { draft = "" }) { WindowsPasteSheet(model: model, text: $draft) }
         .sheet(isPresented: $exchangePresented) {
             VStack {

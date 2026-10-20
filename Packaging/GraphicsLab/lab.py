@@ -353,7 +353,7 @@ def upgrade_embedded_player(root, sources, env):
     commit = run(["/usr/bin/git", "rev-parse", "HEAD"], cwd=qemu, env=env, capture=True).strip()
     if commit != sources["qemu"]["commit"]:
         raise RuntimeError("QEMU-Quelle passt nicht zur vorbereiteten 3D-Laufzeit.")
-    backup = directory(root / "PlayerBackup-before-v5")
+    backup = directory(root / "PlayerBackup-before-v6")
     binary = regular(root / "Runtime/bin/qemu-system-aarch64")
     if not (backup / binary.name).exists():
         shutil.copy2(binary, backup / binary.name)
@@ -368,7 +368,7 @@ def upgrade_embedded_player(root, sources, env):
         raise
     receipt = json.loads(regular(root / "runtime-ready.json").read_text())
     receipt["embeddedPlayer"] = 1
-    receipt["embeddedRevision"] = 5
+    receipt["embeddedRevision"] = 6
     write_json(root / "runtime-ready.json", receipt)
 
 
@@ -376,7 +376,7 @@ def build(root, sources, config, env):
     if runtime_ready(root):
         prepare_runtime_dependencies(root)
         receipt = json.loads(regular(root / "runtime-ready.json").read_text())
-        if receipt.get("embeddedPlayer") != 1 or receipt.get("embeddedRevision") != 5:
+        if receipt.get("embeddedPlayer") != 1 or receipt.get("embeddedRevision") != 6:
             upgrade_embedded_player(root, sources, env)
         receipt = json.loads(regular(root / "runtime-ready.json").read_text())
         receipt["runtimeDependencies"] = 1
@@ -476,7 +476,7 @@ def build(root, sources, config, env):
     if "virtio-ramfb-gl" not in models:
         raise RuntimeError("Gebautes QEMU enthält den benötigten Grafikmodus nicht.")
     prepare_runtime_dependencies(root)
-    write_json(root / "runtime-ready.json", {"version": 1, "sources": sources, "backend": "dxmt", "embeddedPlayer": 1, "embeddedRevision": 5, "runtimeDependencies": 1, "builtAt": time.time()})
+    write_json(root / "runtime-ready.json", {"version": 1, "sources": sources, "backend": "dxmt", "embeddedPlayer": 1, "embeddedRevision": 6, "runtimeDependencies": 1, "builtAt": time.time()})
     print("Grafiklaufzeit fertig. In Stratovo öffnet anschließend die vorhandene oder einmalig erstellte Testkopie.", flush=True)
 
 
