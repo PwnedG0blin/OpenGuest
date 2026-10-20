@@ -79,3 +79,7 @@ vor dem Entfernen der Quelle die Zielkopie prüfen.
 - [Android: ADB](https://developer.android.com/tools/adb)
 
 Entwickelt von **PwnedG0blin**.
+
+## Anleitung direkt in der App
+
+Unter **Dateiaustausch** sind alle Schritte nummeriert und dauerhaft sichtbar: Mac-Ordner öffnen, einmalige SMB-Freigabe, Windows Arm, Ubuntu sowie Android-Senden und Android-Abholen. Die Freigabe-Einrichtung wird getrennt von den Gast-Schritten erklärt. In der direkten Windows-Grafikansicht erreicht man denselben Bereich über **Windows Arm → Dateiaustausch** im Stratovo-Hauptfenster.

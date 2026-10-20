@@ -39,6 +39,7 @@ report. New logs distinguish the first OpenGL or Metal frame.
 
 - **Dateiaustausch / File exchange** in the sidebar, dashboard, embedded players
   and Windows controls.
+- Always-visible numbered setup steps for Mac, Windows Arm, Ubuntu and Android.
 - An `Austausch` folder inside the selected data folder.
 - Windows and Ubuntu: direct folder access through native macOS SMB after a guided,
   one-time setup. No sharing service is enabled automatically.
