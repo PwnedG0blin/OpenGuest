@@ -40,7 +40,7 @@ final class WindowsGraphicsLabController: ObservableObject {
             guard let bundled = Bundle.main.resourceURL?.appendingPathComponent("GraphicsLab") else {
                 throw StorageMigration.failure("Grafiklabor-Ressourcen fehlen.")
             }
-            for name in ["lab.py", "sources.json", "INSTALL_GRAPHICS.ps1", "INSTALL_GRAPHICS.cmd", "ZUERST_AUF_MAC_LESEN.txt", "pkgconf-2.3.0.tar.xz"] {
+            for name in ["lab.py", "sources.json", "INSTALL_GRAPHICS.ps1", "INSTALL_GRAPHICS.cmd", "ZUERST_AUF_MAC_LESEN.txt", "pkgconf-2.3.0.tar.xz", "boot_appearance.py", "embedded_display.py", "embedded_bridge.m.inc", "ubuntu_vm.py"] {
                 let bytes = try Data(contentsOf: bundled.appendingPathComponent(name))
                 try bytes.write(to: resources.appendingPathComponent(name), options: .atomic)
             }
@@ -72,7 +72,7 @@ final class WindowsGraphicsLabController: ObservableObject {
                     model?.setGraphicsLabBusy(false)
                     if code != 0 { self.status = "Grafikvorbereitung angehalten · Ursache unten im Protokoll (Code \(code))" }
                     else if action == "check" { self.status = L10n.text("Mac-Voraussetzungen geprüft · jetzt Grafik vorbereiten") }
-                    else if action == "build" { self.status = L10n.text("Grafiklaufzeit und Treiber-DVD bereit · jetzt Test-Windows starten") }
+                    else if action == "build" { self.status = L10n.text("3D-Grafiklaufzeit und Treiber-DVD bereit · jetzt Windows starten") }
                     else { self.status = "3D-Test beendet · Testdaten bleiben gespeichert" }
                     model?.recordGraphicsLabEvent(self.status + "\n" + self.progress)
                 }
@@ -103,7 +103,9 @@ final class WindowsGraphicsLabController: ObservableObject {
     }
     func refresh(model: AppModel) {
         guard let root = model.storage?.url.appendingPathComponent("GraphicsLab") else { runtimeReady = false; return }
-        runtimeReady = ["runtime-ready.json", "Runtime/bin/qemu-system-aarch64", "Runtime/libexec/virgl_render_server", "Runtime/lib/libdxmt-native.dylib", "GraphicsDrivers.iso"].allSatisfy {
+        let receipt = try? Data(contentsOf: root.appendingPathComponent("runtime-ready.json"))
+        let metadata = receipt.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }
+        runtimeReady = metadata?["embeddedPlayer"] as? Int == 1 && ["runtime-ready.json", "Runtime/bin/qemu-system-aarch64", "Runtime/libexec/virgl_render_server", "Runtime/lib/libdxmt-native.dylib", "GraphicsDrivers.iso"].allSatisfy {
             FileManager.default.fileExists(atPath: root.appendingPathComponent($0).path)
         }
     }
@@ -145,78 +147,53 @@ struct WindowsGraphicsLabView: View {
     @ObservedObject var model: AppModel
     @ObservedObject var lab: WindowsGraphicsLabController
     @State private var showLog = false
-    @State private var showDriverHelp = false
+    @State private var paste = false
+    @State private var draft = ""
     var body: some View {
         GroupBox {
             VStack(alignment: .leading, spacing: 14) {
-                Label(L10n.text("Windows-Modus"), systemImage: "display.2").font(.title3.bold())
-                Picker(L10n.text("Windows-Modus"), selection: $model.windowsLabSelected) {
-                    Text(L10n.text("Normales Windows")).tag(false)
-                    Text(L10n.text("3D-Testkopie · experimentell")).tag(true)
-                }.pickerStyle(.segmented).disabled(model.running || lab.active)
-                if model.windowsLabSelected {
-                    Text("Triton / Neptune → DXMT → Metal").font(.headline).foregroundStyle(.teal)
-                    Text(L10n.text("Experimentelle ARM64-Grafik in einer unabhängigen Kopie deines Windows. Eigene Programme, Anmeldungen und Teständerungen bleiben in dieser Kopie gespeichert. Beim Zurückwechseln öffnest du dein normales Windows; Änderungen werden nicht übertragen."))
-                    Text(lab.status).font(.subheadline.bold()).textSelection(.enabled)
-                    buttons
-                    Label(lab.runtimeReady ? "Mac-Grafiklaufzeit und Treiber-DVD vorhanden" : L10n.text("Schritt 1: Mac-Grafiklaufzeit vorbereiten · Test-Windows noch nicht verfügbar"), systemImage: lab.runtimeReady ? "checkmark.circle.fill" : "hammer.fill")
-                        .font(.subheadline.bold()).foregroundStyle(lab.runtimeReady ? .green : .orange)
-                    Text(L10n.text("Alles beginnt auf deinem Mac: Voraussetzungen prüfen, dann Grafik vorbereiten und Test-Windows starten. Der erste Bau benötigt vollständiges Xcode mit Metal-Werkzeugen, Internet und mindestens 30 GiB auf deinem Datenlaufwerk. Quellen, Werkzeuge und die spätere Windows-Kopie liegen dort. Fehlendes pkg-config wird dort automatisch gebaut."))
-                        .font(.subheadline)
-                    Button(L10n.text("Wo installiere ich den Windows-Grafiktreiber?")) { showDriverHelp = true }.buttonStyle(.bordered)
-                    Text(L10n.text("Die Treiber-DVD entsteht erst nach erfolgreichem Mac-Bau. Im gestarteten Test-Windows: Explorer → Dieser PC → DVD PKGRAPHICS → INSTALL_GRAPHICS.cmd. Die .cmd funktioniert im virtuellen Windows; du brauchst keinen zweiten PC. Danach Test-Windows herunterfahren und erneut starten."))
-                        .font(.subheadline).textSelection(.enabled)
-                    Text(L10n.text("Das 3D-Testfenster verwendet direkte Metal-Ausgabe. Zwischenablage und Trackpad-Regler des normalen Players sind dort noch nicht verbunden."))
-                        .font(.subheadline).foregroundStyle(.secondary)
-                    HStack {
-                        Button(L10n.text("Mac-Protokolle im Finder öffnen")) { lab.openFolder(model: model) }.buttonStyle(.bordered)
-                        Toggle(L10n.text("Protokoll anzeigen"), isOn: $showLog).toggleStyle(.checkbox)
-                    }
-                    if lab.building { Button(L10n.text("Grafikbuild abbrechen"), action: lab.cancelBuild).buttonStyle(.bordered) }
-                    if lab.failed {
-                        Button(L10n.text("Konkreten Baufehler öffnen")) { lab.openBuildLog(model: model) }.buttonStyle(.borderedProminent)
-                        Text(L10n.text("Der Vorgang ist beendet. Das Protokoll ist keine Terminal-Eingabe; Enter ist hier nicht nötig.")).font(.subheadline)
-                    }
-                    if showLog || lab.failed { ScrollView { Text(lab.progress).font(.system(.caption, design: .monospaced)).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading) }.frame(height: 160) }
-                } else {
-                    Text(L10n.text("Dein bisheriges Windows mit den vorhandenen Programmen und Daten.")).font(.subheadline)
-                    Button(action: model.startExistingWindows) { Label(L10n.text("Normales Windows starten"), systemImage: "play.fill") }
+                Label(L10n.text("Windows"), systemImage: "desktopcomputer").font(.title2.bold())
+                Text(L10n.text("3D über Metal · im Stratovo-Player · deine vorhandene Installation"))
+                    .font(.headline).foregroundStyle(.teal)
+                Text(L10n.text("Konten, Programme, Dateien und Einstellungen bleiben in deiner bisherigen Windows-Festplatte. Es wird keine neue Windows-Kopie angelegt."))
+                if !lab.runtimeReady {
+                    Button(L10n.text("3D-Player vorbereiten / aktualisieren")) { lab.start(action: "build", model: model) }
                         .buttonStyle(.borderedProminent).controlSize(.large)
-                        .disabled(!model.canResumeWindows || lab.active)
+                        .disabled(model.running || model.busy || lab.active || !model.storageReady)
+                    Text(L10n.text("Einmalig: vollständiges Xcode mit Metal-Werkzeugen und mindestens 30 GiB für den Grafikbau. Bereits gebaute Laufzeiten werden weiterverwendet."))
+                } else {
+                    Label(L10n.text("3D-Laufzeit bereit"), systemImage: "checkmark.circle.fill").foregroundStyle(.green)
+                }
+                Text(L10n.text("Beim ersten 3D-Start: Windows-Explorer → Dieser PC → DVD PKGRAPHICS → INSTALL_GRAPHICS.cmd. Danach Windows herunterfahren und erneut starten."))
+                if model.running && model.activeGuest == "windows" {
+                    controls
+                    Text(L10n.text("Esc beim Einschalten: UEFI / BIOS. Zum Verlassen des Menüs Continue wählen."))
+                        .font(.system(size: 14, weight: .semibold))
+                    Text(model.windowsPasteStatus).font(.callout).textSelection(.enabled)
+                }
+                DisclosureGroup(L10n.text("Grafikvorbereitung und Protokoll"), isExpanded: $showLog) {
+                    Text(lab.status).textSelection(.enabled)
+                    Button(L10n.text("Mac-Voraussetzungen prüfen")) { lab.start(action: "check", model: model) }
+                        .disabled(model.running || model.busy || lab.active)
+                    if lab.building { Button(L10n.text("Grafikbuild abbrechen"), action: lab.cancelBuild) }
+                    ScrollView { Text(lab.progress).font(.system(.caption, design: .monospaced)).textSelection(.enabled) }.frame(height: 130)
+                    Text(L10n.text("Eine vorhandene frühere Testkopie im Grafiklabor wird nicht gelöscht und nicht automatisch als Hauptinstallation verwendet."))
+                        .font(.caption).foregroundStyle(.secondary)
                 }
             }.padding(12).frame(maxWidth: .infinity, alignment: .leading)
-             .onAppear { lab.refresh(model: model) }
-             .onChange(of: model.windowsLabSelected) { _ in lab.refresh(model: model) }
-             .sheet(isPresented: $showDriverHelp) {
-                 VStack(alignment: .leading, spacing: 18) {
-                     Label(L10n.text("Grafik auf Mac und Windows einrichten"), systemImage: "display.2").font(.title2.bold()).foregroundStyle(.teal)
-                     Text(L10n.text("1 · Auf dem Mac")).font(.headline)
-                     Text(L10n.text("Voraussetzungen prüfen und Grafik vorbereiten anklicken. Erst wenn der Bau erfolgreich ist, kann das Test-Windows geöffnet werden."))
-                     Text(L10n.text("2 · Im virtuellen Windows")).font(.headline)
-                     Text(L10n.text("Im Test-Windows den Datei-Explorer öffnen. Unter Dieser PC erscheint die DVD PKGRAPHICS. Dort INSTALL_GRAPHICS.cmd doppelklicken und die Windows-Administratorabfrage bestätigen."))
-                     Text(L10n.text("3 · Testkopie neu starten")).font(.headline)
-                     Text(L10n.text("Das Test-Windows herunterfahren und anschließend hier erneut starten. Die Treiberinstallation bleibt in der Testkopie gespeichert."))
-                     Text(L10n.text("Im Mac-Finder lassen sich .cmd und .ps1 nicht ausführen. Der Grafikordner enthält nur die Hilfsdateien und Protokolle.")).foregroundStyle(.secondary)
-                     Button(L10n.text("Verstanden")) { showDriverHelp = false }.buttonStyle(.borderedProminent).frame(maxWidth: .infinity, alignment: .trailing)
-                 }.font(.system(size: 15)).padding(28).frame(width: 580)
-                  .background(Color(nsColor: .windowBackgroundColor))
-             }
         }
+        .onAppear { lab.refresh(model: model) }
+        .sheet(isPresented: $paste, onDismiss: { draft = "" }) { WindowsPasteSheet(model: model, text: $draft) }
     }
-    private var buttons: some View { VStack(alignment: .leading, spacing: 12) {
-        Button(L10n.text("Mac-Voraussetzungen prüfen")) { lab.start(action: "check", model: model) }.buttonStyle(.bordered).disabled(model.busy || model.running || lab.active || !model.storageReady)
-        buildButton; startButton; stopButton
-    } }
-    private var buildButton: some View {
-        Button(L10n.text("1 · Grafik vorbereiten und Test-Windows öffnen")) { lab.start(action: "setup", model: model) }
-            .buttonStyle(.bordered).controlSize(.large).disabled(model.busy || model.running || lab.active || !model.storageReady)
-    }
-    private var startButton: some View {
-        Button(L10n.text("2 · Vorbereitetes Test-Windows öffnen")) { lab.start(action: "launch", model: model) }
-            .buttonStyle(.borderedProminent).controlSize(.large).disabled(model.busy || model.running || lab.active || !model.storageReady || !lab.runtimeReady)
-    }
-    private var stopButton: some View {
-        Button(L10n.text("Test-Windows herunterfahren"), action: lab.shutdown)
-            .buttonStyle(.bordered).controlSize(.large).disabled(!lab.active || lab.building)
+    private var controls: some View {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 165))], alignment: .leading, spacing: 10) {
+            Button(L10n.text("Windows-Fenster zeigen"), action: model.activateWindows)
+            Button(L10n.text("Text einfügen …")) { draft = NSPasteboard.general.string(forType: .string) ?? ""; paste = true }
+                .disabled(model.windowsPasteBusy)
+            Button(L10n.text("Anzeige-Einstellungen"), action: model.openWindowsDisplaySettings)
+            Button(L10n.text("UEFI / BIOS · Esc"), action: model.openWindowsFirmwareMenu)
+            Button(L10n.text("Einrichtungskonsole öffnen"), action: model.openWindowsSetupConsole)
+            Button(L10n.text("Herunterfahren")) { model.shutdownGuest() }
+        }.buttonStyle(.bordered)
     }
 }

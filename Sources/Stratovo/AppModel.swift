@@ -110,7 +110,8 @@ final class AppModel: ObservableObject {
     @Published private(set) var sdk: String?
     @Published private(set) var qemu: String?
     let graphicsLab = WindowsGraphicsLabController()
-    @Published var windowsLabSelected = false
+    @Published var windowsLabSelected = true
+    let ubuntu = UbuntuController()
     func setGraphicsLabBusy(_ active: Bool) { busy = active }
     func recordGraphicsLabEvent(_ text: String) { recordDiagnostic("Experimentelles Grafiklabor", text) }
     @Published private(set) var firmware: String?
@@ -181,7 +182,8 @@ final class AppModel: ObservableObject {
         }
     }
     func openWindowsDriverDisc() {
-        guard running, activeGuest == "windows", !windowsPasteBusy,
+        if windowsPlayer == nil { sendWindowsKeys(["meta_l", "e"]); return }
+        guard running, ["windows", "ubuntu"].contains(activeGuest), !windowsPasteBusy,
               windowsPlayer?.sendKeySequence(WindowsKeyboard.explorer) == true else { return }
         playerStatus = L10n.text("Windows-Explorer angefordert · Unter Dieser PC die eingelegte Treiber-CD öffnen.")
     }
@@ -873,6 +875,33 @@ final class AppModel: ObservableObject {
         } catch { errorMessage = error.localizedDescription }
     }
 
+    private var ubuntuSession: UbuntuSession?
+    func startUbuntu(installing: Bool, memory: Int, cores: Int) {
+        guard !running, !busy, let storage, let qemu, let qemuImg, let firmware, let variablesTemplate else {
+            errorMessage = L10n.text("Zuerst Speicherort und QEMU-Werkzeuge unter Einrichtung prüfen.")
+            return
+        }
+        busy = true
+        Task {
+            defer { busy = false }
+            let session = UbuntuSession()
+            do {
+                let (spec, display, qmp) = try await session.prepare(storage: storage, qemu: qemu,
+                    qemuImg: qemuImg, firmware: firmware, variablesTemplate: variablesTemplate,
+                    installing: installing, memory: memory, cores: cores)
+                ubuntuSession = session
+                try start(spec, title: "Ubuntu ARM64")
+                windowsBootArtwork = nil
+                activeGuest = "ubuntu"; qmpSocket = qmp; windowsDisplaySocket = display
+                showPlayer(kind: "ubuntu")
+                connectWindowsPlayer(socket: display)
+            } catch {
+                session.stop(); ubuntuSession = nil
+                errorMessage = error.localizedDescription
+            }
+        }
+    }
+
     func startWindows() {
         refreshWindowsISO()
         Task { await startWindowsVM() }
@@ -910,12 +939,17 @@ final class AppModel: ObservableObject {
             }
             let files = try await session.prepare(qemuImg: qemuImg, swtpm: swtpm, variablesTemplate: variablesTemplate,
                                                   capacityGiB: capacity, selectPro: installing && settings.selectPro, localAccount: account)
+            graphicsLab.refresh(model: self)
+            guard graphicsLab.runtimeReady, let storage else {
+                throw StorageMigration.failure(L10n.text("Bitte zuerst unter Windows die 3D-Grafik vorbereiten."))
+            }
+            let bootFirmware = try await preparePCBootAppearance(firmware: firmware, root: storage.windows)
             windowsDiskBytes = Int64(capacity) * 1_073_741_824
-            let spec = try LaunchPlan.windowsVM(qemu: qemu, firmware: firmware, variables: files.variables, disk: files.disk,
+            let spec = try LaunchPlan.windowsVM(qemu: qemu, firmware: bootFirmware, variables: files.variables, disk: files.disk,
                                                tpmSocket: files.socket, iso: settings.iso, driversISO: settings.driversISO,
                                                proISO: files.proISO, installing: installing, resources: resources,
                                                displaySocket: files.displaySocket, network: settings.windowsNetwork, qmpSocket: files.qmpSocket, identity: files.identity,
-                                               graphics: windowsGraphics, resolution: windowsResolution)
+                                               graphics: windowsGraphics, resolution: windowsResolution, metalRoot: storage.root+"/GraphicsLab")
             recordDiagnostic("Windows · Grafik", windowsGraphics.title + " · bevorzugter Modus " + windowsResolution.title)
             windowsIdentity = files.identity
             windowsIdentityStatus = files.identity.summary
@@ -1079,7 +1113,7 @@ final class AppModel: ObservableObject {
     }
 
     var canReconnectWindowsDisplay: Bool {
-        running && activeGuest == "windows" && !busy && !windowsReconnectBusy && !windowsPasteBusy
+        running && ["windows", "ubuntu"].contains(activeGuest) && !busy && !windowsReconnectBusy && !windowsPasteBusy
     }
     func reconnectWindowsDisplay() async {
         guard canReconnectWindowsDisplay, let socket = windowsDisplaySocket else { return }
@@ -1094,7 +1128,8 @@ final class AppModel: ObservableObject {
         recordDiagnostic("Windows · Anzeige", L10n.text("Bildverbindung neu angefordert; Windows läuft weiter"))
     }
     func openWindowsFirmwareMenu() {
-        guard running, activeGuest == "windows", !windowsPasteBusy else { return }
+        guard running, ["windows", "ubuntu"].contains(activeGuest), !windowsPasteBusy else { return }
+        if windowsPlayer == nil { sendWindowsKeys(["esc"]); return }
         let escape = [WindowsKeyboard.Event(symbol: 0xff1b, down: true), WindowsKeyboard.Event(symbol: 0xff1b, down: false)]
         if windowsPlayer?.sendKeySequence(escape) == true {
             playerStatus = L10n.text("Escape an den Gast gesendet · UEFI-Startmenü ist nur während des Firmwarestarts verfügbar")
@@ -1112,7 +1147,7 @@ final class AppModel: ObservableObject {
                     try? await Task.sleep(nanoseconds: 50_000_000)
                     continue
                 }
-                let client = RFBClient()
+                let client = RFBClient(bootArtwork: self.windowsBootArtwork)
                 self.windowsPlayer = client
                 client.onFrame = { [weak self] image in
                     guard let self else { return }
@@ -1156,16 +1191,16 @@ final class AppModel: ObservableObject {
     }
 
     func pointer(x: Int, y: Int, mask: UInt8) {
-        if activeGuest == "windows", windowsPasteBusy { return }
+        if ["windows", "ubuntu"].contains(activeGuest), windowsPasteBusy { return }
         if activeGuest == "android" { androidStream?.pointer(x: x, y: y, mask: mask) }
-        else if activeGuest == "windows" { windowsPlayer?.pointer(x: x, y: y, mask: mask) }
+        else if ["windows", "ubuntu"].contains(activeGuest) { windowsPlayer?.pointer(x: x, y: y, mask: mask) }
     }
 
     func scroll(x: Int, y: Int, horizontal: Double, vertical: Double, mask: UInt8) {
         let speed = activeGuest == "windows" ? windowsScrollSpeed : androidScrollSpeed
         let h = GuestScrollSpeed.scale(horizontal, percent: speed)
         let v = GuestScrollSpeed.scale(vertical, percent: speed)
-        if activeGuest == "windows", !windowsPasteBusy { windowsPlayer?.scroll(x: x, y: y, vertical: v, mask: mask) }
+        if ["windows", "ubuntu"].contains(activeGuest), !windowsPasteBusy { windowsPlayer?.scroll(x: x, y: y, vertical: v, mask: mask) }
         else if activeGuest == "android" { androidStream?.scroll(x: x, y: y, horizontal: h, vertical: v, mask: mask) }
     }
     func swipeAndroid(x: Int, y: Int, horizontal: Double, vertical: Double, phase: GuestTouchScrollPhase) {
@@ -1177,31 +1212,58 @@ final class AppModel: ObservableObject {
     func resetScroll() { windowsPlayer?.resetScroll() }
 
     func openWindowsDisplaySettings() {
-        guard running, activeGuest == "windows", !windowsPasteBusy,
+        if windowsPlayer == nil { sendWindowsKeys(["meta_l", "i"]); return }
+        guard running, ["windows", "ubuntu"].contains(activeGuest), !windowsPasteBusy,
               windowsPlayer?.sendKeySequence(WindowsKeyboard.settings) == true else { return }
         playerStatus = L10n.text("Windows + I gesendet · Unter System → Anzeige Auflösung und Windows-Skalierung wählen.")
     }
 
     func keyboard(code: UInt16, text: String, down: Bool) {
-        if activeGuest == "windows", windowsPasteBusy { return }
+        if ["windows", "ubuntu"].contains(activeGuest), windowsPasteBusy { return }
         if activeGuest == "android" {
             let special: [UInt16: UInt32] = [36: 66, 51: 67, 48: 61, 53: 111, 123: 21, 124: 22, 125: 20, 126: 19,
                 117: 112, 115: 122, 119: 123, 116: 92, 121: 93, 56: 59, 60: 60, 59: 113, 62: 114, 58: 57, 61: 58, 55: 117, 54: 118]
             if let key = special[code] { androidStream?.key(key, down: down) }
             else if down && !text.isEmpty { androidStream?.text(text) }
-        } else if activeGuest == "windows" {
+        } else if ["windows", "ubuntu"].contains(activeGuest) {
             if let symbol = WindowsKeyboard.symbol(code: code, text: text) { windowsPlayer?.key(symbol, down: down) }
         }
     }
 
     func openWindowsSetupConsole() {
-        guard running, activeGuest == "windows", !windowsPasteBusy,
+        if windowsPlayer == nil { sendWindowsKeys(["shift", "f10"]); return }
+        guard running, ["windows", "ubuntu"].contains(activeGuest), !windowsPasteBusy,
               windowsPlayer?.sendKeySequence(WindowsKeyboard.setupConsole) == true else { return }
         playerStatus = "Shift + F10 an Windows gesendet · Zum Tippen in das Windows-Bild klicken."
     }
 
+    func sendWindowsKeys(_ keys: [String]) {
+        guard running, ["windows", "ubuntu"].contains(activeGuest), !windowsPasteBusy, let socket = qmpSocket else { return }
+        Task {
+            do { try await QMPClient.sendKeys(keys, socket: socket) }
+            catch { playerStatus = error.localizedDescription }
+        }
+    }
+    func activateWindows() {
+        guard activeGuest == "windows" else { return }
+        showPlayer(kind: "windows")
+    }
+    private var windowsBootArtwork: BootArtwork?
+    private func preparePCBootAppearance(firmware: String, root: URL) async throws -> String {
+        windowsBootArtwork = nil
+        guard let helper = Bundle.main.resourceURL?.appendingPathComponent("GraphicsLab/boot_appearance.py") else { return firmware }
+        do {
+            let result = try await Self.capture(CommandSpec(executable: "/usr/bin/python3", arguments: [helper.path,
+                "--firmware", firmware]), timeout: 30)
+            if result.status == 0 {
+                windowsBootArtwork = try? JSONDecoder().decode(BootArtwork.self, from: Data(result.output.utf8))
+            }
+        } catch { recordDiagnostic("Windows · Startlogo", error.localizedDescription) }
+        return firmware
+    }
+
     func pasteWindowsText(_ input: WindowsTextInput) {
-        guard running, activeGuest == "windows", !windowsPasteBusy, let socket = qmpSocket else { return }
+        guard running, ["windows", "ubuntu"].contains(activeGuest), !windowsPasteBusy, let socket = qmpSocket else { return }
         windowsPasteBusy = true
         windowsPasteStatus = L10n.message("Text wird eingefügt: 0 / \(input.count) Zeichen …")
         windowsPasteTask = Task { [weak self] in
@@ -1312,7 +1374,7 @@ final class AppModel: ObservableObject {
         try storage.validate()
         let directory = storage.logs
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        let kind = title.hasPrefix("Android") ? "android" : "windows"
+        let kind = title.hasPrefix("Android") ? "android" : (title.hasPrefix("Ubuntu") ? "ubuntu" : "windows")
         let url = directory.appendingPathComponent("\(kind)-session-\(UUID().uuidString).log")
         let header = DiagnosticReport.redact("Stratovo · \(title)\nStart: \(ISO8601DateFormatter().string(from: Date()))\n\(spec.display)\n\n")
         guard FileManager.default.createFile(atPath: url.path, contents: Data(header.utf8), attributes: [.posixPermissions: 0o600]) else { throw GuestError.missingFile(url.path) }
@@ -1412,6 +1474,7 @@ final class AppModel: ObservableObject {
         guestActivity = nil
         if let windowsSession { await windowsSession.stop() }
         windowsSession = nil
+        ubuntuSession?.stop(); ubuntuSession = nil
         qmpSocket = nil
         windowsDisplaySocket = nil
         activeGuest = ""

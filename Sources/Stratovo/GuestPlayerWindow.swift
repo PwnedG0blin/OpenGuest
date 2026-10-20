@@ -8,7 +8,7 @@ final class GuestPlayerWindows: NSObject, NSWindowDelegate {
     private var windows: [String: NSWindow] = [:]
 
     func show(kind: String, model: AppModel) {
-        guard kind == "android" || kind == "windows" else { return }
+        guard ["android", "windows", "ubuntu"].contains(kind) else { return }
         let window: NSWindow
         if let existing = windows[kind] {
             window = existing
@@ -17,7 +17,7 @@ final class GuestPlayerWindows: NSObject, NSWindowDelegate {
             window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: android ? 520 : 1100, height: 780),
                               styleMask: [.titled, .closable, .miniaturizable, .resizable],
                               backing: .buffered, defer: false)
-            window.title = android ? "Android Player · Stratovo" : "Windows Player · Stratovo"
+            window.title = android ? "Android Player · Stratovo" : (kind == "ubuntu" ? "Ubuntu Player · Stratovo" : "Windows Player · Stratovo")
             window.isReleasedWhenClosed = false
             window.isRestorable = false
             window.contentMinSize = NSSize(width: 360, height: 480)
@@ -95,7 +95,7 @@ private struct GuestPlayerView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
-                Text(kind == "android" ? "Android" : "Windows Arm").font(.headline)
+                Text(kind == "android" ? "Android" : (kind == "ubuntu" ? "Ubuntu ARM" : "Windows")).font(.headline)
                 Spacer(minLength: 0)
                 if active && kind == "android" {
                     Text("Stream \(Int(model.streamFPS.rounded())) · Decoder \(Int(model.decoderFPS.rounded())) FPS")
@@ -110,7 +110,7 @@ private struct GuestPlayerView: View {
                 Color.black
                 // Only the active guest owns the video layer and receives input.
                 if active {
-                    PlayerSurface(image: kind == "windows" ? model.playerImage : nil,
+                    PlayerSurface(image: kind != "android" ? model.playerImage : nil,
                                   videoLayer: kind == "android" ? model.h264Player.layer : nil,
                                   sourceSize: model.playerSize,
                                   pointer: { model.pointer(x: $0, y: $1, mask: $2) },
@@ -121,13 +121,13 @@ private struct GuestPlayerView: View {
                                   allowsScrollMomentum: scrollMomentum,
                                   touchScroll: kind == "android" && androidTouchScroll ? { x,y,h,v,phase in
                                       model.swipeAndroid(x: x, y: y, horizontal: h, vertical: v, phase: phase)
-                                  } : nil, windowsFrames: kind == "windows" ? model.windowsFrames : nil)
+                                  } : nil, windowsFrames: kind != "android" ? model.windowsFrames : nil)
                 }
                 if !active || model.playerSize == .zero {
                     VStack(spacing: 12) {
                         Image(systemName: kind == "android" ? "apps.iphone" : "desktopcomputer")
                             .font(.system(size: 42))
-                        Text(active ? (kind == "windows" ? model.playerStatus : "System startet …") : L10n.text("Gastsystem ist ausgeschaltet"))
+                        Text(active ? (kind != "android" ? model.playerStatus : "System startet …") : L10n.text("Gastsystem ist ausgeschaltet"))
                             .multilineTextAlignment(.center)
                         if active && kind == "windows" {
                             Text(model.windowsBootMediaStatus).font(.caption).multilineTextAlignment(.center)
@@ -204,7 +204,16 @@ private struct GuestPlayerView: View {
                     Text(L10n.text("Auflösung und Textgröße in Windows: System → Anzeige. Die verfügbaren Modi hängen vom Gasttreiber ab; „Ansicht“ vergrößert nur das Playerbild."))
                         .font(.system(size: 13)).foregroundStyle(.primary).fixedSize(horizontal: false, vertical: true)
                 }
+                if kind == "ubuntu" {
+                    HStack {
+                        Button(L10n.text("Anzeige neu verbinden")) { Task { await model.reconnectWindowsDisplay() } }
+                        Button(L10n.text("Text einfügen …"), action: beginPaste)
+                        Button(L10n.text("UEFI / BIOS · Esc"), action: model.openWindowsFirmwareMenu)
+                    }.disabled(!active || model.windowsPasteBusy)
+                    Text(L10n.text("Ubuntu: Auflösung und Skalierung unter Einstellungen → Anzeigegeräte ändern."))
+                }
                 if kind == "windows" {
+                    Text(L10n.text("Esc beim Einschalten: UEFI / BIOS")).font(.system(size: 14, weight: .semibold))
                     HStack {
                         Button(L10n.text("Anzeige neu verbinden")) { Task { await model.reconnectWindowsDisplay() } }
                             .disabled(!active || !model.canReconnectWindowsDisplay)

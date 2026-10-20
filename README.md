@@ -1,16 +1,16 @@
-# Stratovo · 1.0 Beta 1
+# Stratovo · 1.0 Beta 2
 
-Public Apple Silicon beta with a guided dashboard, a user-selected data drive, experimental Windows 3D and verified GitHub app updates. See the [release guide and per-VM storage budget](docs/RELEASE_1.0_BETA1.md). Existing guest data locations are preserved.
+Public Apple Silicon beta with a guided dashboard, a user-selected data drive, experimental Windows 3D and verified GitHub app updates. See the [release guide and per-VM storage budget](docs/RELEASE_1.0_BETA2.md). Existing guest data locations are preserved.
 
-## Android Emulator & Windows VM for Mac
+## Android, Windows and Ubuntu for Mac
 
-**Free, open-source macOS app for Android emulation and Windows ARM64 virtual machines on Apple silicon.**
+**Free, open-source macOS app for Android emulation, Windows ARM64 and Ubuntu ARM virtual machines on Apple silicon.**
 
-Developed by **PwnedG0blin** · macOS **14+** · **MIT license** · **1.0 Beta 1**
+Developed by **PwnedG0blin** · macOS **14+** · **MIT license** · **1.0 Beta 2**
 
 [Deutsch: vollständige Anleitung](README.de.md) · [Setup](LIES_MICH_ZUERST.md) · [Mac test builds](https://github.com/PwnedG0blin/OpenGuest/actions/workflows/macos.yml) · [Report an issue](https://github.com/PwnedG0blin/OpenGuest/issues)
 
-Stratovo brings Android ARM64 and Windows ARM64 guest systems into a native Mac interface. Install Android APKs, use persistent guest storage, and open each guest in its own resizable player window. Only one guest runs at a time. System images, engines and drivers are set up separately.
+Stratovo brings Android ARM64, Windows ARM64 and Ubuntu ARM guest systems into a native Mac interface. Install Android APKs, use persistent guest storage, and open each guest in its own resizable player window. Only one guest runs at a time. System images, engines and drivers are set up separately.
 
 ## Interface language
 
@@ -27,7 +27,15 @@ Stratovo follows your preferred macOS language at launch. Override it under Setu
 
 - Install Windows using your own ARM64 ISO and an appropriate Windows license.
 - Persistent virtual disks, ARM64 firmware, TPM support and optional Virtio drivers.
-- Experimental Windows 3D through VirtIO / Neptune / DXMT in an independent test copy. The first build requires full Xcode and additional libraries; see the release guide.
+- 3D through VirtIO / Neptune / DXMT / Metal in the existing Windows installation and Stratovo player. Update the embedded 3D runtime once; existing build tools are reused. The initial graphics build requires full Xcode and additional libraries.
+
+## Ubuntu ARM
+
+- Ubuntu 26.04.1 LTS Desktop ARM64, downloaded from Canonical with pinned SHA-256 verification.
+- Independent 64-GiB disk and UEFI state on the selected data drive.
+- Same Stratovo player, keyboard, paste and trackpad controls. Plan about 80 GiB storage and 6–8 GiB guest RAM.
+
+[What changed](docs/RELEASE_1.0_BETA2.md) · [Safe cleanup after updating](docs/AUFRAEUMEN.md)
 
 ## Install or build
 

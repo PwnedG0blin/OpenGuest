@@ -9,7 +9,8 @@ import StratovoCore
 final class RFBClient {
     private var connection: NWConnection?
     private var buffer = StreamByteBuffer()
-    private let renderer = WindowsFrameRenderer()
+    private let renderer: WindowsFrameRenderer
+    init(bootArtwork: BootArtwork? = nil) { renderer = WindowsFrameRenderer(bootArtwork: bootArtwork) }
     private var cadence = FrameRequestCadence()
     private var stopped = false
     private var width = 0

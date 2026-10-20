@@ -14,6 +14,7 @@ struct WindowsPasteSheet: View {
         colorScheme == .dark ? Color(red: 0.35, green: 0.82, blue: 0.79) : Color(red: 0.03, green: 0.43, blue: 0.46)
     }
 
+    private func guestText(_ text: String) -> String { L10n.text(text).replacingOccurrences(of: "Windows", with: model.activeGuest == "ubuntu" ? "Ubuntu" : "Windows") }
     private var hasLineBreaks: Bool { WindowsTextInput.normalized(text).contains("\n") }
     private var input: Result<WindowsTextInput, Error> {
         Result { try WindowsTextInput(text: text, layout: model.windowsTextLayout, allowLineBreaks: allowLineBreaks) }
@@ -28,7 +29,7 @@ struct WindowsPasteSheet: View {
             header
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text(L10n.text("Prüfe oder bearbeite deinen Text. Er wird in das zuletzt angeklickte Eingabefeld in Windows geschrieben."))
+                    Text(guestText("Prüfe oder bearbeite deinen Text. Er wird in das zuletzt angeklickte Eingabefeld in Windows geschrieben."))
                         .font(.subheadline).foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                     editor
@@ -64,10 +65,10 @@ struct WindowsPasteSheet: View {
                 .frame(width: 54, height: 54)
                 .background(Color.teal.opacity(0.16), in: RoundedRectangle(cornerRadius: 14))
             VStack(alignment: .leading, spacing: 5) {
-                Label("Stratovo · Windows Player", systemImage: "square.stack.3d.up.fill")
+                Label(model.activeGuest == "ubuntu" ? "Stratovo · Ubuntu Player" : "Stratovo · Windows Player", systemImage: "square.stack.3d.up.fill")
                     .font(.caption.weight(.semibold)).foregroundStyle(accent)
                 Text(L10n.text("Text einfügen")).font(.title2.bold())
-                Text(L10n.text("Vom Mac direkt in Windows")).font(.subheadline).foregroundStyle(.secondary)
+                Text(guestText("Vom Mac direkt in Windows")).font(.subheadline).foregroundStyle(.secondary)
             }
             Spacer(minLength: 0)
         }
@@ -103,7 +104,7 @@ struct WindowsPasteSheet: View {
     private var keyboardSettings: some View {
         VStack(alignment: .leading, spacing: 9) {
             HStack(spacing: 12) {
-                Label(L10n.text("Windows-Tastatur"), systemImage: "keyboard").font(.subheadline.bold())
+                Label(guestText("Windows-Tastatur"), systemImage: "keyboard").font(.subheadline.bold())
                 Spacer(minLength: 0)
                 Picker(L10n.text("Tastaturbelegung in Windows"), selection: $model.windowsTextLayout) {
                     ForEach(WindowsTextLayout.allCases) { layout in Text(layout.title).tag(layout) }

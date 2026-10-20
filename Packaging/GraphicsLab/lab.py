@@ -331,7 +331,37 @@ def graphics_pkg_config_path(root):
                      "/opt/homebrew/lib/pkgconfig", "/opt/homebrew/share/pkgconfig"])
 
 
+def prepare_embedded_player(qemu):
+    import importlib.util
+    path = Path(__file__).with_name("embedded_display.py")
+    spec = importlib.util.spec_from_file_location("stratovo_embedded_display", path)
+    helper = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(helper)
+    helper.patch(qemu)
+
+
+def upgrade_embedded_player(root, sources, env):
+    qemu = root / "Sources/qemu"
+    regular(qemu / "ui/cocoa.m")
+    commit = run(["/usr/bin/git", "rev-parse", "HEAD"], cwd=qemu, env=env, capture=True).strip()
+    if commit != sources["qemu"]["commit"]:
+        raise RuntimeError("QEMU-Quelle passt nicht zur vorbereiteten 3D-Laufzeit.")
+    prepare_embedded_player(qemu)
+    build_env = dict(env, PATH=str(root / "BuildTools/bin") + ":" + str(root / "Runtime/bin") + ":" + env["PATH"])
+    print("Aktualisiere den eingebetteten 3D-Player. Vorhandene ANGLE-/LLVM-Bauten bleiben erhalten.", flush=True)
+    run_logged(["make", "-j4", "install"], root / "Logs/Player-Build.log", cwd=qemu / "build", env=build_env)
+    receipt = json.loads(regular(root / "runtime-ready.json").read_text())
+    receipt["embeddedPlayer"] = 1
+    write_json(root / "runtime-ready.json", receipt)
+
+
 def build(root, sources, config, env):
+    if runtime_ready(root):
+        receipt = json.loads(regular(root / "runtime-ready.json").read_text())
+        if receipt.get("embeddedPlayer") != 1:
+            upgrade_embedded_player(root, sources, env)
+        print("3D-Player bereit. Vorhandene Windows-Installation über Windows starten öffnen.", flush=True)
+        return
     if " " in str(root):
         raise RuntimeError("Die experimentellen QEMU-Buildwerkzeuge benötigen einen Datenpfad ohne Leerzeichen.")
     env["PKG_CONFIG_PATH"] = graphics_pkg_config_path(root)
@@ -400,6 +430,7 @@ def build(root, sources, config, env):
     meson_build(virgl, "build-arm64", ["-Dc_args=-I" + str(angle_inc), "-Dvenus=false", "-Dneptune=true",
                 "-Drender-server-worker=process", "-Dcheck-gl-errors=false", "--pkg-config-path=" + str(prefix / "lib/pkgconfig"), "--prefix=" + str(prefix)])
     qemu = checkout(sources["qemu"], src / "qemu", env)
+    prepare_embedded_player(qemu)
     qb = directory(qemu / "build")
     run([qemu / "configure", "--extra-cflags=-I" + str(angle_inc), "--extra-ldflags=-L" + str(angle_lib),
          "--prefix=" + str(prefix), "--target-list=aarch64-softmmu", "--enable-cocoa", "--enable-hvf",
@@ -423,7 +454,7 @@ def build(root, sources, config, env):
     models = run([prefix / "bin/qemu-system-aarch64", "-device", "help"], env=test_env, capture=True)
     if "virtio-ramfb-gl" not in models:
         raise RuntimeError("Gebautes QEMU enthält den benötigten Grafikmodus nicht.")
-    write_json(root / "runtime-ready.json", {"version": 1, "sources": sources, "backend": "dxmt", "builtAt": time.time()})
+    write_json(root / "runtime-ready.json", {"version": 1, "sources": sources, "backend": "dxmt", "embeddedPlayer": 1, "builtAt": time.time()})
     print("Grafiklaufzeit fertig. In Stratovo öffnet anschließend die vorhandene oder einmalig erstellte Testkopie.", flush=True)
 
 
