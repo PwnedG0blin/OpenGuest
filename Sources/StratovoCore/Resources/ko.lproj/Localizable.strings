@@ -43,7 +43,7 @@
 "Die App übernimmt beim Start automatisch die bevorzugte macOS-Sprache. Du kannst hier eine andere Sprache wählen. Gastsysteme behalten ihre eigene Sprache." = "앱 실행 시 macOS의 선호 언어를 따릅니다. 여기에서 다른 언어를 선택할 수 있습니다. 게스트 시스템의 언어는 유지됩니다.";
 "Downloads und Einrichtung" = "다운로드 및 설정";
 "Eigene Testkopie · VirtIO / Neptune / DXMT" = "별도 테스트 복사본 · VirtIO / Neptune / DXMT";
-"Eine Oberfläche. Zwei Engines.\nEntwickelt für Apple Silicon." = "하나의 인터페이스. 두 개의 엔진.\nApple Silicon용.";
+"Eine Oberfläche. Drei Systeme.\nEntwickelt für Apple Silicon." = "하나의 인터페이스. 세 가지 시스템.\nApple Silicon용.";
 "Einpassen" = "창에 맞춤";
 "Einrichtung" = "설정";
 "Einrichtung nötig" = "설정 필요";

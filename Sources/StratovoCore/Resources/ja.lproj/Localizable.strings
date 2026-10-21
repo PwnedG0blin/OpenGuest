@@ -43,7 +43,7 @@
 "Die App übernimmt beim Start automatisch die bevorzugte macOS-Sprache. Du kannst hier eine andere Sprache wählen. Gastsysteme behalten ihre eigene Sprache." = "起動時は macOS の優先言語に従います。ここで別の言語も選べます。ゲスト OS の言語は変わりません。";
 "Downloads und Einrichtung" = "ダウンロードと設定";
 "Eigene Testkopie · VirtIO / Neptune / DXMT" = "独立したテストコピー · VirtIO / Neptune / DXMT";
-"Eine Oberfläche. Zwei Engines.\nEntwickelt für Apple Silicon." = "1 つの画面。2 つのエンジン。\nApple Silicon 向け。";
+"Eine Oberfläche. Drei Systeme.\nEntwickelt für Apple Silicon." = "1 つの画面。3 つのシステム。\nApple Silicon 向け。";
 "Einpassen" = "ウインドウに合わせる";
 "Einrichtung" = "設定";
 "Einrichtung nötig" = "設定が必要";

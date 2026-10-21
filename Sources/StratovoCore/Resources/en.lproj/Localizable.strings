@@ -192,7 +192,7 @@
 "Eigenes Fenster · frei skalierbar · Vollbild möglich" = "Separate window · resizable · full screen available";
 "Ein Gastprozess läuft noch" = "A guest process is still running";
 "Ein Klick prüft die Version. Installiert wird erst nach deiner Auswahl und Bestätigung, wenn alle Gäste beendet sind. Downloads und Prüfung liegen im gewählten Datenordner. Öffentliche GitHub Releases benötigen keinen API-Schlüssel; Actions-Artefakte sind keine Releases." = "Click to check the version. Installation requires your selection and confirmation, with all guests shut down. Downloads and verification use your chosen data folder. GitHub Actions artifacts are separate from releases.";
-"Eine Oberfläche. Zwei Engines.\nEntwickelt für Apple Silicon." = "One interface. Two engines.\nBuilt for Apple Silicon.";
+"Eine Oberfläche. Drei Systeme.\nEntwickelt für Apple Silicon." = "One interface. Three systems.\nBuilt for Apple Silicon.";
 "Eine vorhandene ISO auf Extern auswählen. Der Pfad wird gespeichert. Geprüft werden Dateiverfügbarkeit und Größe; ARM64-Inhalt und Bootfähigkeit sind damit noch nicht bestätigt. Zum Ändern Windows ausschalten." = "Choose an existing ISO. The path is saved. File availability and size are checked; this does not verify ARM64 content or bootability. Shut down Windows before changing it.";
 "Einfügen" = "Paste";
 "Einfügen abgebrochen. Bereits übertragener Text bleibt im Windows-Feld stehen." = "Paste cancelled. Text already sent remains in the Windows input field.";
