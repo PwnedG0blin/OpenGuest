@@ -1,83 +1,5 @@
-import AppKit
 import SwiftUI
 import StratovoCore
-
-@MainActor
-final class ExchangeController: ObservableObject {
-    @Published private(set) var transferring = false
-    @Published private(set) var status = ""
-    private var transferTask: Task<Void, Never>?
-    func cancelTransfer() { transferTask?.cancel() }
-
-    func openFinder(model: AppModel) {
-        do {
-            guard let storage = model.storage else { return }
-            NSWorkspace.shared.open(try ExchangeFolder.prepare(storage: storage))
-        } catch { status = error.localizedDescription }
-    }
-
-    func openSharingSettings() {
-        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.Sharing-Settings.extension")!)
-    }
-
-    func copy(_ text: String) {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(text, forType: .string)
-        status = L10n.text("Adresse kopiert")
-    }
-
-    private func run(adb: String, port: Int, storage: GuestStorage, arguments: [String]) async throws {
-        try Task.checkCancellation()
-        let result = try await Task.detached(priority: .utility) {
-            try storage.validate()
-            return try CommandCapture.run(CommandSpec(executable: adb, arguments: ["-s", "emulator-\(port)"] + arguments,
-                environment: storage.environment), timeout: 7200)
-        }.value
-        try Task.checkCancellation()
-        guard result.status == 0 else { throw StorageMigration.failure("Dateiübertragung fehlgeschlagen: " + result.output) }
-    }
-
-    func sendAndroid(model: AppModel) {
-        guard !transferring, !model.busy, model.running, model.activeGuest == "android", model.androidBooted,
-              let adb = model.adb, let port = model.androidExchangePort, let storage = model.storage else { return }
-        let panel = NSOpenPanel()
-        panel.title = L10n.text("Datei zu Android senden")
-        panel.canChooseFiles = true; panel.canChooseDirectories = false; panel.allowsMultipleSelection = false
-        do { panel.directoryURL = try ExchangeFolder.prepare(storage: storage) }
-        catch { status = error.localizedDescription; return }
-        guard panel.runModal() == .OK, let file = panel.url else { return }
-        transferring = true; model.setGraphicsLabBusy(true)
-        status = L10n.text("Datei wird zu Android kopiert …")
-        let remote = ExchangeFolder.androidDirectory + "/" + UUID().uuidString
-        transferTask = Task {
-            defer { transferring = false; transferTask = nil; if model.activeGuest == "android" { model.setGraphicsLabBusy(false) } }
-            do {
-                try await run(adb: adb, port: port, storage: storage, arguments: ["shell", "mkdir", "-p", remote])
-                try await run(adb: adb, port: port, storage: storage, arguments: ["push", file.path, remote + "/"])
-                status = L10n.text("Datei kopiert: Android → Downloads → Stratovo-Austausch. Jede Übertragung erhält einen eigenen Unterordner.")
-            } catch { status = error.localizedDescription }
-        }
-    }
-
-    func receiveAndroid(model: AppModel) {
-        guard !transferring, !model.busy, model.running, model.activeGuest == "android", model.androidBooted,
-              let adb = model.adb, let port = model.androidExchangePort, let storage = model.storage else { return }
-        transferring = true; model.setGraphicsLabBusy(true)
-        status = L10n.text("Android-Dateien werden abgeholt …")
-        transferTask = Task {
-            defer { transferring = false; transferTask = nil; if model.activeGuest == "android" { model.setGraphicsLabBusy(false) } }
-            do {
-                let target = try ExchangeFolder.newAndroidImport(storage: storage)
-                try await run(adb: adb, port: port, storage: storage,
-                              arguments: ["shell", "mkdir", "-p", ExchangeFolder.androidDirectory])
-                try await run(adb: adb, port: port, storage: storage,
-                              arguments: ["pull", ExchangeFolder.androidDirectory, target.path])
-                status = L10n.text("Android-Dateien in einen neuen Importordner kopiert. Vorhandene Dateien bleiben erhalten.")
-                NSWorkspace.shared.open(target)
-            } catch { status = error.localizedDescription }
-        }
-    }
-}
 
 @MainActor
 struct ExchangeFolderView: View {
@@ -85,26 +7,46 @@ struct ExchangeFolderView: View {
     @ObservedObject var controller: ExchangeController
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            macSteps
-            sharingSteps
-            windowsSteps
-            ubuntuSteps
-            androidSteps
-            if controller.transferring { ProgressView() }
-            Text(controller.status).textSelection(.enabled)
-        }
-    }
-    private var macSteps: some View {
-        GroupBox(L10n.text("Mac · Austauschordner öffnen")) {
-            VStack(alignment: .leading, spacing: 12) {
-                step(1, "Links in Stratovo Dateiaustausch wählen. Alle folgenden Schritte stehen hier dauerhaft zum Nachlesen.")
-                step(2, "Austausch im Finder öffnen anklicken. Der Ordner wird bei Bedarf auf deinem gewählten Datenlaufwerk angelegt.")
+            WorkspaceCard {
+                Label(L10n.text("Dateiaustausch"), systemImage: "folder.badge.person.crop").font(.headline)
                 Text(model.storage?.url.appendingPathComponent("Austausch").path ?? L10n.text("Zuerst einen Datenordner wählen"))
-                    .font(.body.monospaced()).textSelection(.enabled)
-                Button(L10n.text("Austausch im Finder öffnen")) { controller.openFinder(model: model) }
-                    .buttonStyle(.borderedProminent).disabled(!model.storageReady)
-                step(3, "Dateien hineinlegen oder herauskopieren. Windows und Ubuntu greifen nach der Freigabe direkt darauf zu. Android verwendet die Senden-/Abholen-Schritte weiter unten.")
-            }.padding(14).frame(maxWidth: .infinity, alignment: .leading)
+                    .font(.callout.monospaced()).textSelection(.enabled)
+                HStack {
+                    Button(L10n.text("Austausch im Finder öffnen")) { controller.openFinder(model: model) }
+                        .buttonStyle(.borderedProminent).disabled(!model.storageReady)
+                    ContextHelpButton("Freigabe einrichten") { sharingSteps }
+                }
+                Text(L10n.text("Freigaben können im lokalen Netzwerk erreichbar sein. Die App aktiviert keine Freigabe automatisch und speichert kein Mac-Passwort."))
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 260), alignment: .top)], spacing: 18) {
+                WorkspaceCard {
+                    Label(L10n.text("Windows Arm"), systemImage: "desktopcomputer").font(.headline)
+                    Text(ExchangeFolder.windowsAddress).font(.callout.monospaced()).textSelection(.enabled)
+                    Button(L10n.text("Ordner in Windows öffnen"), action: model.openWindowsExchangeFolder)
+                        .disabled(!model.running || model.activeGuest != "windows" || !model.settings.windowsNetwork || model.windowsPasteBusy)
+                    Button(L10n.text("Windows-Adresse kopieren")) { controller.copy(ExchangeFolder.windowsAddress) }
+                    ContextHelpButton("Anleitung für Windows") { windowsSteps }
+                }
+                WorkspaceCard {
+                    Label(L10n.text("Ubuntu ARM"), systemImage: "terminal").font(.headline)
+                    Text(ExchangeFolder.smbAddress).font(.callout.monospaced()).textSelection(.enabled)
+                    Button(L10n.text("Ubuntu-Adresse kopieren")) { controller.copy(ExchangeFolder.smbAddress) }
+                    ContextHelpButton("Anleitung für Ubuntu") { ubuntuSteps }
+                }
+            }
+            WorkspaceCard {
+                Label(L10n.text("Android"), systemImage: "apps.iphone").font(.headline)
+                HStack {
+                    Button(L10n.text("Datei zu Android senden")) { controller.sendAndroid(model: model) }
+                        .disabled(controller.transferring || !model.canInstallAPK)
+                    Button(L10n.text("Android-Dateien abholen")) { controller.receiveAndroid(model: model) }
+                        .disabled(controller.transferring || !model.canInstallAPK)
+                }
+                ContextHelpButton("Anleitung für Android") { androidSteps }
+            }
+            if controller.transferring { ProgressView().controlSize(.small) }
+            if !controller.status.isEmpty { Text(controller.status).font(.callout).textSelection(.enabled) }
         }
     }
     private var sharingSteps: some View {

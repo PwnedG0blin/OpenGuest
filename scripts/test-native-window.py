@@ -84,6 +84,18 @@ int main(int argc,char **argv) { @autoreleasepool {
     assert(!stratovo_boot_layer.hidden); /* Cover survives until the first completed frame. */
     [view stratovoBootFinished];assert(stratovo_boot_layer.hidden);
     [view stratovoBootLogo:logo];assert(stratovo_boot_layer.hidden); /* Never cover a GPU desktop. */
+    /* A second firmware boot in the same process must show the cover again. */
+    view.scanout=QemuCocoaViewScanoutGL;
+    [view stratovoBootGPUFinished];
+    uint64_t prior=stratovo_boot_generation;
+    [view stratovoBootDetected:logo];
+    assert(!stratovo_boot_layer.hidden && stratovo_boot_generation > prior);
+    [view stratovoBootFinished]; /* Escape/timeout dismisses this boot. */
+    [view stratovoBootDetected:logo];assert(stratovo_boot_layer.hidden);
+    [view stratovoLayout];assert(stratovo_boot_layer.hidden);
+    [view stratovoBootGPUFinished];
+    [view stratovoBootDetected:logo];assert(!stratovo_boot_layer.hidden);
+    [view stratovoBootGPUFinished];assert(stratovo_boot_layer.hidden);
     [window close];
     return 0;
 } }
@@ -93,7 +105,11 @@ with tempfile.TemporaryDirectory(prefix='stratovo-native-test-') as tmp:
     points=[{'x':x,'y':y,'red':200 if x<32 else 20,'green':80,'blue':40}
             for y in range(0,40,5) for x in range(0,64,8)]
     fingerprint.write_text(json.dumps({'width':64,'height':40,'samples':points}))
-    source.write_text(head+(root/'native_geometry.h.inc').read_text()+(root/'native_view.m.inc').read_text()+view+(root/'native_methods.m.inc').read_text()+exercise)
+    import importlib.util
+    spec=importlib.util.spec_from_file_location('restart_boot',root/'restart_boot.py')
+    restart=importlib.util.module_from_spec(spec);spec.loader.exec_module(restart)
+    native_source=head+(root/'native_geometry.h.inc').read_text()+(root/'native_view.m.inc').read_text()+view+(root/'native_methods.m.inc').read_text()
+    source.write_text(restart.presentation(native_source)+exercise)
     subprocess.run(['/usr/bin/xcrun','--sdk','macosx','clang','-x','objective-c','-fblocks',
         '-Werror=implicit-function-declaration','-Werror=incompatible-pointer-types',
         '-mmacosx-version-min=14.0',str(source),'-framework','Cocoa','-framework','QuartzCore','-framework','Metal','-o',str(binary)],check=True)

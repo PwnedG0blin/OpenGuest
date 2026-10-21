@@ -21,6 +21,17 @@ import time
 import urllib.request
 import zipfile
 
+def runtime_policy():
+    value = json.loads(Path(__file__).with_name('runtime-policy.json').read_text())
+    keys = ('embeddedPlayer', 'embeddedRevision', 'runtimeDependencies')
+    if value.get('version') != 1 or any(type(value.get(key)) is not int or value[key] < 1 for key in keys):
+        raise RuntimeError('Grafiklaufzeit-Beschreibung ist ungültig. App erneut installieren.')
+    return value
+
+
+RUNTIME_POLICY = runtime_policy()
+
+
 def prepare_runtime_dependencies(root):
     import importlib.util
     spec = importlib.util.spec_from_file_location('stratovo_runtime_dependencies', Path(__file__).with_name('runtime_dependencies.py'))
@@ -353,7 +364,7 @@ def upgrade_embedded_player(root, sources, env):
     commit = run(["/usr/bin/git", "rev-parse", "HEAD"], cwd=qemu, env=env, capture=True).strip()
     if commit != sources["qemu"]["commit"]:
         raise RuntimeError("QEMU-Quelle passt nicht zur vorbereiteten 3D-Laufzeit.")
-    backup = directory(root / "PlayerBackup-before-v6")
+    backup = directory(root / ("PlayerBackup-before-v" + str(RUNTIME_POLICY["embeddedRevision"])))
     binary = regular(root / "Runtime/bin/qemu-system-aarch64")
     if not (backup / binary.name).exists():
         shutil.copy2(binary, backup / binary.name)
@@ -367,8 +378,8 @@ def upgrade_embedded_player(root, sources, env):
         shutil.copy2(backup / binary.name, binary)
         raise
     receipt = json.loads(regular(root / "runtime-ready.json").read_text())
-    receipt["embeddedPlayer"] = 1
-    receipt["embeddedRevision"] = 6
+    receipt["embeddedPlayer"] = RUNTIME_POLICY["embeddedPlayer"]
+    receipt["embeddedRevision"] = RUNTIME_POLICY["embeddedRevision"]
     write_json(root / "runtime-ready.json", receipt)
 
 
@@ -376,10 +387,10 @@ def build(root, sources, config, env):
     if runtime_ready(root):
         prepare_runtime_dependencies(root)
         receipt = json.loads(regular(root / "runtime-ready.json").read_text())
-        if receipt.get("embeddedPlayer") != 1 or receipt.get("embeddedRevision") != 6:
+        if receipt.get("embeddedPlayer") != RUNTIME_POLICY["embeddedPlayer"] or receipt.get("embeddedRevision") != RUNTIME_POLICY["embeddedRevision"]:
             upgrade_embedded_player(root, sources, env)
         receipt = json.loads(regular(root / "runtime-ready.json").read_text())
-        receipt["runtimeDependencies"] = 1
+        receipt["runtimeDependencies"] = RUNTIME_POLICY["runtimeDependencies"]
         write_json(root / "runtime-ready.json", receipt)
         print("3D-Player bereit. Vorhandene Windows-Installation über Windows starten öffnen.", flush=True)
         return
@@ -476,7 +487,7 @@ def build(root, sources, config, env):
     if "virtio-ramfb-gl" not in models:
         raise RuntimeError("Gebautes QEMU enthält den benötigten Grafikmodus nicht.")
     prepare_runtime_dependencies(root)
-    write_json(root / "runtime-ready.json", {"version": 1, "sources": sources, "backend": "dxmt", "embeddedPlayer": 1, "embeddedRevision": 6, "runtimeDependencies": 1, "builtAt": time.time()})
+    write_json(root / "runtime-ready.json", {"version": 1, "sources": sources, "backend": "dxmt", "embeddedPlayer": RUNTIME_POLICY["embeddedPlayer"], "embeddedRevision": RUNTIME_POLICY["embeddedRevision"], "runtimeDependencies": RUNTIME_POLICY["runtimeDependencies"], "builtAt": time.time()})
     print("Grafiklaufzeit fertig. In Stratovo öffnet anschließend die vorhandene oder einmalig erstellte Testkopie.", flush=True)
 
 

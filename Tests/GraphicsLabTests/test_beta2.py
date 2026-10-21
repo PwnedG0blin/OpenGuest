@@ -81,4 +81,5 @@ class Beta2Tests(unittest.TestCase):
             self.assertEqual(commands,[['make','-j4','install']])
             self.assertEqual(json.loads((root/'runtime-ready.json').read_text())['embeddedPlayer'],1)
             patch.assert_called_once()
-            self.assertEqual((root/'PlayerBackup-before-v6/qemu-system-aarch64').read_bytes(),b'existing engine')
+            backup=root/('PlayerBackup-before-v'+str(lab.RUNTIME_POLICY['embeddedRevision']))
+            self.assertEqual((backup/'qemu-system-aarch64').read_bytes(),b'existing engine')

@@ -1,14 +1,14 @@
 # Stratovo · Android, Windows & Ubuntu for Mac
 
-**1.0 Beta 6**
+**1.0 Beta 7 · Midnight**
 
-Public Apple Silicon beta with a guided dashboard, a user-selected data drive, experimental Windows 3D and verified GitHub app updates. See the [Beta 6 release guide](docs/RELEASE_1.0_BETA6.md) for automatic graphics-library repair, virtual monitor timing and the improved native startup view. Existing guest data locations are preserved.
+Public Apple Silicon beta with the illustrated Midnight dashboard, persistent launch controls for all three systems and optional native Liquid Glass on macOS 26+. See the [Beta 7 release guide](docs/RELEASE_1.0_BETA7.md). Existing guest data locations are preserved. This remains a prerelease.
 
 ## Android, Windows and Ubuntu for Mac
 
 **Free, open-source macOS app for Android emulation, Windows ARM64 and Ubuntu ARM virtual machines on Apple silicon.**
 
-Developed by **PwnedG0blin** · macOS **14+** · **MIT license** · **1.0 Beta 6**
+Developed by **PwnedG0blin** · macOS **14+** · **MIT license** · **1.0 Beta 7**
 
 [Deutsch: vollständige Anleitung](README.de.md) · [Setup](LIES_MICH_ZUERST.md) · [Mac test builds](https://github.com/PwnedG0blin/OpenGuest/actions/workflows/macos.yml) · [Report an issue](https://github.com/PwnedG0blin/OpenGuest/issues)
 

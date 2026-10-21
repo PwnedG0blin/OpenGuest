@@ -23,9 +23,18 @@ public enum L10n {
         resolve(preference: UserDefaults.standard.string(forKey: preferenceKey) ?? "system",
                 preferredLanguages: Locale.preferredLanguages)
     }
+    static func resourceURL(in application: Bundle) -> URL? {
+        if application.bundleURL.pathExtension.lowercased() == "app" {
+            // SwiftPM's generated accessor also embeds the original build path.
+            // An installed app must resolve its resources entirely within itself.
+            guard let root = application.resourceURL else { return nil }
+            return Bundle(url: root.appendingPathComponent("Stratovo_StratovoCore.bundle"))?.resourceURL
+        }
+        return Bundle.module.resourceURL
+    }
     private static let bundles: [String: Bundle] = Dictionary(uniqueKeysWithValues: languages.compactMap { language in
         // SwiftPM normalizes localization folder names (zh-Hans → zh-hans).
-        guard let resources = Bundle.module.resourceURL else { return nil }
+        guard let resources = resourceURL(in: .main) else { return nil }
         let folders = (try? FileManager.default.contentsOfDirectory(at: resources, includingPropertiesForKeys: nil)) ?? []
         guard let folder = folders.first(where: { $0.lastPathComponent.lowercased() == language.code.lowercased() + ".lproj" }),
               let bundle = Bundle(url: folder) else { return nil }

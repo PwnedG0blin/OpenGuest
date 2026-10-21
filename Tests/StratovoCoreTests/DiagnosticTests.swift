@@ -13,11 +13,12 @@ final class DiagnosticTests: XCTestCase {
         let storage = try fixture(); defer { try? FileManager.default.removeItem(at: storage.url) }
         try Data("Android emulator version 37\nforcing software rendering".utf8).write(to: storage.logs.appendingPathComponent("session-old.log"))
         try Data("QEMU boot diagnostic".utf8).write(to: storage.logs.appendingPathComponent("windows-session-new.log"))
+        try Data("Ubuntu boot diagnostic".utf8).write(to: storage.logs.appendingPathComponent("ubuntu-session-new.log"))
         try DiagnosticReport.record("Windows: Das Passwort hat 7 Zeichen.", storage: storage)
         try Data("NEVER_INCLUDE_SETTINGS_OR_PASSWORDS".utf8).write(to: storage.url.appendingPathComponent("settings.json"))
         let url = try DiagnosticReport.export(storage: storage, snapshot: "Host snapshot", systemCheck: "HVF vorhanden", recentEvents: "Before VM launch")
         let result = try String(contentsOf: url, encoding: .utf8)
-        for text in ["Android emulator version", "QEMU boot diagnostic", "7 Zeichen", "HVF vorhanden", "Before VM launch"] {
+        for text in ["Android emulator version", "QEMU boot diagnostic", "Ubuntu boot diagnostic", "Ubuntu · letzte Sitzungen", "7 Zeichen", "HVF vorhanden", "Before VM launch"] {
             XCTAssertTrue(result.contains(text), text)
         }
         XCTAssertFalse(result.contains("NEVER_INCLUDE"))

@@ -52,7 +52,7 @@ public enum DiagnosticReport {
         guard destination.resolvingSymlinksInPath().path.hasPrefix(root) else {
             throw StorageMigration.failure("Diagnoseziel liegt außerhalb des gewählten Datenordners.")
         }
-        var report = "Stratovo · Gemeinsames Diagnoseprotokoll Android + Windows\n"
+        var report = "Stratovo · Gemeinsames Diagnoseprotokoll Windows + Android + Ubuntu\n"
         report += "Erstellt: \(ISO8601DateFormatter().string(from: Date()))\n"
         report += "Keine Einstellungen, Antwortdateien, Schlüsselbunddaten oder Gastdateisysteme enthalten. Protokolle sind gekürzt und bekannte sensible Angaben ausgeblendet.\n"
         func section(_ title: String, _ content: String) {
@@ -64,11 +64,12 @@ public enum DiagnosticReport {
         let files = ((try? fm.contentsOfDirectory(at: storage.logs, includingPropertiesForKeys: [.contentModificationDateKey])) ?? [])
             .filter { regularFile($0, storage: storage) && $0.pathExtension == "log" }
             .sorted { modification($0) > modification($1) }
-        var android: [URL] = [], windows: [URL] = [], legacy: [URL] = [], setup: [URL] = []
+        var android: [URL] = [], windows: [URL] = [], ubuntu: [URL] = [], legacy: [URL] = [], setup: [URL] = []
         for file in files {
             let name = file.lastPathComponent
             if name.hasPrefix("android-session-") { android.append(file) }
             else if name.hasPrefix("windows-session-") { windows.append(file) }
+            else if name.hasPrefix("ubuntu-session-") { ubuntu.append(file) }
             else if name.hasPrefix("session-") {
                 let head = (try? readBounded(file, limit: 8192)) ?? ""
                 if head.contains("Android emulator version") { android.append(file) }
@@ -87,6 +88,7 @@ public enum DiagnosticReport {
         }
         logs("Android · letzte Sitzungen", android)
         logs("Windows · letzte Sitzungen", windows)
+        logs("Ubuntu · letzte Sitzungen", ubuntu)
         logs("Ältere Sitzungen ohne eindeutige Zuordnung", legacy)
         logs("Downloads und Einrichtung", setup)
         for (title, file) in [

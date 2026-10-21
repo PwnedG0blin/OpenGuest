@@ -1592,7 +1592,7 @@ final class AppModel: ObservableObject {
 
     func openSetupScript(_ name: String) {
         guard storageReady else { showStorageSetup = true; return }
-        guard ["Android_einrichten.command", "Android_Streaming_einrichten.command", "Windows_Treiber_einrichten.command", "Aufraeumen.command"].contains(name) else { return }
+        guard ["Android_einrichten.command", "Android_Streaming_einrichten.command", "Windows_Treiber_einrichten.command"].contains(name) else { return }
         let bundled = Bundle.main.resourceURL?.appendingPathComponent(name)
         let development = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
             .deletingLastPathComponent().appendingPathComponent(name)
@@ -1601,7 +1601,13 @@ final class AppModel: ObservableObject {
             return
         }
         NSWorkspace.shared.open([script], withApplicationAt: URL(fileURLWithPath: "/System/Applications/Utilities/Terminal.app"),
-                                configuration: NSWorkspace.OpenConfiguration())
+                                configuration: NSWorkspace.OpenConfiguration()) { [weak self] _, error in
+            guard let error else { return }
+            let detail = error.localizedDescription
+            Task { @MainActor in
+                self?.errorMessage = L10n.message("Skript konnte nicht geöffnet werden: \(detail)")
+            }
+        }
     }
 
     func chooseStorageFolder() {
