@@ -3,6 +3,7 @@ import StratovoCore
 
 @MainActor
 struct SetupDownloadsView: View {
+    @State private var showCleanupConfirmation = false
     @ObservedObject var model: AppModel
     @ObservedObject var installer: SetupInstaller
     @State private var selection: Set<SetupComponent> = []
@@ -14,8 +15,10 @@ struct SetupDownloadsView: View {
             Label(L10n.text("Downloads und Einrichtung"), systemImage: "arrow.down.circle.fill").font(.title2.bold())
             Text(L10n.message("Ziel: \(model.storage?.root ?? "Zuerst einen Datenordner wählen")"))
                 .font(.body.monospaced()).textSelection(.enabled)
-            Text(L10n.text("Downloads, Entpackdateien und Gastsysteme bleiben auf diesem Datenträger. Vorhandene Komponenten werden wiederverwendet. Ohne den Datenträger startet kein Ersatzdownload intern."))
-                .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            ContextHelpButton("Details und Anleitung") {
+                Text(L10n.text("Downloads, Entpackdateien und Gastsysteme bleiben auf diesem Datenträger. Vorhandene Komponenten werden wiederverwendet. Ohne den Datenträger startet kein Ersatzdownload intern."))
+                    .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            }
             ForEach(SetupComponent.allCases) { component in
                 Toggle(isOn: Binding(get: { selection.contains(component) }, set: { enabled in
                     if enabled { selection.insert(component) } else { selection.remove(component) }
@@ -40,20 +43,26 @@ struct SetupDownloadsView: View {
                 Text(L10n.text("Dev einschließen")).tag(2)
                 Text(L10n.text("Canary · alle Vorschaukanäle")).tag(3)
             }.disabled(!model.canManageAndroid)
-            Text(L10n.text("Android 17 wird als eigenes Profil angelegt. SDK-Kanäle bestimmen, welche Abbildrevisionen Google anbietet; sie sind keine Anmeldung im Pixel-Betaprogramm. Apps und Google-Konto werden im neuen Profil separat eingerichtet."))
-                .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            ContextHelpButton("Google-Konto & Cloud-Spielstände") {
+                Text(L10n.text("Android 17 wird als eigenes Profil angelegt. SDK-Kanäle bestimmen, welche Abbildrevisionen Google anbietet; sie sind keine Anmeldung im Pixel-Betaprogramm. Apps und Google-Konto werden im neuen Profil separat eingerichtet."))
+                    .font(.body).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            }
             Toggle(L10n.text("Beim Öffnen täglich nach SDK-Updates suchen"), isOn: $model.androidCheckUpdatesOnOpen)
                 .disabled(!model.canManageAndroid)
             Toggle(L10n.text("Gewähltes Systemabbild vor jedem Android-Start aktualisieren"), isOn: $model.androidAutoUpdateBeforeStart)
                 .disabled(!model.canManageAndroid)
-            Text(L10n.text("Optional: benötigt Internet und kann den Start verzögern. Aktualisiert nur das gewählte Android-Abbild im SDK-Kanal; kein automatischer Wechsel von Android 16 auf 17."))
-                .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            ContextHelpButton("Android-Updates") {
+                Text(L10n.text("Optional: benötigt Internet und kann den Start verzögern. Aktualisiert nur das gewählte Android-Abbild im SDK-Kanal; kein automatischer Wechsel von Android 16 auf 17."))
+                    .font(.body).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            }
             HStack {
                 Button(L10n.text("Android-Updates prüfen")) { Task { await model.manageAndroidUpdates(install: false) } }
                 Button(L10n.text("Gewähltes Android-Abbild aktualisieren")) { Task { await model.manageAndroidUpdates(install: true) } }
             }.disabled(!model.canManageAndroid || model.selectedAndroidSystem == nil)
-            Text(L10n.text("Updates werden bei ausgeschaltetem Android auf den gewählten Datenträger geladen. Die Prüfung allein installiert nichts. Ein Abbildupdate ist kein garantierter Versionssprung; Android 16 und 17 bleiben getrennte Profile."))
-                .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            ContextHelpButton("Android-Updates") {
+                Text(L10n.text("Updates werden bei ausgeschaltetem Android auf den gewählten Datenträger geladen. Die Prüfung allein installiert nichts. Ein Abbildupdate ist kein garantierter Versionssprung; Android 16 und 17 bleiben getrennte Profile."))
+                    .font(.body).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            }
             DisclosureGroup(L10n.text("Alte Android-Profile und Daten bereinigen")) {
                 VStack(alignment: .leading, spacing: 10) {
                     Text(L10n.text("Zuerst das funktionierende Android 16 auswählen und alle Emulatoren beenden. Die Liste enthält andere lokale Profile samt Apps/Konten/Spielständen, andere Systemabbilder und erkannte alte Android-Sicherungen. Die Entfernung ist endgültig."))
@@ -66,7 +75,7 @@ struct SetupDownloadsView: View {
                             Text(path).font(.caption.monospaced()).textSelection(.enabled)
                         }
                         Button(L10n.text("Aufgelistete alte Android-Daten endgültig löschen"), role: .destructive) {
-                            Task { await model.cleanupOldAndroid() }
+                            showCleanupConfirmation = true
                         }.disabled(!model.canManageAndroid || plan.paths.isEmpty)
                     }
                 }.padding(.top, 8)
@@ -76,8 +85,10 @@ struct SetupDownloadsView: View {
                 Link(L10n.text("Offizielle Microsoft-Seite · ARM64 wählen ↗"), destination: URL(string: "https://www.microsoft.com/de-de/software-download/windows11arm64")!)
                 TextField(L10n.text("Direkten Microsoft-Downloadlink der ARM64-ISO einfügen"), text: $microsoftLink)
                     .textFieldStyle(.roundedBorder).disabled(model.busy)
-                Text(L10n.text("Auf der Microsoft-Seite die Sprache wählen und den erzeugten Downloadlink kopieren. Stratovo lädt ihn direkt auf den eingestellten Datenträger. Alternativ eine vorhandene ISO im Windows-Bereich auswählen."))
-                    .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                ContextHelpButton("Details und Anleitung") {
+                    Text(L10n.text("Auf der Microsoft-Seite die Sprache wählen und den erzeugten Downloadlink kopieren. Stratovo lädt ihn direkt auf den eingestellten Datenträger. Alternativ eine vorhandene ISO im Windows-Bereich auswählen."))
+                        .font(.body).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                }
             }
             Button {
                 Task { await model.installComponents(selection, microsoftLink: microsoftLink) }
@@ -90,11 +101,11 @@ struct SetupDownloadsView: View {
             if installer.running { ProgressView().controlSize(.small) }
             Text(installer.status).font(.body.weight(.medium)).textSelection(.enabled)
             if !installer.output.isEmpty {
-                ScrollView {
-                    Text(installer.output).font(.system(size: 13, design: .monospaced))
-                        .textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading).padding(12)
-                }.frame(height: 240)
-                    .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
+                if installer.licensePrompt {
+                    installationLog
+                } else {
+                    DisclosureGroup(L10n.text("Einrichtungsprotokoll")) { installationLog }
+                }
             }
             if installer.licensePrompt {
                 Text(L10n.text("Die Android-Werkzeuge warten auf deine Antwort zur oben angezeigten Lizenz.")).font(.headline)
@@ -106,8 +117,10 @@ struct SetupDownloadsView: View {
             Divider()
             Text(L10n.message("Windows-Engine: \(model.qemu == nil ? "QEMU fehlt" : "QEMU vorhanden") · \(model.swtpm == nil ? "swtpm fehlt" : "swtpm vorhanden")"))
                 .font(.headline)
-            Text(L10n.text("QEMU und swtpm werden aus deiner vorhandenen Mac-Installation genutzt. Sie werden hier noch nicht automatisch installiert. UEFI-Dateien und eigene Engines kannst du unten auswählen."))
-                .font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            ContextHelpButton("Lokale Engines") {
+                Text(L10n.text("QEMU und swtpm werden aus deiner vorhandenen Mac-Installation genutzt. Sie werden hier noch nicht automatisch installiert. UEFI-Dateien und eigene Engines kannst du unten auswählen."))
+                    .font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            }
             HStack {
                 Link(L10n.text("QEMU für macOS ↗"), destination: URL(string: "https://www.qemu.org/download/#macos")!)
                 Link("swtpm ↗", destination: URL(string: "https://github.com/stefanberger/swtpm")!)
@@ -115,6 +128,22 @@ struct SetupDownloadsView: View {
         }
         .padding(20).frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 16))
+        .confirmationDialog(L10n.text("Alte Android-Daten endgültig löschen?"), isPresented: $showCleanupConfirmation,
+                            titleVisibility: .visible) {
+            Button(L10n.text("Endgültig löschen"), role: .destructive) { Task { await model.cleanupOldAndroid() } }
+                .disabled(!model.canManageAndroid || model.androidCleanupPlan?.keeping != model.settings.selectedAVD)
+            Button(L10n.text("Abbrechen"), role: .cancel) { }
+        } message: {
+            Text(L10n.text("Nur die zuvor aufgelisteten Profile, Systemabbilder und Sicherungen werden entfernt. Dies lässt sich nicht über den Papierkorb rückgängig machen. Das ausgewählte Android-16-Profil bleibt erhalten."))
+        }
+    }
+
+    private var installationLog: some View {
+                ScrollView {
+                    Text(installer.output).font(.system(size: 13, design: .monospaced))
+                        .textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading).padding(12)
+                }.frame(height: 240)
+                    .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
     }
 
     private func detail(_ item: SetupComponent) -> String {

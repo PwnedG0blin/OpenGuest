@@ -65,18 +65,41 @@ def bridge_cocoa(base, legacy_v2=False):
     return source
 
 
-def repaired_cocoa(base, legacy_v2=False, legacy_v3=False, legacy_v4=False, legacy_v5=False, legacy_v6=False):
+def repaired_cocoa(base, legacy_v2=False, legacy_v3=False, legacy_v4=False, legacy_v5=False, legacy_v6=False, legacy_v7=False, legacy_v9=False):
     source = bridge_cocoa(base, legacy_v2=legacy_v2)
     if legacy_v2 or legacy_v3: return source
     import importlib.util
     spec = importlib.util.spec_from_file_location('stratovo_native_display', HERE/'native_display.py')
     native = importlib.util.module_from_spec(spec);spec.loader.exec_module(native)
-    return native.patch(source, legacy_v4=legacy_v4, legacy_v5=legacy_v5, legacy_v6=legacy_v6)
+    source = native.patch(source, legacy_v4=legacy_v4, legacy_v5=legacy_v5, legacy_v6=legacy_v6)
+    if legacy_v4 or legacy_v5 or legacy_v6 or legacy_v7: return source
+    spec = importlib.util.spec_from_file_location("stratovo_runtime_fixes", HERE/"runtime_fixes.py")
+    fixes = importlib.util.module_from_spec(spec);spec.loader.exec_module(fixes)
+    source = fixes.cocoa(source)
+    if legacy_v9: return source
+    spec = importlib.util.spec_from_file_location("stratovo_restart_boot", HERE/"restart_boot.py")
+    restart = importlib.util.module_from_spec(spec);spec.loader.exec_module(restart)
+    return restart.patch(source)
 
 
 def repaired_vnc(base):
     anchor = 'void vnc_display_init(const char *id, Error **errp)\n{'
     return replace_once(base, anchor, (HERE/'vnc_frame.c.inc').read_text()+'\n'+anchor)
+
+
+def repaired_hvf(base):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location('stratovo_runtime_fixes', HERE/'runtime_fixes.py')
+    fixes = importlib.util.module_from_spec(spec);spec.loader.exec_module(fixes)
+    return fixes.hvf(base)
+
+
+def repaired_meson(base):
+    # The scanout snapshot uses MTLTextureDescriptor directly. Cocoa's
+    # dependencies must carry Metal even when ParavirtualizedGraphics is off.
+    return replace_once(base,
+        "modules: ['Cocoa', 'CoreVideo', 'OpenGL', 'QuartzCore'],",
+        "modules: ['Cocoa', 'CoreVideo', 'OpenGL', 'QuartzCore', 'Metal'],")
 
 
 def plan(qemu):
@@ -87,7 +110,7 @@ def plan(qemu):
     if commit != PIN:
         raise RuntimeError('Die QEMU-Quelle hat eine andere Version; es wurde nichts geändert.')
     updates = []
-    for relative, transform in [('ui/cocoa.m', repaired_cocoa), ('ui/vnc.c', repaired_vnc)]:
+    for relative, transform in [('ui/cocoa.m', repaired_cocoa), ('ui/vnc.c', repaired_vnc), ('target/arm/hvf/hvf.c', repaired_hvf), ('meson.build', repaired_meson)]:
         path = qemu/relative
         if path.is_symlink() or not path.is_file():
             raise RuntimeError('Anzeigequelle fehlt oder ist verknüpft: '+str(path))
@@ -96,7 +119,7 @@ def plan(qemu):
         actual = path.read_text()
         allowed = [base, desired]
         if relative == 'ui/cocoa.m':
-            allowed.extend([v1_source(base), repaired_cocoa(base, legacy_v2=True), repaired_cocoa(base, legacy_v3=True), repaired_cocoa(base, legacy_v4=True), repaired_cocoa(base, legacy_v5=True), repaired_cocoa(base, legacy_v6=True)])
+            allowed.extend([v1_source(base), repaired_cocoa(base, legacy_v2=True), repaired_cocoa(base, legacy_v3=True), repaired_cocoa(base, legacy_v4=True), repaired_cocoa(base, legacy_v5=True), repaired_cocoa(base, legacy_v6=True), repaired_cocoa(base, legacy_v7=True), repaired_cocoa(base, legacy_v9=True)])
         if actual not in allowed:
             raise RuntimeError('Andere Änderungen in '+relative+'; nichts wurde überschrieben.')
         if actual != desired:

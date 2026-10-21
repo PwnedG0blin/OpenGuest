@@ -12,7 +12,19 @@ struct GitHubUpdatesView: View {
     @AppStorage("Pixelkoje.GitHubUpdates.automatic") private var automaticChecks = false
     @AppStorage("Pixelkoje.GitHubUpdates.prereleases") private var includePrereleases = true
 
+    private var privateBuild: Bool {
+        Bundle.main.object(forInfoDictionaryKey: "StratovoBuildFlavor") as? String == "private"
+    }
+
     var body: some View {
+        if privateBuild {
+            PrivateBetaUpdatesView(model: model)
+        } else {
+            publicUpdates
+        }
+    }
+
+    private var publicUpdates: some View {
         VStack(alignment: .leading, spacing: 12) {
             Label(L10n.text("Stratovo-Updates über GitHub"), systemImage: "arrow.triangle.2.circlepath")
                 .font(.title2.bold())

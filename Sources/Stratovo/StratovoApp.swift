@@ -23,7 +23,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             if alert.runModal() == .alertFirstButtonReturn { model?.shutdownGuest() }
             return .terminateCancel
         }
-        if model?.busy == true { return .terminateCancel }
+        if model?.busy == true {
+            let alert = NSAlert()
+            alert.messageText = L10n.text("Aktion läuft noch")
+            alert.informativeText = L10n.text("Warte, bis die laufende Einrichtung oder Dateiaktion abgeschlossen ist. Danach kannst du Stratovo schließen.")
+            alert.addButton(withTitle: L10n.text("Zurück"))
+            alert.runModal()
+            return .terminateCancel
+        }
         return .terminateNow
     }
 }
@@ -45,7 +52,7 @@ struct StratovoApp: App {
                     await model.open()
                 }
         }
-        .defaultSize(width: 1060, height: 800)
+        .defaultSize(width: 1240, height: 850)
         .commands {
             CommandGroup(replacing: .newItem) { }
             CommandGroup(replacing: .help) {

@@ -1,4 +1,4 @@
-# Stratovo 1.0 Beta 6 einrichten
+# Stratovo 1.0 Beta 7 einrichten
 
 Entwickelt von **PwnedG0blin** · macOS 14+ · Apple Silicon.
 

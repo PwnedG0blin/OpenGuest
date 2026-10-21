@@ -38,4 +38,9 @@ The display source fragments under `Packaging/GraphicsLab` (`*_frame.*.inc`, `em
 
 Ubuntu Desktop ARM64 is downloaded separately from Canonical. Ubuntu and its packages retain their upstream licenses: https://ubuntu.com/legal/intellectual-property-policy
 
+The Midnight system-card illustrations are generated artwork created for Stratovo,
+not bundled operating-system wallpapers. The small system identification marks are
+drawn in code. Windows, Android and Ubuntu names and marks identify the respective
+guest systems; Stratovo is not affiliated with or endorsed by their owners.
+
 Native window geometry and boot-overlay adapters in Packaging/GraphicsLab are GPL-2.0-or-later. QEMU and firmware attribution remains in the distributed notices and source. Cosmetic overlays do not change the firmware binaries.

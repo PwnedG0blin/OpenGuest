@@ -19,8 +19,10 @@ struct AndroidFrameRateControls: View {
                     Button("\(value) FPS") { model.androidTargetFPS = value }.buttonStyle(.bordered)
                 }
             }
-            Text(L10n.text("Die Bildrate richtet sich nach dem Bildinhalt: ruhige Szenen benötigen weniger Bilder, Bewegung bis zur gewählten Obergrenze. Dies ist ein Limit, keine erzwungene oder garantierte Spiel-Bildrate."))
-                .font(.system(size: 13)).fixedSize(horizontal: false, vertical: true)
+            ContextHelpButton("Bildwiederholrate") {
+                Text(L10n.text("Die Bildrate richtet sich nach dem Bildinhalt: ruhige Szenen benötigen weniger Bilder, Bewegung bis zur gewählten Obergrenze. Dies ist ein Limit, keine erzwungene oder garantierte Spiel-Bildrate."))
+                    .font(.system(size: 13)).fixedSize(horizontal: false, vertical: true)
+            }
             if model.running && model.activeGuest == "android" {
                 Button(L10n.text("Limit jetzt übernehmen")) { Task { await model.reconnectAndroidDisplay() } }
                     .buttonStyle(.borderedProminent).disabled(!model.canReconnectAndroidDisplay)

@@ -2,6 +2,31 @@ import XCTest
 @testable import StratovoCore
 
 final class LocalizationTests: XCTestCase {
+    func testInstalledAppLoadsItsOwnResourcesAndDoesNotFallBackToBuildDirectory() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let appURL = root.appendingPathComponent("Moved/Stratovo.app")
+        let contents = appURL.appendingPathComponent("Contents")
+        try FileManager.default.createDirectory(at: contents, withIntermediateDirectories: true)
+        let appInfo = ["CFBundleIdentifier": "org.stratovo.localization-test", "CFBundlePackageType": "APPL"]
+        try PropertyListSerialization.data(fromPropertyList: appInfo, format: .xml, options: 0)
+            .write(to: contents.appendingPathComponent("Info.plist"))
+        let app = try XCTUnwrap(Bundle(url: appURL))
+        XCTAssertNil(L10n.resourceURL(in: app), "A missing installed resource must not use the build directory")
+
+        let bundleURL = contents.appendingPathComponent("Resources/Stratovo_StratovoCore.bundle")
+        let resources = bundleURL.appendingPathComponent("Contents/Resources")
+        let language = resources.appendingPathComponent("en.lproj")
+        try FileManager.default.createDirectory(at: language, withIntermediateDirectories: true)
+        let info = ["CFBundleIdentifier": "org.stratovo.test-resources", "CFBundlePackageType": "BNDL"]
+        try PropertyListSerialization.data(fromPropertyList: info, format: .xml, options: 0)
+            .write(to: bundleURL.appendingPathComponent("Contents/Info.plist"))
+        try "\"Abbrechen\" = \"Relocated Cancel\";".write(to: language.appendingPathComponent("Localizable.strings"), atomically: true, encoding: .utf8)
+        let resolved = try XCTUnwrap(L10n.resourceURL(in: app))
+        XCTAssertEqual(resolved.standardizedFileURL.path, resources.standardizedFileURL.path)
+        let translated = try XCTUnwrap(Bundle(url: resolved.appendingPathComponent("en.lproj")))
+        XCTAssertEqual(translated.localizedString(forKey: "Abbrechen", value: nil, table: nil), "Relocated Cancel")
+    }
     func testSystemLanguageRegionsAndUnsupportedFallback() {
         let cases = ["de-DE":"de", "en-GB":"en", "fr-CA":"fr", "es-MX":"es", "it-IT":"it", "pt-BR":"pt", "nl-NL":"nl", "pl-PL":"pl", "tr-TR":"tr", "uk-UA":"uk", "ar-SA":"ar", "zh-CN":"zh-Hans", "ja-JP":"ja", "ko-KR":"ko"]
         for (input, expected) in cases {

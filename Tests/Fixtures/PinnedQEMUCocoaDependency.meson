@@ -1,0 +1,4 @@
+# Exact Cocoa dependency declaration from utmapp/qemu ae92cdc41fb0b0dab36c6ac724e1729ffc47ef18/meson.build.
+cocoa = dependency('appleframeworks',
+                   modules: ['Cocoa', 'CoreVideo', 'OpenGL', 'QuartzCore'],
+                   required: get_option('cocoa'))

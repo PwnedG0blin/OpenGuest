@@ -34,27 +34,27 @@ struct WindowsPasteSheet: View {
                         .fixedSize(horizontal: false, vertical: true)
                     editor
                     keyboardSettings
-                    if hasLineBreaks {
-                        VStack(alignment: .leading, spacing: 6) {
+                    VStack(alignment: .leading, spacing: 6) {
                             Toggle(L10n.text("Zeilenumbrüche als Enter übertragen"), isOn: $allowLineBreaks)
-                            Label(L10n.text("In einer Konsole können enthaltene Befehlszeilen dadurch ausgeführt werden."), systemImage: "exclamationmark.triangle.fill")
-                                .font(.caption).foregroundStyle(.orange)
+                                .toggleStyle(.switch).controlSize(.small)
+                            Text(L10n.text("In einer Konsole können enthaltene Befehlszeilen dadurch ausgeführt werden."))
+                                .font(.caption).foregroundStyle(.secondary)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                         .padding(14)
-                        .background(Color.orange.opacity(0.10), in: RoundedRectangle(cornerRadius: 12))
-                    }
+                        .background(Color.teal.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
                     Label(L10n.text("Kein zusätzliches Enter. Abschließende Zeilenumbrüche werden weggelassen."), systemImage: "return")
                         .font(.caption).foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                     validationStatus
                 }.padding(22)
-            }.frame(maxHeight: 500)
+            }.frame(height: 500)
             footer
         }
         .frame(width: 600)
         .background(Color(nsColor: .windowBackgroundColor))
         .tint(accent)
+        .onChange(of: text) { _, _ in allowLineBreaks = false }
     }
 
     private var header: some View {
@@ -126,7 +126,9 @@ struct WindowsPasteSheet: View {
                 Label("\(plan.count) Zeichen bereit · \(plan.layout.title)", systemImage: "checkmark.circle.fill")
                     .foregroundStyle(accent)
             case .failure(let error):
-                Label(error.localizedDescription, systemImage: text.isEmpty ? "info.circle" : "exclamationmark.triangle.fill")
+                Label(hasLineBreaks && !allowLineBreaks
+                      ? L10n.text("Mehrzeiliger Text: Bitte Enter-Übertragung freigeben.")
+                      : error.localizedDescription, systemImage: text.isEmpty ? "info.circle" : "exclamationmark.triangle.fill")
                     .foregroundStyle(text.isEmpty ? Color.secondary : Color.orange)
             }
         }

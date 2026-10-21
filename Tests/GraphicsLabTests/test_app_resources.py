@@ -1,6 +1,7 @@
 """Exercise the exact resource copied by the app, not a separate terminal patch."""
 import importlib.util
 import ast
+import json
 from pathlib import Path
 import re
 import tempfile
@@ -14,9 +15,9 @@ SPEC.loader.exec_module(lab)
 
 class AppResourceTests(unittest.TestCase):
     def test_staged_app_resources_include_python_fragment_dependencies(self):
-        controller=(ROOT/'Sources/Stratovo/WindowsGraphicsLabView.swift').read_text()
-        arrays=re.findall(r'for name in \[(.*?)\]', controller, re.S)
-        staged={name for array in arrays for name in re.findall(r'"([^"]+)"', array)}
+        controller=(ROOT/'Sources/Stratovo/WindowsGraphicsLabController.swift').read_text()
+        staged=set(json.loads((ROOT/'Packaging/GraphicsLab/runtime-policy.json').read_text())['resources'])
+        self.assertIn('policy.readResources(from: bundled)', controller)
         resources=ROOT/'Packaging/GraphicsLab'
         self.assertIn('window_state.m.inc', staged)
         for name in staged:
@@ -65,9 +66,9 @@ class AppResourceTests(unittest.TestCase):
             self.assertNotIn('GCC_TREAT_WARNINGS_AS_ERRORS=NO',angle)
 
     def test_app_overwrites_working_copy_with_correct_bundled_resource(self):
-        controller=(ROOT/'Sources/Stratovo/WindowsGraphicsLabView.swift').read_text()
+        controller=(ROOT/'Sources/Stratovo/WindowsGraphicsLabController.swift').read_text()
         builder=(ROOT/'scripts/build-app.sh').read_text()
-        self.assertIn('resources.appendingPathComponent(name)',controller)
+        self.assertIn('resources.appendingPathComponent(resource.name)',controller)
         self.assertIn('Packaging/GraphicsLab',builder)
         self.assertIn('Contents/Resources/GraphicsLab',builder)
         self.assertIn('/opt/homebrew/opt/zlib/lib/pkgconfig',lab.graphics_pkg_config_path(Path('/chosen')))
