@@ -11,8 +11,8 @@ struct DeveloperCredits: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Label("Open Source · MIT", systemImage: "curlybraces")
-            Text(L10n.text("Eine Oberfläche. Zwei Engines.\nEntwickelt für Apple Silicon."))
-                .foregroundStyle(.secondary)
+            Text("Windows · Android · Ubuntu").foregroundStyle(.secondary)
+            Text("Apple Silicon").foregroundStyle(.secondary)
             Divider().padding(.vertical, 4)
             VStack(alignment: .leading, spacing: 3) {
                 Text(L10n.text("Entwickelt von")).foregroundStyle(.secondary)
