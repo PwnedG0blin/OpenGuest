@@ -30,16 +30,21 @@ struct QuickLaunchBar: View {
     }
 
     private var buttons: some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 200), alignment: .leading)],
-                  alignment: .leading, spacing: 12) {
-            launch("Windows starten", guest: "windows", setup: "Windows einrichten", tab: .windows, ready: model.canResumeWindows && graphicsLab.runtimeReady,
-                   action: model.startExistingWindows)
-            launch("Android starten", guest: "android", setup: "Android einrichten", tab: .android, ready: model.canStartAndroid,
-                   action: model.startAndroid)
-            launch("Ubuntu starten", guest: "ubuntu", setup: "Ubuntu einrichten", tab: .ubuntu,
-                   ready: !model.running && !model.busy && model.storageReady && ubuntu.diskReady && !ubuntu.downloading) {
-                model.startUbuntu(installing: false, memory: memory, cores: cores)
-            }
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 12) { launchButtons }
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 200), alignment: .leading)],
+                      alignment: .leading, spacing: 12) { launchButtons }
+        }
+    }
+
+    @ViewBuilder private var launchButtons: some View {
+        launch("Windows starten", guest: "windows", setup: "Windows einrichten", tab: .windows, ready: model.canResumeWindows && graphicsLab.runtimeReady,
+               action: model.startExistingWindows)
+        launch("Android starten", guest: "android", setup: "Android einrichten", tab: .android, ready: model.canStartAndroid,
+               action: model.startAndroid)
+        launch("Ubuntu starten", guest: "ubuntu", setup: "Ubuntu einrichten", tab: .ubuntu,
+               ready: !model.running && !model.busy && model.storageReady && ubuntu.diskReady && !ubuntu.downloading) {
+            model.startUbuntu(installing: false, memory: memory, cores: cores)
         }
     }
 
@@ -60,6 +65,7 @@ struct QuickLaunchBar: View {
         }
         .buttonStyle(MidnightLaunchButtonStyle())
         .disabled(!active && (model.running || model.busy))
+        .frame(minWidth: 200, maxWidth: .infinity)
     }
 
     private func refreshAvailability() {

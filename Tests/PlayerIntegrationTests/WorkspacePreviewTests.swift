@@ -13,6 +13,12 @@ final class WorkspacePreviewTests: XCTestCase {
         }
         let directory = URL(fileURLWithPath: destination, isDirectory: true)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let infoURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("Packaging/Info.plist")
+        let info = try XCTUnwrap(PropertyListSerialization.propertyList(
+            from: Data(contentsOf: infoURL), options: [], format: nil) as? [String: Any])
+        let releaseLabel = AppPresentation.releaseLabel(info: info)
         for kind in ["windows", "android", "ubuntu"] {
             XCTAssertNotNil(WorkspaceArtwork.url(for: kind).flatMap { NSImage(contentsOf: $0) })
         }
@@ -32,7 +38,7 @@ final class WorkspacePreviewTests: XCTestCase {
             ("classic-large", NSSize(width: 1240, height: 850), true)
         ] {
             defaults.set(classic ? "classic" : "automatic", forKey: WorkspaceAppearance.preferenceKey)
-            let view = ContentView(model: AppModel(applyPerformanceDefaults: false))
+            let view = ContentView(model: AppModel(applyPerformanceDefaults: false), releaseLabel: releaseLabel)
             try render(view, size: size, appearance: classic ? .aqua : .darkAqua,
                        to: directory.appendingPathComponent(name + ".png"))
         }

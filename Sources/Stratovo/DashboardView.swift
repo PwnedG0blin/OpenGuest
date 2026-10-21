@@ -17,13 +17,11 @@ struct DashboardView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 225), alignment: .top)], spacing: 16) {
-                system("Windows 11", kind: "windows", ready: graphicsLab.runtimeReady && model.windowsDiskBytes != nil,
-                       running: model.running && model.activeGuest == "windows", tab: .windows)
-                system("Android", kind: "android", ready: model.androidReady,
-                       running: model.running && model.activeGuest == "android", tab: .android)
-                system("Ubuntu", kind: "ubuntu", ready: ubuntu.diskReady,
-                       running: model.running && model.activeGuest == "ubuntu", tab: .ubuntu)
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .top, spacing: 16) { systemCards }
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 225), alignment: .top)], spacing: 16) {
+                    systemCards
+                }
             }
             WorkspaceCard {
                 ViewThatFits(in: .horizontal) {
@@ -33,6 +31,15 @@ struct DashboardView: View {
             }
         }
         .onAppear { graphicsLab.refresh(model: model); ubuntu.refresh(model: model) }
+    }
+
+    @ViewBuilder private var systemCards: some View {
+        system("Windows 11", kind: "windows", ready: graphicsLab.runtimeReady && model.windowsDiskBytes != nil,
+               running: model.running && model.activeGuest == "windows", tab: .windows)
+        system("Android", kind: "android", ready: model.androidReady,
+               running: model.running && model.activeGuest == "android", tab: .android)
+        system("Ubuntu", kind: "ubuntu", ready: ubuntu.diskReady,
+               running: model.running && model.activeGuest == "ubuntu", tab: .ubuntu)
     }
 
     private var storageSummary: some View {
@@ -93,6 +100,7 @@ struct DashboardView: View {
                     .accessibilityLabel(L10n.text("Optionen") + " · " + title)
             }.padding(18).frame(maxWidth: .infinity, alignment: .leading)
         }
+        .frame(minWidth: 225, maxWidth: .infinity)
         .background { WorkspaceCardSurface() }
         .clipShape(RoundedRectangle(cornerRadius: 15))
         .overlay(RoundedRectangle(cornerRadius: 15).strokeBorder(Color.white.opacity(0.13)))

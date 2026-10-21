@@ -4,6 +4,7 @@ import StratovoCore
 @MainActor
 struct ContentView: View {
     @ObservedObject var model: AppModel
+    var releaseLabel = AppPresentation.releaseLabel
     @State private var selection: WorkspaceTab = .dashboard
     @State private var showDiagnostics = false
     @AppStorage(WorkspaceAppearance.preferenceKey) private var appearance = WorkspaceAppearance.automatic
@@ -61,7 +62,7 @@ struct ContentView: View {
                 StratovoBrandMark().frame(width: 32, height: 44).accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Stratovo").font(.system(size: 25, weight: .bold))
-                    Text(AppPresentation.releaseLabel).font(.caption2).foregroundStyle(.secondary)
+                    Text(releaseLabel).font(.caption2).foregroundStyle(.secondary)
                 }
             }.padding(.horizontal, 22).padding(.top, 24).padding(.bottom, 28)
             ScrollView {
@@ -89,7 +90,7 @@ struct ContentView: View {
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 17).padding(.vertical, 14)
-            .foregroundStyle(selection == tab ? Color.white : Color.primary.opacity(0.86))
+            .foregroundStyle(selection == tab && appearance != .classic ? Color.white : Color.primary.opacity(0.86))
             .background {
                 if selection == tab { Color.clear.modifier(WorkspaceChromeSurface(cornerRadius: 11, selected: true)) }
             }
@@ -131,7 +132,9 @@ struct ContentView: View {
 
 enum AppPresentation {
     static var releaseLabel: String {
-        let info = Bundle.main.infoDictionary ?? [:]
+        releaseLabel(info: Bundle.main.infoDictionary ?? [:])
+    }
+    static func releaseLabel(info: [String: Any]) -> String {
         let version = info["CFBundleShortVersionString"] as? String ?? "1.0"
         let build = info["CFBundleVersion"] as? String ?? "dev"
         let flavor = info["StratovoBuildFlavor"] as? String == "private" ? "Private Beta 7" : "Beta 7"

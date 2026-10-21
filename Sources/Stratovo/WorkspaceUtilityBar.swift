@@ -48,13 +48,17 @@ struct WorkspaceUtilityBar: View {
 
 private struct WorkspaceUtilityButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var enabled
+    @Environment(\.colorScheme) private var colorScheme
     @State private var hovering = false
+    private var accent: Color {
+        colorScheme == .dark ? MidnightPalette.turquoise : Color(red: 0.03, green: 0.43, blue: 0.46)
+    }
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(size: 17, weight: .medium))
             .frame(width: 36, height: 36)
-            .foregroundStyle(enabled ? MidnightPalette.turquoise : Color.secondary)
+            .foregroundStyle(enabled ? accent : Color.secondary)
             .background(MidnightPalette.turquoise.opacity(enabled && (hovering || configuration.isPressed) ? 0.14 : 0),
                         in: RoundedRectangle(cornerRadius: 11))
             .overlay(RoundedRectangle(cornerRadius: 11).strokeBorder(
