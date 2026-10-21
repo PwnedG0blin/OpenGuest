@@ -78,6 +78,7 @@ struct WindowsGraphicsLabView: View {
                     Text(L10n.text("Beim ersten 3D-Start: Windows-Explorer → Dieser PC → DVD PKGRAPHICS → INSTALL_GRAPHICS.cmd. Danach Windows herunterfahren und erneut starten."))
                 }
                 if model.running && model.activeGuest == "windows" {
+                    GuestAudioControls(audio: model.audio, kind: "windows")
                     controls
                     Text(L10n.text("Esc beim Einschalten: UEFI / BIOS. Zum Verlassen des Menüs Continue wählen."))
                         .font(.system(size: 14, weight: .semibold))
@@ -106,7 +107,7 @@ struct WindowsGraphicsLabView: View {
             VStack {
                 ScrollView { ExchangeFolderView(model: model, controller: model.exchange).padding(20) }
                 Button(L10n.text("Fertig")) { exchangePresented = false }.keyboardShortcut(.defaultAction).padding()
-            }.frame(width: 720, height: 700)
+            }.frame(width: 720, height: 700).modifier(WorkspaceDialogTheme())
         }
     }
     private var controls: some View {

@@ -7,7 +7,7 @@ struct SessionDiagnosticsView: View {
     @State private var showStopConfirmation = false
     @Environment(\.dismiss) private var dismiss
     var body: some View {
-        WorkspaceCard {
+        VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     Label(L10n.text("Diagnose"), systemImage: "waveform.path.ecg").font(.title2.bold())
@@ -41,7 +41,9 @@ struct SessionDiagnosticsView: View {
                 .frame(minHeight: 220, idealHeight: 320)
             }
         }
+        .padding(24)
         .frame(minWidth: 680, idealWidth: 780, minHeight: 420, idealHeight: 520)
+        .modifier(WorkspaceDialogTheme())
         .confirmationDialog(L10n.text("Gastprozess beenden?"), isPresented: $showStopConfirmation) {
             Button(L10n.text("Prozess beenden"), role: .destructive) { model.terminateGuest() }
             Button(L10n.text("Abbrechen"), role: .cancel) { }

@@ -53,6 +53,7 @@ struct StorageSetupSheet: View {
                     .disabled(model.proposedStoragePath.isEmpty || model.busy)
             }
         }.padding(28).frame(minWidth: 600, idealWidth: 720, maxWidth: 820, minHeight: 500, idealHeight: 620)
+            .modifier(WorkspaceDialogTheme())
     }
 
 }

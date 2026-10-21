@@ -53,6 +53,11 @@ final class AppModel: ObservableObject {
         }
     }
     @Published private(set) var androidGuestRefreshHz = 60
+    @Published var androidStreamQuality = AndroidStreamQuality(rawValue: UserDefaults.standard.string(forKey: "Stratovo.androidStreamQuality") ?? "sharp") ?? .sharp {
+        didSet { UserDefaults.standard.set(androidStreamQuality.rawValue, forKey: "Stratovo.androidStreamQuality") }
+    }
+    @Published private(set) var appliedAndroidStreamQuality: AndroidStreamQuality?
+    @Published private(set) var appliedAndroidTargetFPS: Int?
 
     @Published private(set) var androidRendererStatus = L10n.text("Grafikrenderer wird beim Android-Start geprüft")
     @Published private(set) var androidSoftwareRendering = false
@@ -362,7 +367,9 @@ final class AppModel: ObservableObject {
         Gast: \(activeGuest.isEmpty ? "Keiner" : activeGuest) · \(sessionName)
         Android: \(androidAcceleration)
         Android-Profil: \(settings.selectedAVD)
-        Leistungsprofil: \(androidProfile.rawValue) · Ziel: \(androidTargetFPS) FPS · Stream-Maximum: \(androidProfile.streamMaxSize)
+        Leistungsprofil: \(androidProfile.rawValue) · Gewähltes Ziel: \(androidTargetFPS) FPS · Aktives Limit: \(appliedAndroidTargetFPS.map(String.init) ?? "—")
+        Streamqualität: \(appliedAndroidStreamQuality?.rawValue ?? "Nicht verbunden") · Gewählt: \(androidStreamQuality.rawValue)
+        Empfangenes Bild: \(Int(playerSize.width)) × \(Int(playerSize.height)) px
         Android-Bildschirm: \(androidDisplayStatus)
         Android-Grafikrenderer: \(androidRendererStatus)
         Decoder-Zuführung: \(Int(decoderFPS.rounded())) FPS · Wiederanläufe: \(decoderRecoveries) · verworfene verspätete Frames: \(androidDroppedFrames)
@@ -513,6 +520,7 @@ final class AppModel: ObservableObject {
     private(set) var windowsFrameCount = 0
     @Published private(set) var googleServicesStatus = L10n.text("Google-Dienste werden nach dem Android-Start geprüft.")
     let h264Player = H264Player()
+    let audio = GuestAudioController()
     let installer = SetupInstaller()
     private let playerWindows = GuestPlayerWindows()
 
@@ -928,6 +936,7 @@ final class AppModel: ObservableObject {
                 try start(spec, title: "Ubuntu ARM64")
                 windowsBootArtwork = nil
                 activeGuest = "ubuntu"; qmpSocket = qmp; windowsDisplaySocket = display
+                audio.connect(.qmp(socket: qmp), kind: "ubuntu")
                 showPlayer(kind: "ubuntu")
                 connectWindowsPlayer(socket: display)
             } catch {
@@ -1020,6 +1029,7 @@ final class AppModel: ObservableObject {
             activeGuest = "windows"
             windowsUsesDirectDisplay = !windowsEmbeddedPlayer
             qmpSocket = files.qmpSocket
+            audio.connect(.qmp(socket: files.qmpSocket), kind: "windows")
             if windowsUsesDirectDisplay {
                 windowsDisplaySocket = nil
                 playerStatus = L10n.text("Windows Arm läuft im direkten Grafikfenster · Metal")
@@ -1079,7 +1089,7 @@ final class AppModel: ObservableObject {
                         throw GuestError.commandFailed(result.status, result.output)
                     }
                 }
-                androidDisplayStatus = plan.summary + " · Stream bis \(androidProfile.streamMaxSize) px"
+                androidDisplayStatus = plan.summary
             } catch {
                 if running, androidPort == port {
                     for command in plan.rollback {
@@ -1114,7 +1124,12 @@ final class AppModel: ObservableObject {
         }
         androidStream = stream
         do {
-            try await stream.start(adb: adb, serial: "emulator-\(port)", profile: androidProfile, fps: androidTargetFPS)
+            let quality = androidStreamQuality, fps = androidTargetFPS
+            try await stream.start(adb: adb, serial: "emulator-\(port)", quality: quality, fps: fps)
+            if running && androidPort == port && !Task.isCancelled {
+                appliedAndroidStreamQuality = quality; appliedAndroidTargetFPS = fps
+                audio.connect(.android(adb: adb, serial: "emulator-\(port)"), kind: "android")
+            }
             if Task.isCancelled || !running { await stream.stop() }
         } catch {
             await stream.stop()
@@ -1540,6 +1555,8 @@ final class AppModel: ObservableObject {
         busy = true
         defer { busy = false }
         exchange.cancelTransfer()
+        audio.disconnect()
+        appliedAndroidStreamQuality = nil; appliedAndroidTargetFPS = nil
         bootTask?.cancel()
         bootTask = nil
         displayTask?.cancel(); displayTask = nil

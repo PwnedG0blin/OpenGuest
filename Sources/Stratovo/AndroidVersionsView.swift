@@ -170,6 +170,7 @@ private struct AndroidVersionInstallView: View {
                 Button(L10n.text("Fertig")) { dismiss() }.keyboardShortcut(.cancelAction).disabled(installer.running)
             }.padding(16)
         }.frame(width: 740, height: 710).tint(.teal)
+            .modifier(WorkspaceDialogTheme())
             .interactiveDismissDisabled(installer.running)
     }
 }

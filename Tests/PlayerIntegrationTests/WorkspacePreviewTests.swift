@@ -47,6 +47,32 @@ final class WorkspacePreviewTests: XCTestCase {
                                        diagnose: {}, refresh: {}),
                    size: NSSize(width: 180, height: 72), appearance: .darkAqua,
                    to: directory.appendingPathComponent("utilities-busy.png"))
+        for (name, size, kind, classic) in [
+            ("android-player-small", NSSize(width: 360, height: 680), "android", false),
+            ("android-player-large", NSSize(width: 620, height: 1000), "android", false),
+            ("ubuntu-player", NSSize(width: 1100, height: 780), "ubuntu", false),
+            ("android-player-classic", NSSize(width: 520, height: 850), "android", true)
+        ] {
+            defaults.set(classic ? "classic" : "automatic", forKey: WorkspaceAppearance.preferenceKey)
+            try render(GuestPlayerView(model: AppModel(applyPerformanceDefaults: false), kind: kind),
+                       size: size, appearance: classic ? .aqua : .darkAqua,
+                       to: directory.appendingPathComponent(name + ".png"))
+        }
+        defaults.set("automatic", forKey: WorkspaceAppearance.preferenceKey)
+        let model = AppModel(applyPerformanceDefaults: false)
+        try render(AndroidDisplaySheet(model: model), size: NSSize(width: 500, height: 600), appearance: .darkAqua,
+                   to: directory.appendingPathComponent("android-resolution.png"))
+        try render(AndroidPasteSheet(model: model, text: .constant("Grüße vom Mac 👋")),
+                   size: NSSize(width: 560, height: 560), appearance: .darkAqua,
+                   to: directory.appendingPathComponent("android-paste.png"))
+        try render(WindowsPasteSheet(model: model, text: .constant("Text aus Stratovo")),
+                   size: NSSize(width: 600, height: 690), appearance: .darkAqua,
+                   to: directory.appendingPathComponent("windows-paste.png"))
+        try render(WorkspaceHelpSheet(title: "Android") { WorkspaceGuide(tab: .android) },
+                   size: NSSize(width: 640, height: 540), appearance: .darkAqua,
+                   to: directory.appendingPathComponent("android-help.png"))
+        try render(SessionDiagnosticsView(model: model), size: NSSize(width: 780, height: 520), appearance: .darkAqua,
+                   to: directory.appendingPathComponent("diagnostics.png"))
     }
 
     @MainActor

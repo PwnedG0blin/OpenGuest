@@ -30,11 +30,14 @@ final class AndroidPerformanceTests: XCTestCase {
         XCTAssertEqual(AndroidRenderer.inspect("Selecting Vulkan device: llvmpipe (LLVM 21.1.4)").kind, .software)
         XCTAssertEqual(AndroidRenderer.inspect("Graphics Adapter Android Emulator OpenGL ES Translator (Apple M4)").kind, .hardware)
     }
-    func testStreamProfilesAndFPSCannotEscapeSupportedBounds() {
-        XCTAssertEqual(AndroidPerformance.smooth.streamOptions(fps: 60), ["max_size=1280", "max_fps=60", "video_bit_rate=8000000"])
-        XCTAssertTrue(AndroidPerformance.balanced.streamOptions(fps: 30).contains("max_fps=30"))
+    func testSharpStreamPreservesResolutionWithoutChangingTheRequestedFPS() {
+        XCTAssertEqual(AndroidStreamQuality.sharp.options(fps: 45), ["max_size=0", "max_fps=45", "video_bit_rate=32000000"])
+        XCTAssertEqual(AndroidStreamQuality.fast.options(fps: 60), ["max_size=1280", "max_fps=60", "video_bit_rate=8000000"])
+        XCTAssertEqual(AndroidStreamQuality.balanced.maxSize, 1920)
         for (value, limit) in [(-1,1), (0,1), (45,45), (90,90), (120,90), (999,90)] {
-            XCTAssertTrue(AndroidPerformance.native.streamOptions(fps: value).contains("max_fps=\(limit)"))
+            for quality in AndroidStreamQuality.allCases {
+                XCTAssertTrue(quality.options(fps: value).contains("max_fps=\(limit)"))
+            }
         }
     }
 }

@@ -18,7 +18,7 @@ struct AndroidPasteSheet: View {
             Label(L10n.text("Text in Android einfügen"), systemImage: "doc.on.clipboard").font(.title2.bold()).foregroundStyle(.teal)
             Text(L10n.text("Zuerst das gewünschte Eingabefeld in Android antippen. Bestätigter Text wird in die Android-Zwischenablage übertragen und eingefügt."))
                 .font(.subheadline).foregroundStyle(.secondary)
-            TextEditor(text: $text).font(.body).frame(height: 160).padding(6)
+            TextEditor(text: $text).font(.body).scrollContentBackground(.hidden).frame(height: 160).padding(6)
                 .background(.teal.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
                 .overlay(RoundedRectangle(cornerRadius: 8).stroke(.teal.opacity(0.35)))
             Toggle(L10n.text("Zeilenumbrüche innerhalb des Textes erlauben"), isOn: $allowLineBreaks)
@@ -43,6 +43,6 @@ struct AndroidPasteSheet: View {
                     .buttonStyle(.borderedProminent).disabled(input == nil || sending).keyboardShortcut(.defaultAction)
             }
             if !model.androidPasteStatus.isEmpty { Text(model.androidPasteStatus).font(.caption) }
-        }.padding(24).frame(width: 560).background(Color(nsColor: .windowBackgroundColor)).tint(.teal)
+        }.padding(24).frame(width: 560).modifier(WorkspaceDialogTheme())
     }
 }

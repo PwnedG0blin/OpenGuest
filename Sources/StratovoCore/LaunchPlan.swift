@@ -118,6 +118,8 @@ public enum LaunchPlan {
                     "-device", "nvme,drive=systemdisk,serial=\(identity.serial),bootindex=2",
                     "-device", graphics.device(resolution: resolution), "-device", "qemu-xhci,id=usb",
                     "-device", "usb-kbd,bus=usb.0", "-device", "usb-tablet,bus=usb.0",
+                    "-audiodev", "coreaudio,id=stratovo-audio",
+                    "-device", "usb-audio,id=stratovo-sound,bus=usb.0,audiodev=stratovo-audio",
                     "-display", "none", "-vnc", "unix:\(displaySocket)", "-serial", "none", "-monitor", "none",
                     "-qmp", "unix:\(qmpSocket),server=on,wait=off",
                     "-chardev", "socket,id=chrtpm,path=\(tpmSocket)",

@@ -67,7 +67,7 @@ final class GuestPlayerWindows: NSObject, NSWindowDelegate {
 }
 
 @MainActor
-private struct GuestPlayerView: View {
+struct GuestPlayerView: View {
     @ObservedObject var model: AppModel
     let kind: String
     private var active: Bool { model.activeGuest == kind }
@@ -97,20 +97,9 @@ private struct GuestPlayerView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 12) {
-                Text(kind == "android" ? "Android" : (kind == "ubuntu" ? "Ubuntu ARM" : "Windows Arm")).font(.headline)
-                Spacer(minLength: 0)
-                Button(L10n.text("Dateiaustausch")) { exchangePresented = true }
-                    .disabled(!model.storageReady)
-                if active && kind == "android" {
-                    Text("Stream \(Int(model.streamFPS.rounded())) · Decoder \(Int(model.decoderFPS.rounded())) FPS")
-                        .font(.system(size: 13, weight: .semibold).monospacedDigit())
-                        .help(L10n.text("Empfangene Bilder / Decoder-Zuführung. Keine Messung der Spiel-FPS."))
-                }
-                Button { model.togglePlayerFullScreen(kind: kind) } label: {
-                    Image(systemName: "arrow.up.left.and.arrow.down.right")
-                }.help("Player als Vollbild anzeigen")
-            }.padding(12)
+            playerHeader
+                .padding(12).modifier(WorkspaceChromeSurface())
+                .padding(.horizontal, 10).padding(.top, 10).padding(.bottom, 8)
             ZStack {
                 Color.black
                 // Only the active guest owns the video layer and receives input.
@@ -141,15 +130,21 @@ private struct GuestPlayerView: View {
                     }.padding(24).frame(maxWidth: 650).foregroundStyle(.white.opacity(0.85)).allowsHitTesting(false)
                 }
             }.frame(maxWidth: .infinity, maxHeight: .infinity)
+                .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(MidnightPalette.turquoise.opacity(0.20)))
+                .padding(.horizontal, 10)
+            VStack(spacing: 0) {
             HStack {
                 Label(L10n.text("Player-Steuerung"), systemImage: "slider.horizontal.3").font(.system(size: 13, weight: .semibold))
                 Spacer(minLength: 4)
-                Text(L10n.text("Weitere Optionen: hier scrollen")).font(.system(size: 12))
+                Image(systemName: "chevron.up.chevron.down").foregroundStyle(.secondary)
+                    .help(L10n.text("Weitere Optionen: hier scrollen"))
             }.padding(.horizontal, 14).padding(.top, 10)
-             .background(Color(nsColor: .controlBackgroundColor))
             ScrollView {
               VStack(alignment: .leading, spacing: 10) {
+                GuestAudioControls(audio: model.audio, kind: kind)
+                Divider()
                 if kind == "android" {
+                    AndroidStreamQualityControls(model: model)
                     DisclosureGroup(L10n.text("Bildrate · bis 90 FPS")) { AndroidFrameRateControls(model: model).padding(.vertical, 8) }
                     HStack {
                         Button(L10n.text("Bild einpassen")) { fitsWindow = true }
@@ -161,16 +156,16 @@ private struct GuestPlayerView: View {
                         .help(L10n.text("Text vom Mac nach Android übertragen. Auch mit ⌘V im Gastbild."))
                     if !model.androidPasteStatus.isEmpty { Text(model.androidPasteStatus).font(.system(size: 13)) }
                 }
-                HStack {
+                ViewThatFits(in: .horizontal) {
+                  HStack {
                     Toggle(L10n.text("An Fenster anpassen"), isOn: $fitsWindow).toggleStyle(.checkbox)
                     Spacer(minLength: 4)
-                    if kind == "android" {
-                        Button(L10n.text("Android-Auflösung …")) { androidDisplayPresented = true }
-                    } else if kind == "windows" {
-                        Button(L10n.text("Windows-Einstellungen …"), action: model.openWindowsDisplaySettings)
-                            .disabled(!active || model.playerSize == .zero || model.windowsPasteBusy)
-                            .help(L10n.text("Windows + I; danach System → Anzeige für die vom Gast unterstützten Auflösungen und Skalierungen."))
-                    }
+                    displaySettingsButton
+                  }
+                  VStack(alignment: .leading, spacing: 10) {
+                    Toggle(L10n.text("An Fenster anpassen"), isOn: $fitsWindow).toggleStyle(.checkbox)
+                    displaySettingsButton
+                  }
                 }
                 if !fitsWindow {
                     HStack {
@@ -212,7 +207,7 @@ private struct GuestPlayerView: View {
                         .font(.system(size: 13)).foregroundStyle(.primary).fixedSize(horizontal: false, vertical: true)
                 }
                 if kind == "ubuntu" {
-                    HStack {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 160))], alignment: .leading, spacing: 8) {
                         Button(L10n.text("Anzeige neu verbinden")) { Task { await model.reconnectWindowsDisplay() } }
                         Button(L10n.text("Text einfügen …"), action: beginPaste)
                         Button(L10n.text("UEFI / BIOS · Esc"), action: model.openWindowsFirmwareMenu)
@@ -264,7 +259,9 @@ private struct GuestPlayerView: View {
                     Button(L10n.text("Herunterfahren"), action: model.shutdownGuest).disabled(!active)
                 }
               }.padding(14).frame(maxWidth: .infinity, alignment: .leading)
-            }.frame(height: 225).background(Color(nsColor: .controlBackgroundColor))
+            }.frame(height: 225)
+            }.modifier(WorkspaceChromeSurface())
+                .padding(.horizontal, 10).padding(.top, 8)
             VStack(alignment: .leading, spacing: 7) {
                 Label(active ? model.playerStatus : L10n.text("Apps, Dateien und Einstellungen bleiben gespeichert."),
                       systemImage: active ? "info.circle.fill" : "externaldrive.fill")
@@ -277,10 +274,13 @@ private struct GuestPlayerView: View {
             }
             .foregroundStyle(.primary)
             .padding(14).frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.teal.opacity(0.14))
-            .overlay(alignment: .top) { Rectangle().fill(Color.teal.opacity(0.65)).frame(height: 2) }
+            .modifier(WorkspaceChromeSurface(cornerRadius: 14, selected: true))
+            .padding(10)
         }
         .frame(minWidth: 360, minHeight: 480)
+        .controlSize(.small)
+        .modifier(WorkspaceActionStyle())
+        .modifier(WorkspaceWindowTheme())
         .onAppear { zoomPercent = safeZoom }
         .sheet(isPresented: $pastePresented, onDismiss: { pasteDraft = "" }) {
             if kind == "android" { AndroidPasteSheet(model: model, text: $pasteDraft) }
@@ -291,7 +291,61 @@ private struct GuestPlayerView: View {
             VStack(alignment: .trailing) {
                 Button(L10n.text("Fertig")) { exchangePresented = false }
                 ScrollView { ExchangeFolderView(model: model, controller: model.exchange) }
-            }.padding(18).frame(width: 700, height: 720)
+            }.padding(18).frame(width: 700, height: 720).modifier(WorkspaceDialogTheme())
+        }
+    }
+
+    private var systemTitle: some View {
+        HStack(spacing: 9) {
+            GuestSystemSymbol(kind: kind).frame(width: 22, height: 22)
+            Text(kind == "android" ? "Android" : kind == "ubuntu" ? "Ubuntu ARM" : "Windows Arm")
+                .font(.headline)
+        }
+    }
+
+    private var playerHeader: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 12) {
+                systemTitle
+                Spacer(minLength: 8)
+                streamStatus
+                windowActions
+            }
+            VStack(alignment: .leading, spacing: 9) {
+                HStack { systemTitle; Spacer(minLength: 8); windowActions }
+                streamStatus
+            }
+        }
+    }
+
+    @ViewBuilder private var streamStatus: some View {
+        if active && kind == "android" {
+            Text("\(Int(model.playerSize.width)) × \(Int(model.playerSize.height)) px · Stream \(Int(model.streamFPS.rounded())) · Decoder \(Int(model.decoderFPS.rounded())) FPS")
+                .font(.system(size: 12, weight: .medium).monospacedDigit())
+                .foregroundStyle(.secondary).fixedSize()
+                .help(L10n.text("Empfangene Bilder / Decoder-Zuführung. Keine Messung der Spiel-FPS."))
+        }
+    }
+
+    private var windowActions: some View {
+        HStack(spacing: 8) {
+            Button { exchangePresented = true } label: {
+                Label(L10n.text("Dateiaustausch"), systemImage: "folder")
+            }.disabled(!model.storageReady)
+            Button { model.togglePlayerFullScreen(kind: kind) } label: {
+                Image(systemName: "arrow.up.left.and.arrow.down.right")
+            }.help(L10n.text("Player als Vollbild anzeigen"))
+                .accessibilityLabel(L10n.text("Player als Vollbild anzeigen"))
+        }.fixedSize()
+    }
+
+    @ViewBuilder private var displaySettingsButton: some View {
+        if kind == "android" {
+            Button(L10n.text("Android-Auflösung …")) { androidDisplayPresented = true }
+        } else if kind == "windows" {
+            Button(L10n.text("Windows-Einstellungen …"), action: model.openWindowsDisplaySettings)
+                .disabled(!active || model.playerSize == .zero || model.windowsPasteBusy)
+                .help(L10n.text("Windows + I; danach System → Anzeige für die vom Gast unterstützten Auflösungen und Skalierungen."))
         }
     }
 }

@@ -60,8 +60,9 @@ struct AndroidWorkspaceView: View {
                         }
                     }.disabled(model.running || model.busy)
                     AndroidFrameRateControls(model: model)
+                    AndroidStreamQualityControls(model: model)
                     ContextHelpButton("Leistungsprofile") {
-                        Text(L10n.text("Flüssig reduziert die Android-Auflösung und Streamgröße. Änderungen gelten beim nächsten Android-Start. Originalauflösung hebt die Bildschirm-Anpassung wieder auf."))
+                        Text(L10n.text("Flüssig reduziert die Android-Auflösung. Änderungen gelten beim nächsten Android-Start. Die Bildqualität der Übertragung wählst du separat; Originalauflösung hebt die Bildschirm-Anpassung wieder auf."))
                             .font(.body).foregroundStyle(.secondary)
                     }
                     Text(model.androidDisplayStatus).font(.caption).textSelection(.enabled)

@@ -90,6 +90,8 @@ def launch_arguments(config, folder, socket, installing):
             '-device','nvme,drive=system,serial=StratovoUbuntu,bootindex=2',
             '-device','virtio-gpu-pci','-display','none','-vnc','unix:'+str(Path(socket).parent/'display.sock'),
             '-device','qemu-xhci,id=usb','-device','usb-kbd,bus=usb.0','-device','usb-tablet,bus=usb.0',
+            '-audiodev','coreaudio,id=stratovo-audio',
+            '-device','usb-audio,id=stratovo-sound,bus=usb.0,audiodev=stratovo-audio',
             '-netdev','user,id=net0','-device','virtio-net-pci,netdev=net0',
             '-device','virtio-rng-pci','-qmp','unix:'+str(socket)+',server=on,wait=off',
             '-serial','none','-monitor','none']
