@@ -38,7 +38,9 @@ final class PlayerIntegrationTests: XCTestCase {
             "-kernel", kernel.path, "-nodefaults", "-device", "ramfb", "-display", "none", "-vnc", "unix:\(socket.path)",
             "-monitor", "none", "-serial", "none", "-nic", "none",
             "-qmp", "unix:\(qmp.path),server=on,wait=off",
-            "-device", "qemu-xhci,id=usb", "-device", "usb-kbd,bus=usb.0", "-blockdev", block,
+            "-device", "qemu-xhci,id=usb", "-device", "usb-kbd,bus=usb.0",
+            "-audiodev", "none,id=stratovo-audio", "-device", "usb-audio,id=stratovo-sound,bus=usb.0,audiodev=stratovo-audio",
+            "-blockdev", block,
             "-device", "usb-bot,id=installer-usb,bus=usb.0",
             "-device", "scsi-cd,id=installer-cd,drive=installer,bus=installer-usb.0,scsi-id=0,lun=0,bootindex=1"]
         qemu.standardInput = FileHandle.nullDevice
@@ -76,5 +78,8 @@ final class PlayerIntegrationTests: XCTestCase {
         var typed = 0
         try await QMPClient.typeText(WindowsTextInput(text: "@\\Yz", layout: .german), socket: qmp.path) { typed = $0 }
         XCTAssertEqual(typed, 4, "A real QEMU instance must accept all physical keyboard chords")
+        for key in ["volumedown", "volumeup", "audiomute"] {
+            try await QMPClient.sendKeys([key], socket: qmp.path)
+        }
     }
 }

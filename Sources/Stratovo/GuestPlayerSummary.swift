@@ -17,7 +17,9 @@ struct GuestPlayerSummary: View {
                     Text(active ? model.playerStatus : L10n.text("Eigenes Fenster · frei skalierbar · Vollbild möglich"))
                         .font(.subheadline).foregroundStyle(.secondary)
                     if active && kind == "android" {
-                        Text(L10n.message("Stream: \(Int(model.streamFPS.rounded())) FPS · Decoder-Zuführung: \(Int(model.decoderFPS.rounded())) FPS · Ziel \(model.androidTargetFPS)"))
+                        Text(L10n.message("Stream: \(Int(model.streamFPS.rounded())) FPS · Decoder-Zuführung: \(Int(model.decoderFPS.rounded())) FPS · Aktives Limit \(model.appliedAndroidTargetFPS ?? model.androidTargetFPS)"))
+                            .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                        Text("\(Int(model.playerSize.width)) × \(Int(model.playerSize.height)) px")
                             .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
                         Text(L10n.text("Empfangene und an den Decoder übergebene Bilder; keine Messung der Spiel-FPS."))
                             .font(.caption).foregroundStyle(.secondary)

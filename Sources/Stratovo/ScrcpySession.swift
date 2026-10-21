@@ -39,7 +39,7 @@ final class ScrcpySession {
     private var touchSwipe = AndroidTouchScroll()
     private var touchDown = false
 
-    func start(adb: String, serial: String, profile: AndroidPerformance, fps: Int) async throws {
+    func start(adb: String, serial: String, quality: AndroidStreamQuality, fps: Int) async throws {
         guard let storage = GuestStorage.load() else { throw failure(L10n.text("Speicherort fehlt.")) }
         try storage.validate()
         self.adb = adb; self.serial = serial
@@ -70,7 +70,7 @@ final class ScrcpySession {
         child.arguments = ["-s", serial, "shell", "CLASSPATH=\(remote)", "app_process", "/", "com.genymobile.scrcpy.Server", ScrcpyWire.version,
                            "scid=\(scid)", "tunnel_forward=true", "audio=false", "control=true", "video_codec=h264",
                            "video_codec_options=i-frame-interval=1", "send_device_meta=false",
-                           "send_stream_meta=false", "send_frame_meta=true", "send_dummy_byte=true", "clipboard_autosync=false", "cleanup=true"] + profile.streamOptions(fps: fps)
+                           "send_stream_meta=false", "send_frame_meta=true", "send_dummy_byte=true", "clipboard_autosync=false", "cleanup=true"] + quality.options(fps: fps)
         child.standardInput = FileHandle.nullDevice
         child.standardOutput = handle
         child.standardError = handle

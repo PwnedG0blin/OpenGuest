@@ -1,18 +1,18 @@
 # Stratovo · Android, Windows & Ubuntu for Mac
 
-**1.0 Beta 7 · Midnight**
+**1.0 Beta 7.1 · Midnight**
 
-Public Apple Silicon beta with the illustrated Midnight dashboard, persistent launch controls for all three systems and optional native Liquid Glass on macOS 26+. See the [Beta 7 release guide](docs/RELEASE_1.0_BETA7.md). Existing guest data locations are preserved. This remains a prerelease.
+Public Apple Silicon beta with the illustrated Midnight dashboard, persistent launch controls for all three systems and optional native Liquid Glass on macOS 26+. See the [Beta 7.1 release guide](docs/RELEASE_1.0_BETA7_1.md). Existing guest data locations are preserved. This remains a prerelease.
 
 ## Android, Windows and Ubuntu for Mac
 
 **Free, open-source macOS app for Android emulation, Windows ARM64 and Ubuntu ARM virtual machines on Apple silicon.**
 
-Developed by **PwnedG0blin** · macOS **14+** · **MIT license** · **1.0 Beta 7**
+Developed by **PwnedG0blin** · macOS **14+** · **MIT license** · **1.0 Beta 7.1**
 
 [Deutsch: vollständige Anleitung](README.de.md) · [Setup](LIES_MICH_ZUERST.md) · [Mac test builds](https://github.com/PwnedG0blin/OpenGuest/actions/workflows/macos.yml) · [Report an issue](https://github.com/PwnedG0blin/OpenGuest/issues)
 
-Stratovo brings Android ARM64, Windows ARM64 and Ubuntu ARM guest systems into a native Mac interface. Install Android APKs, use persistent guest storage, and open each guest in its own resizable player window. Only one guest runs at a time. System images, engines and drivers are set up separately.
+Stratovo brings Android ARM64, Windows ARM64 and Ubuntu ARM guest systems into a native Mac interface. Install Android APKs, use persistent guest storage, and open Android and Ubuntu in resizable display windows. Windows uses a direct native Metal graphics window by default. Only one guest runs at a time. System images, engines and drivers are set up separately.
 
 ## Interface language
 
@@ -29,7 +29,7 @@ Stratovo follows your preferred macOS language at launch. Override it under Setu
 
 - Install Windows using your own ARM64 ISO and an appropriate Windows license.
 - Persistent virtual disks, ARM64 firmware, TPM support and optional Virtio drivers.
-- 3D through VirtIO / Neptune / DXMT / Metal in the existing Windows installation and Stratovo player. Update the embedded 3D runtime once; existing build tools are reused. The initial graphics build requires full Xcode and additional libraries.
+- 3D through VirtIO / Neptune / DXMT / Metal in the existing Windows installation. Direct native output is the default, avoiding VNC/CPU frame copies; embedding remains an explicit experimental option. The initial graphics build requires full Xcode and additional libraries.
 
 ## Ubuntu ARM
 

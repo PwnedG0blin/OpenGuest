@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import StratovoCore
 
@@ -111,7 +112,7 @@ struct WorkspaceAppearanceSettings: View {
                 Label("Ubuntu", systemImage: "terminal")
             }.font(.callout).padding(14).modifier(WorkspaceChromeSurface())
                 .accessibilityLabel(L10n.text("Vorschau der Darstellung"))
-            Text(L10n.text("Gilt sofort für Navigation und Bedienelemente. Deine Auswahl wird gespeichert."))
+            Text(L10n.text("Gilt sofort für Hauptfenster, Player und Dialoge. Deine Auswahl wird gespeichert."))
                 .font(.callout).foregroundStyle(.secondary)
             if !WorkspaceAppearance.supportsGlass {
                 Text(L10n.text("Liquid Glass benötigt macOS 26 oder neuer. Auf diesem Mac wird die klassische Darstellung verwendet."))
@@ -120,6 +121,55 @@ struct WorkspaceAppearanceSettings: View {
             ContextHelpButton("Darstellung und Bedienungshilfen") {
                 Text(L10n.text("Automatisch verwendet Liquid Glass auf unterstützten macOS-Versionen. Klassisch zeigt feste Flächen. Reduzierte Transparenz und erhöhter Kontrast haben Vorrang. Die Darstellung der Gastsysteme und ihre Grafikleistung werden durch diese Auswahl nicht geändert."))
             }
+        }
+    }
+}
+
+/// Independent NSHostingView windows do not inherit the main scene's theme.
+/// Apply the same stored choice at every presentation root, including sheets.
+struct WorkspaceWindowTheme: ViewModifier {
+    @AppStorage(WorkspaceAppearance.preferenceKey) private var appearance = WorkspaceAppearance.automatic
+    func body(content: Content) -> some View {
+        content
+            .background { WorkspaceBackdrop() }
+            .background { WorkspaceNativeWindowAppearance(classic: appearance == .classic) }
+            .preferredColorScheme(appearance == .classic ? nil : .dark)
+            .tint(MidnightPalette.turquoise)
+    }
+}
+
+struct WorkspaceDialogTheme: ViewModifier {
+    func body(content: Content) -> some View {
+        content.modifier(WorkspaceActionStyle()).modifier(WorkspaceWindowTheme())
+    }
+}
+
+@MainActor
+private struct WorkspaceNativeWindowAppearance: NSViewRepresentable {
+    var classic: Bool
+    func makeNSView(context: Context) -> AppearanceView {
+        let view = AppearanceView()
+        view.classic = classic
+        return view
+    }
+    func updateNSView(_ view: AppearanceView, context: Context) {
+        view.classic = classic
+        view.applyAppearance()
+    }
+    final class AppearanceView: NSView {
+        var classic = false
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            applyAppearance()
+        }
+        func applyAppearance() {
+            guard let window else { return }
+            let desired = classic ? nil : NSAppearance(named: .darkAqua)
+            if window.appearance?.name != desired?.name { window.appearance = desired }
+            if window.titlebarAppearsTransparent == classic { window.titlebarAppearsTransparent = !classic }
+            let color: NSColor = classic ? .windowBackgroundColor :
+                NSColor(srgbRed: 0.027, green: 0.082, blue: 0.149, alpha: 1)
+            if window.backgroundColor != color { window.backgroundColor = color }
         }
     }
 }

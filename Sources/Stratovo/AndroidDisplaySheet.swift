@@ -60,6 +60,6 @@ struct AndroidDisplaySheet: View {
             HStack { Spacer(); Button(L10n.text("Fertig")) { dismiss() }.keyboardShortcut(.defaultAction) }
         }
         .padding(24).frame(width: 500)
-        .background(Color(nsColor: .windowBackgroundColor)).tint(.teal)
+        .modifier(WorkspaceDialogTheme())
     }
 }

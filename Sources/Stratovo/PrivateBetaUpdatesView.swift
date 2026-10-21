@@ -65,6 +65,7 @@ struct PrivateBetaUpdatesView: View {
                     }.buttonStyle(.borderedProminent).disabled(credential.isEmpty || updates.busy)
                 }
             }.padding(24).frame(width: 570)
+                .modifier(WorkspaceDialogTheme())
                 .interactiveDismissDisabled(updates.busy)
         }
         .confirmationDialog(L10n.text("Stratovo aktualisieren und neu starten?"), isPresented: $confirming) {

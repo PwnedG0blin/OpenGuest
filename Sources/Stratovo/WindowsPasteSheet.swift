@@ -52,7 +52,7 @@ struct WindowsPasteSheet: View {
             footer
         }
         .frame(width: 600)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .modifier(WorkspaceDialogTheme())
         .tint(accent)
         .onChange(of: text) { _, _ in allowLineBreaks = false }
     }
@@ -74,7 +74,7 @@ struct WindowsPasteSheet: View {
         }
         .padding(22)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.teal.opacity(0.09))
+        .modifier(WorkspaceChromeSurface(cornerRadius: 0))
         .overlay(alignment: .bottom) { Rectangle().fill(Color.teal.opacity(0.18)).frame(height: 1) }
     }
 
@@ -97,7 +97,7 @@ struct WindowsPasteSheet: View {
                 .accessibilityLabel(L10n.text("Text für Windows"))
         }
         .padding(14)
-        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 14))
+        .modifier(WorkspaceChromeSurface(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.teal.opacity(0.18)))
     }
 
@@ -156,7 +156,7 @@ struct WindowsPasteSheet: View {
         }
         .controlSize(.large)
         .padding(.horizontal, 22).padding(.vertical, 16)
-        .background(Color.teal.opacity(0.07))
+        .modifier(WorkspaceChromeSurface(cornerRadius: 0))
         .overlay(alignment: .top) { Rectangle().fill(Color.teal.opacity(0.18)).frame(height: 1) }
     }
 }

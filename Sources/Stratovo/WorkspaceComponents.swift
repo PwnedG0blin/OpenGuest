@@ -97,7 +97,7 @@ struct WorkspaceHelpSheet<Content: View>: View {
                     .font(.title2.weight(.semibold))
                 Spacer()
                 Button(L10n.text("Schließen")) { dismiss() }.keyboardShortcut(.cancelAction)
-            }.padding(24)
+            }.padding(24).modifier(WorkspaceChromeSurface(cornerRadius: 0))
             Divider()
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) { content() }
@@ -105,5 +105,6 @@ struct WorkspaceHelpSheet<Content: View>: View {
                     .frame(maxWidth: .infinity, alignment: .leading).padding(24)
             }
         }.frame(minWidth: 520, idealWidth: 640, maxWidth: 760, minHeight: 360, idealHeight: 540)
+            .modifier(WorkspaceDialogTheme())
     }
 }

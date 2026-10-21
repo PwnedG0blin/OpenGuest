@@ -33,8 +33,7 @@ struct ContentView: View {
                 if model.running { sessionBar }
             }
         }
-        .background { WorkspaceBackdrop() }
-        .preferredColorScheme(appearance == .classic ? nil : .dark)
+        .modifier(WorkspaceWindowTheme())
         .frame(minWidth: 860, minHeight: 650).tint(MidnightPalette.turquoise)
         .onChange(of: model.settings.iso) { _, _ in model.refreshWindowsISO() }
         .sheet(isPresented: $model.showStorageSetup) { StorageSetupSheet(model: model).interactiveDismissDisabled() }
@@ -137,7 +136,7 @@ enum AppPresentation {
     static func releaseLabel(info: [String: Any]) -> String {
         let version = info["CFBundleShortVersionString"] as? String ?? "1.0"
         let build = info["CFBundleVersion"] as? String ?? "dev"
-        let flavor = info["StratovoBuildFlavor"] as? String == "private" ? "Private Beta 7" : "Beta 7"
+        let flavor = info["StratovoBuildFlavor"] as? String == "private" ? "Private Beta 7.1" : "Beta 7.1"
         return "\(version) · \(flavor) · \(build)"
     }
 }
