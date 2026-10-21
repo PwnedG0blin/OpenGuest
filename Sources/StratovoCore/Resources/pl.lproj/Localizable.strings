@@ -43,7 +43,7 @@
 "Die App übernimmt beim Start automatisch die bevorzugte macOS-Sprache. Du kannst hier eine andere Sprache wählen. Gastsysteme behalten ihre eigene Sprache." = "Przy uruchomieniu aplikacja używa preferowanego języka macOS. Tutaj możesz wybrać inny. Systemy gości zachowują własny język.";
 "Downloads und Einrichtung" = "Pobieranie i konfiguracja";
 "Eigene Testkopie · VirtIO / Neptune / DXMT" = "Oddzielna kopia testowa · VirtIO / Neptune / DXMT";
-"Eine Oberfläche. Zwei Engines.\nEntwickelt für Apple Silicon." = "Jeden interfejs. Dwa silniki.\nDla Apple Silicon.";
+"Eine Oberfläche. Drei Systeme.\nEntwickelt für Apple Silicon." = "Jeden interfejs. Trzy systemy.\nDla Apple Silicon.";
 "Einpassen" = "Dopasuj";
 "Einrichtung" = "Konfiguracja";
 "Einrichtung nötig" = "Wymagana konfiguracja";

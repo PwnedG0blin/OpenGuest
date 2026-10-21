@@ -192,7 +192,7 @@
 "Eigenes Fenster · frei skalierbar · Vollbild möglich" = "Eigenes Fenster · frei skalierbar · Vollbild möglich";
 "Ein Gastprozess läuft noch" = "Ein Gastprozess läuft noch";
 "Ein Klick prüft die Version. Installiert wird erst nach deiner Auswahl und Bestätigung, wenn alle Gäste beendet sind. Downloads und Prüfung liegen im gewählten Datenordner. Öffentliche GitHub Releases benötigen keinen API-Schlüssel; Actions-Artefakte sind keine Releases." = "Ein Klick prüft die Version. Installiert wird erst nach deiner Auswahl und Bestätigung, wenn alle Gäste beendet sind. Downloads und Prüfung liegen im gewählten Datenordner. Öffentliche GitHub Releases benötigen keinen API-Schlüssel; Actions-Artefakte sind keine Releases.";
-"Eine Oberfläche. Zwei Engines.\nEntwickelt für Apple Silicon." = "Eine Oberfläche. Zwei Engines.\nEntwickelt für Apple Silicon.";
+"Eine Oberfläche. Drei Systeme.\nEntwickelt für Apple Silicon." = "Eine Oberfläche. Drei Systeme.\nEntwickelt für Apple Silicon.";
 "Eine vorhandene ISO auf Extern auswählen. Der Pfad wird gespeichert. Geprüft werden Dateiverfügbarkeit und Größe; ARM64-Inhalt und Bootfähigkeit sind damit noch nicht bestätigt. Zum Ändern Windows ausschalten." = "Eine vorhandene ISO auf Extern auswählen. Der Pfad wird gespeichert. Geprüft werden Dateiverfügbarkeit und Größe; ARM64-Inhalt und Bootfähigkeit sind damit noch nicht bestätigt. Zum Ändern Windows ausschalten.";
 "Einfügen" = "Einfügen";
 "Einfügen abgebrochen. Bereits übertragener Text bleibt im Windows-Feld stehen." = "Einfügen abgebrochen. Bereits übertragener Text bleibt im Windows-Feld stehen.";
