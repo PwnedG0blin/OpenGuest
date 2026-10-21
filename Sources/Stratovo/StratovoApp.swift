@@ -6,6 +6,8 @@ import StratovoCore
 final class AppDelegate: NSObject, NSApplicationDelegate {
     weak var model: AppModel?
     func applicationDidFinishLaunching(_ notification: Notification) {
+        WorkspaceAppearance.applyApplicationAppearance(WorkspaceAppearance(rawValue:
+            UserDefaults.standard.string(forKey: WorkspaceAppearance.preferenceKey) ?? "automatic") ?? .automatic)
         if let url = Bundle.main.url(forResource: "Stratovo", withExtension: "icns"),
            let icon = NSImage(contentsOf: url) {
             NSApplication.shared.applicationIconImage = icon
@@ -41,13 +43,16 @@ struct StratovoApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @StateObject private var model = AppModel()
     @AppStorage(L10n.preferenceKey) private var interfaceLanguage = "system"
+    @AppStorage(WorkspaceAppearance.preferenceKey) private var interfaceAppearance = WorkspaceAppearance.automatic
 
     var body: some Scene {
         WindowGroup {
             ContentView(model: model)
                 .environment(\.locale, Locale(identifier: L10n.resolve(preference: interfaceLanguage, preferredLanguages: Locale.preferredLanguages)))
                 .environment(\.layoutDirection, L10n.code == "ar" ? .rightToLeft : .leftToRight)
+                .onChange(of: interfaceAppearance) { _, value in WorkspaceAppearance.applyApplicationAppearance(value) }
                 .task {
+                    WorkspaceAppearance.applyApplicationAppearance(interfaceAppearance)
                     delegate.model = model
                     await model.open()
                 }

@@ -2,7 +2,8 @@
 
 - Midnight appearance now also covers Android/Ubuntu player windows, title bars,
   resolution and paste dialogs, help, diagnostics, storage setup and private
-  update connection dialogs. Glass controls are used on macOS 26; older systems
+  update connection dialogs. Native alerts, confirmation popovers and file
+  panels inherit the app appearance as well. Glass controls are used on macOS 26; older systems
   and accessibility settings keep the compatible solid surfaces.
 - Windows continues to use its direct native Cocoa/Metal graphics window by
   default. Styling the app's controls does not enable the experimental embedded

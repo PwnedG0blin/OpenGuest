@@ -49,6 +49,12 @@ enum WorkspaceAppearance: String, CaseIterable, Identifiable {
         if #available(macOS 26.0, *) { return true }
         return false
     }
+    @MainActor
+    static func applyApplicationAppearance(_ value: WorkspaceAppearance) {
+        // Native alerts, confirmation popovers and file panels inherit this too.
+        let desired = value == .classic ? nil : NSAppearance(named: .darkAqua)
+        if NSApp.appearance?.name != desired?.name { NSApp.appearance = desired }
+    }
 }
 
 /// App chrome only: guest pixels and content cards keep their own rendering.
