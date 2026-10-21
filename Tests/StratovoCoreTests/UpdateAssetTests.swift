@@ -3,13 +3,13 @@ import XCTest
 @testable import StratovoCore
 
 final class UpdateAssetTests: XCTestCase {
-    private func release(url: String? = nil, digest: String? = nil) throws -> StratovoRelease {
+    private func release(url: String? = nil, digest: String? = nil, repository: String = "OpenGuest", releaseURL: String? = nil) throws -> StratovoRelease {
         let data = try JSONSerialization.data(withJSONObject: [
             "tag_name": "v1.0.0-beta.2", "name": "Beta 2",
-            "html_url": "https://github.com/PwnedG0blin/OpenGuest/releases/tag/v1.0.0-beta.2",
+            "html_url": releaseURL ?? "https://github.com/PwnedG0blin/\(repository)/releases/tag/v1.0.0-beta.2",
             "draft": false, "prerelease": true,
             "assets": [["name": "Stratovo-macOS-AppleSilicon.app.zip", "size": 1234,
-                         "browser_download_url": url ?? "https://github.com/PwnedG0blin/OpenGuest/releases/download/v1.0.0-beta.2/Stratovo-macOS-AppleSilicon.app.zip",
+                         "browser_download_url": url ?? "https://github.com/PwnedG0blin/\(repository)/releases/download/v1.0.0-beta.2/Stratovo-macOS-AppleSilicon.app.zip",
                          "digest": digest ?? "sha256:" + String(repeating: "a", count: 64)]]
         ])
         return try JSONDecoder().decode(StratovoRelease.self, from: data)
@@ -26,6 +26,34 @@ final class UpdateAssetTests: XCTestCase {
             XCTAssertFalse(try XCTUnwrap(bad.assets?.first).isTrusted(for: bad))
         }
     }
+    func testUpdatesWorkBeforeAndAfterRepositoryRename() throws {
+        for repository in ["OpenGuest", "Stratovo"] {
+            let good = try release(repository: repository)
+            XCTAssertTrue(good.hasTrustedURL)
+            XCTAssertTrue(try XCTUnwrap(good.assets?.first).isTrusted(for: good))
+            XCTAssertEqual(StratovoReleaseCatalog.newerRelease(in: [good], installedVersion: "1.0.0-beta.1", includePrereleases: true)?.tagName, good.tagName)
+        }
+        XCTAssertEqual(StratovoReleaseCatalog.apiURL.absoluteString,
+                       "https://api.github.com/repos/PwnedG0blin/Stratovo/releases?per_page=30")
+        XCTAssertEqual(StratovoReleaseCatalog.legacyAPIURL.absoluteString,
+                       "https://api.github.com/repos/PwnedG0blin/OpenGuest/releases?per_page=30")
+    }
+
+    func testRejectsMixedRepositoriesAndMisleadingReleaseURLs() throws {
+        let mixed = try release(url: "https://github.com/PwnedG0blin/OpenGuest/releases/download/v1.0.0-beta.2/Stratovo-macOS-AppleSilicon.app.zip", repository: "Stratovo")
+        XCTAssertFalse(try XCTUnwrap(mixed.assets?.first).isTrusted(for: mixed))
+        for path in ["Stratovo-other/releases/tag/v1.0.0-beta.2",
+                     "Stratovo/releases/tag/v1.0.0-beta.3",
+                     "Stratovo/releases/tag/v1.0.0-beta.2/extra",
+                     "Stratovo/releases/tag/v1.0.0-beta.2?download=1",
+                     "Stratovo/releases/tag/v1.0.0-beta.2#fragment",
+                     "%53tratovo/releases/tag/v1.0.0-beta.2"] {
+            let bad = try release(releaseURL: "https://github.com/PwnedG0blin/" + path)
+            XCTAssertFalse(bad.hasTrustedURL, path)
+            XCTAssertFalse(try XCTUnwrap(bad.assets?.first).isTrusted(for: bad), path)
+        }
+    }
+
     func testBetaVersionUpdatesToNextBetaThenStableWithoutDowngrade() {
         XCTAssertLessThan(StratovoVersion("1.0.0-beta.1")!, StratovoVersion("v1.0.0-beta.2")!)
         XCTAssertLessThan(StratovoVersion("1.0.0-beta.2")!, StratovoVersion("1.0.0")!)

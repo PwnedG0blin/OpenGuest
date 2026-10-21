@@ -18,7 +18,14 @@ final class GitHubUpdateChecker: ObservableObject {
     @Published private(set) var lastChecked: Date?
 
     private let lastAttemptKey = "Pixelkoje.GitHubUpdates.lastAttempt"
-    let installedVersion = Bundle.main.object(forInfoDictionaryKey: "StratovoReleaseVersion") as? String ?? Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Unbekannt"
+    private let fetch: (URLRequest) async throws -> (Data, URLResponse)
+    let installedVersion: String
+
+    init(installedVersion: String? = nil,
+         fetch: @escaping (URLRequest) async throws -> (Data, URLResponse) = { try await URLSession.shared.data(for: $0) }) {
+        self.fetch = fetch
+        self.installedVersion = installedVersion ?? Bundle.main.object(forInfoDictionaryKey: "StratovoReleaseVersion") as? String ?? Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Unbekannt"
+    }
 
     func checkIfDue(includePrereleases: Bool) async {
         if let last = UserDefaults.standard.object(forKey: lastAttemptKey) as? Date,
@@ -44,7 +51,11 @@ final class GitHubUpdateChecker: ObservableObject {
         request.setValue("Stratovo/1.0 GitHub-Releases-Check", forHTTPHeaderField: "User-Agent")
         request.cachePolicy = .reloadIgnoringLocalCacheData
         do {
-            let (data, response) = try await URLSession.shared.data(for: request)
+            var (data, response) = try await fetch(request)
+            if (response as? HTTPURLResponse)?.statusCode == 404 {
+                request.url = StratovoReleaseCatalog.legacyAPIURL
+                (data, response) = try await fetch(request)
+            }
             guard let http = response as? HTTPURLResponse else {
                 state = .failed(L10n.text("Keine gültige Antwort von GitHub erhalten."))
                 return

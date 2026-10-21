@@ -136,7 +136,7 @@ enum AppPresentation {
     static func releaseLabel(info: [String: Any]) -> String {
         let version = info["CFBundleShortVersionString"] as? String ?? "1.0"
         let build = info["CFBundleVersion"] as? String ?? "dev"
-        let flavor = info["StratovoBuildFlavor"] as? String == "private" ? "Private Beta 7.1" : "Beta 7.1"
+        let flavor = info["StratovoBuildFlavor"] as? String == "private" ? "Private Beta 7.2" : "Beta 7.2"
         return "\(version) · \(flavor) · \(build)"
     }
 }

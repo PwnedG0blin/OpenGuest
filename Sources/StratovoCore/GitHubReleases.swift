@@ -20,13 +20,20 @@ public struct StratovoRelease: Decodable, Sendable {
     public var version: StratovoVersion? { StratovoVersion(tagName) }
 
     /// Never offer a download link outside this project's official releases.
-    public var hasTrustedURL: Bool {
+    public var hasTrustedURL: Bool { trustedRepository != nil }
+
+    /// Match the release tag exactly and retain the legacy name during migration.
+    fileprivate var trustedRepository: String? {
         guard let parts = URLComponents(url: htmlURL, resolvingAgainstBaseURL: false),
-              parts.scheme?.lowercased() == "https",
-              parts.host?.lowercased() == "github.com",
-              parts.user == nil, parts.password == nil, parts.port == nil else { return false }
-        let prefix = "/PwnedG0blin/OpenGuest/releases/tag/"
-        return parts.path.hasPrefix(prefix) && parts.path.count > prefix.count
+              parts.scheme == "https", parts.host == "github.com",
+              parts.user == nil, parts.password == nil, parts.port == nil,
+              parts.query == nil, parts.fragment == nil,
+              !tagName.isEmpty, !tagName.contains("/"), !tagName.contains("%"),
+              tagName != ".", tagName != ".." else { return nil }
+        return ["Stratovo", "OpenGuest"].first {
+            parts.path == "/PwnedG0blin/\($0)/releases/tag/\(tagName)" &&
+            parts.percentEncodedPath == parts.path
+        }
     }
 }
 
@@ -80,7 +87,10 @@ public struct StratovoVersion: Comparable, Sendable {
 }
 
 public enum StratovoReleaseCatalog {
-    public static let apiURL = URL(string: "https://api.github.com/repos/PwnedG0blin/OpenGuest/releases?per_page=30")!
+    public static let apiURL = URL(string: "https://api.github.com/repos/PwnedG0blin/Stratovo/releases?per_page=30")!
+    // Before the rename, the canonical endpoint returns 404.
+    public static let legacyAPIURL = URL(string: "https://api.github.com/repos/PwnedG0blin/OpenGuest/releases?per_page=30")!
+    // Keep existing browser links functional on both sides of the rename.
     public static let releasesURL = URL(string: "https://github.com/PwnedG0blin/OpenGuest/releases")!
     public static let buildsURL = URL(string: "https://github.com/PwnedG0blin/OpenGuest/actions/workflows/macos.yml")!
 
@@ -119,13 +129,14 @@ public struct StratovoReleaseAsset: Decodable, Sendable {
         return hash.count == 64 && hash.allSatisfy({ "0123456789abcdef".contains($0) }) ? hash : nil
     }
     public func isTrusted(for release: StratovoRelease) -> Bool {
-        guard release.hasTrustedURL, !release.draft,
+        guard let repository = release.trustedRepository, !release.draft,
               name == "Stratovo-macOS-AppleSilicon.app.zip", size > 0, size <= 300 * 1024 * 1024,
               sha256 != nil,
               let parts = URLComponents(url: browserDownloadURL, resolvingAgainstBaseURL: false),
               parts.scheme == "https", parts.host == "github.com",
               parts.user == nil, parts.password == nil, parts.port == nil,
               parts.query == nil, parts.fragment == nil else { return false }
-        return parts.path == "/PwnedG0blin/OpenGuest/releases/download/\(release.tagName)/\(name)"
+        return parts.path == "/PwnedG0blin/\(repository)/releases/download/\(release.tagName)/\(name)" &&
+            parts.percentEncodedPath == parts.path
     }
 }
