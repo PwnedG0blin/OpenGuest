@@ -5,6 +5,16 @@ import StratovoCore
 struct AndroidFrameRateControls: View {
     @ObservedObject var model: AppModel
     var body: some View {
+        if model.androidOutputMode == .direct {
+            VStack(alignment: .leading, spacing: 10) {
+                Label(L10n.text("Virtuelle Displayfrequenz"), systemImage: "speedometer").font(.headline)
+                Slider(value: Binding(get: { Double(AndroidFrameRate.displayHz(for: model.androidTargetFPS)) },
+                                      set: { model.androidTargetFPS = Int($0.rounded()) }), in: 60...90, step: 1)
+                Text("\(AndroidFrameRate.displayHz(for: model.androidTargetFPS)) Hz").monospacedDigit()
+                Text(L10n.text("Gilt beim nächsten Android-Start. Die virtuelle Displayfrequenz ist keine Messung und keine Garantie der Spiel-FPS. Im direkten Modus gibt es kein zusätzliches Stream-FPS-Limit."))
+                    .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            }.disabled(model.running || model.busy)
+        } else {
         VStack(alignment: .leading, spacing: 10) {
             Label(L10n.text("Dynamische Android-Bildrate"), systemImage: "speedometer").font(.headline)
             HStack {
@@ -32,5 +42,6 @@ struct AndroidFrameRateControls: View {
                 Text(L10n.text("Wird beim nächsten Android-Start angewendet.")).font(.system(size: 13)).foregroundStyle(.secondary)
             }
         }.disabled(model.busy || model.androidReconnectBusy || (model.running && model.activeGuest != "android"))
+        }
     }
 }

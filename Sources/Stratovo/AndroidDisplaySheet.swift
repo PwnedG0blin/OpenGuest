@@ -34,7 +34,9 @@ struct AndroidDisplayControls: View {
             }
             Button(L10n.text("Originalauflösung und Dichte wiederherstellen")) { Task { await model.restoreAndroidDisplay() } }
                 .disabled(!model.canEditAndroidDisplay)
-            Button(L10n.text("Player als Telefonfenster anpassen"), action: model.fitAndroidPlayerWindow)
+            if !model.androidUsesDirectDisplay && model.androidOutputMode.usesStream {
+                Button(L10n.text("Player als Telefonfenster anpassen"), action: model.fitAndroidPlayerWindow)
+            }
             Text(L10n.text("Werte werden gemerkt und beim nächsten Android-Start angewendet. Bei laufendem Android zusätzlich „Jetzt in Android anwenden“ wählen. „Ansicht“ im Player verändert nur die Darstellung auf dem Mac."))
                 .font(.caption).foregroundStyle(.secondary)
             Text(model.androidDisplayStatus).font(.caption).textSelection(.enabled)

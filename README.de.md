@@ -1,6 +1,6 @@
 # Stratovo · Android, Windows und Ubuntu auf dem Mac
 
-Entwickelt von **PwnedG0blin** · **1.0 Beta 7.2 · Mitternacht** · macOS 14+ · Apple Silicon.
+Entwickelt von **PwnedG0blin** · **1.0 Beta 7.3 · Mitternacht** · macOS 14+ · Apple Silicon.
 
 Die neue bebilderte Übersicht zeigt Windows, Android und Ubuntu mit einer dauerhaft
 erreichbaren Startleiste. Dunkelblau, Türkis und Violett sowie optionales natives
@@ -18,8 +18,8 @@ Gäste und Werkzeuge liegen auf deinem selbst gewählten Datenträger.
 - Austauschordner im gewählten Datenordner: Windows/Ubuntu über SMB, Android über Datei-Senden und Abholen.
 - GitHub-Updates mit Prüfungen vor der Installation.
 
-[Download](https://github.com/PwnedG0blin/OpenGuest/releases) · [Schritt-für-Schritt-Anleitung](LIES_MICH_ZUERST.md) ·
-[Neu in Beta 7.2](docs/RELEASE_1.0_BETA7_2.md)
+[Download](https://github.com/PwnedG0blin/Stratovo/releases) · [Schritt-für-Schritt-Anleitung](LIES_MICH_ZUERST.md) ·
+[Neu in Beta 7.3](docs/RELEASE_1.0_BETA7_3.md)
 
 3D und Gastkompatibilität bleiben experimentell. Für den ersten Grafikbau werden
 vollständiges Xcode mit Metal-Werkzeugen und mindestens 30 GiB benötigt. Die App

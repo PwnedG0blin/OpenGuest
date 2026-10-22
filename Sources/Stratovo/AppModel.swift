@@ -52,6 +52,17 @@ final class AppModel: ObservableObject {
             frameRateDefaults.set(value, forKey: "Pixelkoje.androidFPS")
         }
     }
+    @Published var androidOutputMode: AndroidOutputMode {
+        didSet { frameRateDefaults.set(androidOutputMode.rawValue, forKey: "Stratovo.androidOutputMode") }
+    }
+    @Published private(set) var activeAndroidOutputMode: AndroidOutputMode?
+    @Published private(set) var androidWindowStatus = ""
+    var androidUsesDirectDisplay: Bool {
+        running && activeGuest == "android" && activeAndroidOutputMode == .direct
+    }
+    func guestWindowButtonTitle(kind: String) -> String {
+        L10n.text(kind == "android" && androidUsesDirectDisplay ? "Android-Fenster öffnen" : "Player öffnen")
+    }
     @Published private(set) var androidGuestRefreshHz = 60
     @Published var androidStreamQuality = AndroidStreamQuality(rawValue: UserDefaults.standard.string(forKey: "Stratovo.androidStreamQuality") ?? "sharp") ?? .sharp {
         didSet { UserDefaults.standard.set(androidStreamQuality.rawValue, forKey: "Stratovo.androidStreamQuality") }
@@ -370,6 +381,7 @@ final class AppModel: ObservableObject {
         Leistungsprofil: \(androidProfile.rawValue) · Gewähltes Ziel: \(androidTargetFPS) FPS · Aktives Limit: \(appliedAndroidTargetFPS.map(String.init) ?? "—")
         Streamqualität: \(appliedAndroidStreamQuality?.rawValue ?? "Nicht verbunden") · Gewählt: \(androidStreamQuality.rawValue)
         Empfangenes Bild: \(Int(playerSize.width)) × \(Int(playerSize.height)) px
+        Android-Ausgabe: \(activeAndroidOutputMode?.rawValue ?? "Nicht gestartet") · nächster Start: \(androidOutputMode.rawValue)
         Android-Bildschirm: \(androidDisplayStatus)
         Android-Grafikrenderer: \(androidRendererStatus)
         Decoder-Zuführung: \(Int(decoderFPS.rounded())) FPS · Wiederanläufe: \(decoderRecoveries) · verworfene verspätete Frames: \(androidDroppedFrames)
@@ -525,10 +537,37 @@ final class AppModel: ObservableObject {
     private let playerWindows = GuestPlayerWindows()
 
     func showPlayer(kind: String) {
-        if kind == "windows", windowsUsesDirectDisplay {
+        if kind == "android", androidUsesDirectDisplay {
+            playerWindows.hide(kind: kind)
+            activateAndroidGraphics()
+        } else if kind == "windows", windowsUsesDirectDisplay {
             playerWindows.hide(kind: kind)
             activateWindowsGraphics()
         } else { playerWindows.show(kind: kind, model: self) }
+    }
+    private func activateAndroidGraphics() {
+        guard androidUsesDirectDisplay, let child = process else { return }
+        let pid = child.processIdentifier
+        Task { [weak self] in
+            for _ in 0..<5 {
+                guard let self, self.androidUsesDirectDisplay, self.process?.processIdentifier == pid else { return }
+                // The SDK launcher may start a separate QEMU/Qt child. Only activate
+                // this launch's descendants, never an unrelated Android instance.
+                let result = try? await Self.capture(CommandSpec(executable: "/bin/ps", arguments: ["-axo", "pid=,ppid="]), timeout: 2)
+                guard self.androidUsesDirectDisplay, self.process?.processIdentifier == pid else { return }
+                let descendants = AndroidProcessTree.descendants(of: pid, snapshot: result?.output ?? "")
+                for candidate in [pid] + descendants {
+                    if let app = NSRunningApplication(processIdentifier: candidate),
+                       app.activate(options: [.activateAllWindows, .activateIgnoringOtherApps]) {
+                        self.androidWindowStatus = ""
+                        return
+                    }
+                }
+                try? await Task.sleep(nanoseconds: 300_000_000)
+            }
+            guard let self, self.androidUsesDirectDisplay, self.process?.processIdentifier == pid else { return }
+            self.androidWindowStatus = L10n.text("Das native Android-Fenster bei Bedarf über das Dock auswählen. Ein geschlossenes Emulatorfenster kann Android beenden; danach neu starten.")
+        }
     }
     private func activateWindowsGraphics() {
         guard running, activeGuest == "windows", let child = process else { return }
@@ -742,7 +781,7 @@ final class AppModel: ObservableObject {
     }
     var selectedDevice: AndroidDevice? { devices.first { $0.name == settings.selectedAVD } }
     var canStartAndroid: Bool {
-        storageReady && supportedHost && hypervisorAvailable && androidReady && selectedDevice?.supported == true && adb != nil && ScrcpySession.installed && androidDisplayIssue == nil && !busy && !running
+        storageReady && supportedHost && hypervisorAvailable && androidReady && selectedDevice?.supported == true && adb != nil && androidOutputMode.canLaunch(streamInstalled: ScrcpySession.installed) && androidDisplayIssue == nil && !busy && !running
     }
     private var windowsHostReady: Bool {
         storageReady && storage?.windowsFolderReady == true && windowsCapacityIssue == nil && supportedHost && hypervisorAvailable && windowsReady && firmware != nil && settings.memoryGB >= 4 && !busy && !running
@@ -763,6 +802,7 @@ final class AppModel: ObservableObject {
 
     init(frameRateDefaults: UserDefaults = .standard, applyPerformanceDefaults: Bool = true) {
         self.frameRateDefaults = frameRateDefaults
+        self.androidOutputMode = AndroidOutputMode(rawValue: frameRateDefaults.string(forKey: "Stratovo.androidOutputMode") ?? "player") ?? .player
         self.storedAndroidTargetFPS = AndroidFrameRate.limit(frameRateDefaults.object(forKey: "Pixelkoje.androidFPS") as? Int ?? 60)
         guard applyPerformanceDefaults else { return }
         if !UserDefaults.standard.bool(forKey: "Pixelkoje.performanceDefaultsApplied") {
@@ -901,14 +941,16 @@ final class AppModel: ObservableObject {
             let refreshChanged = try AndroidFrameRate.prepareAVD(root: storage.avd, name: device.name, fps: androidTargetFPS)
             androidGuestRefreshHz = AndroidFrameRate.displayHz(for: androidTargetFPS)
             let base = try LaunchPlan.android(sdk: sdk, device: device, resources: resources,
-                                              coldBoot: settings.coldBoot || refreshChanged, gpu: settings.gpu, port: port, vulkan: androidVulkanEnabled)
+                                              coldBoot: settings.coldBoot || refreshChanged, gpu: settings.gpu, port: port, vulkan: androidVulkanEnabled, output: androidOutputMode)
             let spec = CommandSpec(executable: base.executable, arguments: base.arguments, environment: storage.environment)
             try start(spec, title: "Android · \(device.name)")
             activeGuest = "android"
+            activeAndroidOutputMode = androidOutputMode
+            androidWindowStatus = ""
             androidRendererStatus = L10n.text("Grafikrenderer wird geprüft"); androidSoftwareRendering = false
             androidDisplayStatus = L10n.text("Leistungsprofil wird angewendet, sobald Android bereit ist")
             streamFPS = 0; decoderFPS = 0; decoderRecoveries = 0
-            recordDiagnostic("Android · Leistung", "Profil \(androidProfile.rawValue), Ziel \(androidTargetFPS) FPS, GPU angefordert \(settings.gpu), Vulkan \(androidVulkanEnabled ? "erlaubt" : "aus"), begrenzte Stream-Warteschlange")
+            recordDiagnostic("Android · Leistung", "Profil \(androidProfile.rawValue), Ziel \(androidTargetFPS) FPS, Ausgabe \(androidOutputMode.rawValue), GPU angefordert \(androidOutputMode.gpu(requested: settings.gpu)), Vulkan \(androidVulkanEnabled ? "erlaubt" : "aus"), begrenzte Stream-Warteschlange")
             playerStatus = "Android startet …"
             androidPort = port
             androidBooted = false
@@ -1061,7 +1103,13 @@ final class AppModel: ObservableObject {
                     await self.applyAndroidDisplay(port: port)
                     guard !Task.isCancelled, self.running, self.androidPort == port else { return }
                     self.apkStatus = L10n.text("Android bereit · APKs können installiert werden")
-                    await self.connectAndroidPlayer(port: port)
+                    self.audio.connect(.android(adb: adb, serial: "emulator-\(port)"), kind: "android")
+                    if self.androidUsesDirectDisplay {
+                        self.playerStatus = L10n.text("Direktes Emulatorfenster · ohne Stratovo-Videostream")
+                        self.recordDiagnostic("Android · Anzeige", self.playerStatus)
+                    } else {
+                        await self.connectAndroidPlayer(port: port)
+                    }
                     await self.checkGoogleServices(port: port)
                     return
                 }
@@ -1103,7 +1151,7 @@ final class AppModel: ObservableObject {
     }
 
     private func connectAndroidPlayer(port: Int) async {
-        guard let adb, running, androidPort == port else { return }
+        guard let adb, running, androidPort == port, activeAndroidOutputMode == .player else { return }
         h264Player.reset()
         let stream = ScrcpySession()
         h264Player.onSize = { [weak self, weak stream] size in
@@ -1128,7 +1176,6 @@ final class AppModel: ObservableObject {
             try await stream.start(adb: adb, serial: "emulator-\(port)", quality: quality, fps: fps)
             if running && androidPort == port && !Task.isCancelled {
                 appliedAndroidStreamQuality = quality; appliedAndroidTargetFPS = fps
-                audio.connect(.android(adb: adb, serial: "emulator-\(port)"), kind: "android")
             }
             if Task.isCancelled || !running { await stream.stop() }
         } catch {
@@ -1138,7 +1185,7 @@ final class AppModel: ObservableObject {
     }
 
     var canReconnectAndroidDisplay: Bool {
-        running && activeGuest == "android" && androidBooted && !busy && !androidReconnectBusy
+        running && activeGuest == "android" && activeAndroidOutputMode == .player && androidBooted && !busy && !androidReconnectBusy
     }
     func reconnectAndroidDisplay() async {
         guard canReconnectAndroidDisplay, let port = androidPort else { return }
@@ -1570,6 +1617,7 @@ final class AppModel: ObservableObject {
         h264Player.reset()
         androidPort = nil
         androidBooted = false
+        activeAndroidOutputMode = nil; androidWindowStatus = ""
         timer?.invalidate()
         timer = nil
         await logReadTask?.value

@@ -1,8 +1,8 @@
 blank_issues_enabled: true
 contact_links:
   - name: Einrichtung und bekannte Grenzen
-    url: https://github.com/PwnedG0blin/OpenGuest/blob/main/LIES_MICH_ZUERST.md
+    url: https://github.com/PwnedG0blin/Stratovo/blob/main/LIES_MICH_ZUERST.md
     about: Anleitung für Android, Windows und externe Datenträger.
   - name: Hinweise zu Sicherheitsmeldungen
-    url: https://github.com/PwnedG0blin/OpenGuest/blob/main/SECURITY.md
+    url: https://github.com/PwnedG0blin/Stratovo/blob/main/SECURITY.md
     about: Vor dem Teilen sensibler Sicherheitsdetails lesen.

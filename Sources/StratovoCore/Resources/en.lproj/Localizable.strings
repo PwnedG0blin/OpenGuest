@@ -860,3 +860,16 @@
 "Erweiterte Einstellungen" = "Advanced settings";
 "Deine Apps und Spiele auf dem Mac." = "Your apps and games on your Mac.";
 "Ubuntu einrichten" = "Set up Ubuntu";
+
+// Android direct output
+"Direkt · Spiele (Mac-GPU)" = "Direct · Games (Mac GPU)";
+"Integrierter Player" = "Integrated player";
+"Android-Fenster öffnen" = "Open Android window";
+"Android-Bildausgabe" = "Android display output";
+"Virtuelle Displayfrequenz" = "Virtual display refresh rate";
+"Kein Videostream · Spiel-FPS hier nicht gemessen" = "No video stream · Game FPS not measured here";
+"Direktes Emulatorfenster · ohne Stratovo-Videostream" = "Native emulator window · No Stratovo video stream";
+"Direkt öffnet das native Emulatorfenster mit angeforderter Mac-GPU und ohne zusätzlichen Videostream. Gilt für den gesamten Android-Start, auch für Apps. Zum Wechsel Android herunterfahren und neu starten." = "Direct opens the native emulator window, requesting the Mac GPU with no additional video stream. Applies to the entire Android session, including apps. Shut Android down and restart to switch modes.";
+"Auflösung und Lautstärke bleiben in Stratovo steuerbar. Grafikübersetzung und tatsächlicher Renderer hängen vom Emulator ab; die Diagnose zeigt den erkannten Renderer. Das Schließen des nativen Fensters kann Android beenden." = "Resolution and volume remain available in Stratovo. Graphics translation and the actual renderer depend on the emulator; diagnostics report the detected renderer. Closing the native window may shut Android down.";
+"Das native Android-Fenster bei Bedarf über das Dock auswählen. Ein geschlossenes Emulatorfenster kann Android beenden; danach neu starten." = "Select the native Android window in the Dock if needed. Closing the emulator window may shut Android down; restart it afterwards.";
+"Gilt beim nächsten Android-Start. Die virtuelle Displayfrequenz ist keine Messung und keine Garantie der Spiel-FPS. Im direkten Modus gibt es kein zusätzliches Stream-FPS-Limit." = "Applies on the next Android start. The virtual refresh rate is neither a measurement nor a guarantee of game FPS. Direct mode has no additional stream FPS limit.";
