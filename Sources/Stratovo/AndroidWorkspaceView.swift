@@ -13,7 +13,11 @@ struct AndroidWorkspaceView: View {
                     AndroidVersionsView(model: model, installer: model.installer).padding(.top, 8)
                 }
             }
-            GuestPlayerSummary(model: model, kind: "android", title: "Android Player")
+            GuestPlayerSummary(model: model, kind: "android", title: "Android")
+            WorkspaceCard { AndroidOutputControls(model: model) }
+            if model.running && model.activeGuest == "android" {
+                WorkspaceCard { GuestAudioControls(audio: model.audio, kind: "android") }
+            }
             WorkspaceCard {
                 VStack(alignment: .leading, spacing: 18) {
                     HStack {
@@ -47,7 +51,7 @@ struct AndroidWorkspaceView: View {
                         Text(L10n.text("Automatisch")).tag("auto")
                         Text(L10n.text("Mac-GPU bevorzugen")).tag("host")
                         Text(L10n.text("Software (Fehlersuche)")).tag("software")
-                    }.disabled(model.running || model.busy)
+                    }.disabled(model.running || model.busy || model.androidOutputMode == .direct)
                     Toggle(L10n.text("Vulkan für Android-Spiele zulassen"), isOn: $model.androidVulkanEnabled)
                         .disabled(model.running || model.busy)
                     ContextHelpButton("Grafik und Kompatibilität") {
@@ -60,7 +64,9 @@ struct AndroidWorkspaceView: View {
                         }
                     }.disabled(model.running || model.busy)
                     AndroidFrameRateControls(model: model)
-                    AndroidStreamQualityControls(model: model)
+                    if model.androidOutputMode.usesStream {
+                        AndroidStreamQualityControls(model: model)
+                    }
                     ContextHelpButton("Leistungsprofile") {
                         Text(L10n.text("Flüssig reduziert die Android-Auflösung. Änderungen gelten beim nächsten Android-Start. Die Bildqualität der Übertragung wählst du separat; Originalauflösung hebt die Bildschirm-Anpassung wieder auf."))
                             .font(.body).foregroundStyle(.secondary)
@@ -100,7 +106,7 @@ struct AndroidWorkspaceView: View {
                             .disabled(!model.canInstallAPK)
                         if model.apkBusy { ProgressView().controlSize(.small) }
                     }
-                    if !ScrcpySession.installed {
+                    if model.androidOutputMode.usesStream && !ScrcpySession.installed {
                         Text(L10n.text("Streaming-Modul fehlt. Unter „Einrichtung“ kannst du es vorbereiten."))
                             .font(.caption).foregroundStyle(.orange)
                     }

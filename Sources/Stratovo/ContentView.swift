@@ -121,7 +121,7 @@ struct ContentView: View {
             Text(model.sessionName).font(.callout.weight(.medium)).lineLimit(1)
             Spacer()
             if !model.activeGuest.isEmpty {
-                Button(L10n.text("Player öffnen")) { model.showPlayer(kind: model.activeGuest) }
+                Button(model.guestWindowButtonTitle(kind: model.activeGuest)) { model.showPlayer(kind: model.activeGuest) }
             }
             Button(L10n.text("Herunterfahren"), action: model.shutdownGuest)
         }.padding(.horizontal, 18).padding(.vertical, 12)
@@ -136,7 +136,7 @@ enum AppPresentation {
     static func releaseLabel(info: [String: Any]) -> String {
         let version = info["CFBundleShortVersionString"] as? String ?? "1.0"
         let build = info["CFBundleVersion"] as? String ?? "dev"
-        let flavor = info["StratovoBuildFlavor"] as? String == "private" ? "Private Beta 7.2" : "Beta 7.2"
+        let flavor = info["StratovoBuildFlavor"] as? String == "private" ? "Private Beta 7.3" : "Beta 7.3"
         return "\(version) · \(flavor) · \(build)"
     }
 }

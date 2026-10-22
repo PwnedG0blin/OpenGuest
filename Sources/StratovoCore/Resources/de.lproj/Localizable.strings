@@ -761,3 +761,16 @@
 "Erweiterte Einstellungen" = "Erweiterte Einstellungen";
 "Deine Apps und Spiele auf dem Mac." = "Deine Apps und Spiele auf dem Mac.";
 "Ubuntu einrichten" = "Ubuntu einrichten";
+
+// Android direct output
+"Direkt · Spiele (Mac-GPU)" = "Direkt · Spiele (Mac-GPU)";
+"Integrierter Player" = "Integrierter Player";
+"Android-Fenster öffnen" = "Android-Fenster öffnen";
+"Android-Bildausgabe" = "Android-Bildausgabe";
+"Virtuelle Displayfrequenz" = "Virtuelle Displayfrequenz";
+"Kein Videostream · Spiel-FPS hier nicht gemessen" = "Kein Videostream · Spiel-FPS hier nicht gemessen";
+"Direktes Emulatorfenster · ohne Stratovo-Videostream" = "Direktes Emulatorfenster · ohne Stratovo-Videostream";
+"Direkt öffnet das native Emulatorfenster mit angeforderter Mac-GPU und ohne zusätzlichen Videostream. Gilt für den gesamten Android-Start, auch für Apps. Zum Wechsel Android herunterfahren und neu starten." = "Direkt öffnet das native Emulatorfenster mit angeforderter Mac-GPU und ohne zusätzlichen Videostream. Gilt für den gesamten Android-Start, auch für Apps. Zum Wechsel Android herunterfahren und neu starten.";
+"Auflösung und Lautstärke bleiben in Stratovo steuerbar. Grafikübersetzung und tatsächlicher Renderer hängen vom Emulator ab; die Diagnose zeigt den erkannten Renderer. Das Schließen des nativen Fensters kann Android beenden." = "Auflösung und Lautstärke bleiben in Stratovo steuerbar. Grafikübersetzung und tatsächlicher Renderer hängen vom Emulator ab; die Diagnose zeigt den erkannten Renderer. Das Schließen des nativen Fensters kann Android beenden.";
+"Das native Android-Fenster bei Bedarf über das Dock auswählen. Ein geschlossenes Emulatorfenster kann Android beenden; danach neu starten." = "Das native Android-Fenster bei Bedarf über das Dock auswählen. Ein geschlossenes Emulatorfenster kann Android beenden; danach neu starten.";
+"Gilt beim nächsten Android-Start. Die virtuelle Displayfrequenz ist keine Messung und keine Garantie der Spiel-FPS. Im direkten Modus gibt es kein zusätzliches Stream-FPS-Limit." = "Gilt beim nächsten Android-Start. Die virtuelle Displayfrequenz ist keine Messung und keine Garantie der Spiel-FPS. Im direkten Modus gibt es kein zusätzliches Stream-FPS-Limit.";

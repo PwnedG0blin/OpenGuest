@@ -59,6 +59,13 @@ final class WorkspacePreviewTests: XCTestCase {
                        to: directory.appendingPathComponent(name + ".png"))
         }
         defaults.set("automatic", forKey: WorkspaceAppearance.preferenceKey)
+        let outputModel = AppModel(applyPerformanceDefaults: false)
+        let previousOutput = outputModel.androidOutputMode
+        defer { outputModel.androidOutputMode = previousOutput }
+        outputModel.androidOutputMode = .direct
+        try render(AndroidOutputControls(model: outputModel).padding(20).modifier(WorkspaceDialogTheme()),
+                   size: NSSize(width: 520, height: 320), appearance: .darkAqua,
+                   to: directory.appendingPathComponent("android-direct-output.png"))
         let model = AppModel(applyPerformanceDefaults: false)
         try render(AndroidDisplaySheet(model: model), size: NSSize(width: 500, height: 600), appearance: .darkAqua,
                    to: directory.appendingPathComponent("android-resolution.png"))

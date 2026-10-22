@@ -67,7 +67,7 @@ public struct AndroidDevice: Identifiable, Equatable {
 
 public enum LaunchPlan {
     public static func android(sdk: String, device: AndroidDevice, resources: GuestResources,
-                               coldBoot: Bool, gpu: String, port: Int = 5554, vulkan: Bool = true) throws -> CommandSpec {
+                               coldBoot: Bool, gpu: String, port: Int = 5554, vulkan: Bool = true, output: AndroidOutputMode = .player) throws -> CommandSpec {
         try resources.validate()
         guard !device.name.isEmpty, !device.name.hasPrefix("-"),
               !device.name.contains("/"), !device.name.contains("\\"),
@@ -76,9 +76,10 @@ public enum LaunchPlan {
         guard device.supported else { throw GuestError.wrongArchitecture }
         guard ["auto", "host", "software"].contains(gpu) else { throw GuestError.invalidResources }
         guard (5554...5682).contains(port), port.isMultiple(of: 2) else { throw GuestError.invalidAVD }
-        var args = ["-avd", device.name, "-accel", "on", "-gpu", gpu,
+        var args = ["-avd", device.name, "-accel", "on", "-gpu", output.gpu(requested: gpu),
                     "-memory", String(resources.memoryMiB), "-cores", String(resources.cores),
-                    "-port", String(port), "-no-window", "-camera-back", "none", "-camera-front", "none"]
+                    "-port", String(port), "-camera-back", "none", "-camera-front", "none"]
+        if output.usesStream { args.append("-no-window") }
         if coldBoot { args.append("-no-snapshot-load") }
         if !vulkan { args += ["-feature", "-Vulkan"] }
         return CommandSpec(executable: URL(fileURLWithPath: sdk).appendingPathComponent("emulator/emulator").path,

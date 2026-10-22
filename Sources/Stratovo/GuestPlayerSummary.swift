@@ -16,7 +16,11 @@ struct GuestPlayerSummary: View {
                     Text(title).font(.headline)
                     Text(active ? model.playerStatus : L10n.text("Eigenes Fenster · frei skalierbar · Vollbild möglich"))
                         .font(.subheadline).foregroundStyle(.secondary)
-                    if active && kind == "android" {
+                    if active && model.androidUsesDirectDisplay && kind == "android" {
+                        Text(L10n.text("Kein Videostream · Spiel-FPS hier nicht gemessen"))
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    if active && kind == "android" && !model.androidUsesDirectDisplay {
                         Text(L10n.message("Stream: \(Int(model.streamFPS.rounded())) FPS · Decoder-Zuführung: \(Int(model.decoderFPS.rounded())) FPS · Aktives Limit \(model.appliedAndroidTargetFPS ?? model.androidTargetFPS)"))
                             .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
                         Text("\(Int(model.playerSize.width)) × \(Int(model.playerSize.height)) px")
@@ -30,7 +34,7 @@ struct GuestPlayerSummary: View {
                     Button(L10n.text("Android starten"), action: model.startAndroid)
                         .buttonStyle(.borderedProminent).disabled(!model.canStartAndroid)
                 } else {
-                    Button(L10n.text("Player öffnen")) { model.showPlayer(kind: kind) }
+                    Button(model.guestWindowButtonTitle(kind: kind)) { model.showPlayer(kind: kind) }
                         .disabled(!active || !model.running)
                 }
             }
