@@ -90,9 +90,9 @@ public enum StratovoReleaseCatalog {
     public static let apiURL = URL(string: "https://api.github.com/repos/PwnedG0blin/Stratovo/releases?per_page=30")!
     // Before the rename, the canonical endpoint returns 404.
     public static let legacyAPIURL = URL(string: "https://api.github.com/repos/PwnedG0blin/OpenGuest/releases?per_page=30")!
-    // Keep existing browser links functional on both sides of the rename.
-    public static let releasesURL = URL(string: "https://github.com/PwnedG0blin/OpenGuest/releases")!
-    public static let buildsURL = URL(string: "https://github.com/PwnedG0blin/OpenGuest/actions/workflows/macos.yml")!
+    // Canonical browser links after the repository rename.
+    public static let releasesURL = URL(string: "https://github.com/PwnedG0blin/Stratovo/releases")!
+    public static let buildsURL = URL(string: "https://github.com/PwnedG0blin/Stratovo/actions/workflows/macos.yml")!
 
     public static func latestRelease(in releases: [StratovoRelease], includePrereleases: Bool) -> StratovoRelease? {
         releases.filter { release in

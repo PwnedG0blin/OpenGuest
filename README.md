@@ -10,7 +10,7 @@ Public Apple Silicon beta with the illustrated Midnight dashboard, persistent la
 
 Developed by **PwnedG0blin** · macOS **14+** · **MIT license** · **1.0 Beta 7.3**
 
-[Deutsch: vollständige Anleitung](README.de.md) · [Setup](LIES_MICH_ZUERST.md) · [Mac test builds](https://github.com/PwnedG0blin/OpenGuest/actions/workflows/macos.yml) · [Report an issue](https://github.com/PwnedG0blin/OpenGuest/issues)
+[Deutsch: vollständige Anleitung](README.de.md) · [Setup](LIES_MICH_ZUERST.md) · [Mac test builds](https://github.com/PwnedG0blin/Stratovo/actions/workflows/macos.yml) · [Report an issue](https://github.com/PwnedG0blin/Stratovo/issues)
 
 Stratovo brings Android ARM64, Windows ARM64 and Ubuntu ARM guest systems into a native Mac interface. Install Android APKs, use persistent guest storage, and open Android and Ubuntu in resizable display windows. Windows uses a direct native Metal graphics window by default. Only one guest runs at a time. System images, engines and drivers are set up separately.
 
@@ -45,13 +45,13 @@ The **File exchange / Dateiaustausch** workspace keeps `Austausch` inside the se
 
 ## Install or build
 
-Download the DMG from [GitHub Releases](https://github.com/PwnedG0blin/OpenGuest/releases), or run `bash scripts/build-app.sh` on an Apple-silicon Mac with Xcode command line tools. The output is `dist/Stratovo.app`.
+Download the DMG from [GitHub Releases](https://github.com/PwnedG0blin/Stratovo/releases), or run `bash scripts/build-app.sh` on an Apple-silicon Mac with Xcode command line tools. The output is `dist/Stratovo.app`.
 
 The test app is ad-hoc signed, not Developer ID signed or notarized. See [signing information](SIGNIERUNG.md), [setup instructions](LIES_MICH_ZUERST.md) and [third-party licenses](THIRD_PARTY_NOTICES.md).
 
 ## Updating from Pixelkoje / OpenGuest
 
-Stratovo was previously called Pixelkoje. This repository keeps its existing **OpenGuest** URL so downloads, issue links and update checks continue to work. Shut down both guest systems and quit the previous app before replacing it. Keep your selected data folder.
+Stratovo was previously called Pixelkoje. The public repository is now **Stratovo**. GitHub redirects legacy OpenGuest links. Public app versions older than Beta 7.2 (build 1027) must be updated manually after the rename because their updater trusts only the old download paths. Shut down both guest systems and quit the previous app before replacing it. Keep your selected data folder.
 
 The bundle ID, existing settings keys, keychain service, Android AVD names, Windows machine identity and legacy storage paths are intentionally preserved. Existing virtual disks are not moved or recreated by this rename.
 

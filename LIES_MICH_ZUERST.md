@@ -91,7 +91,7 @@ Die App ist lokal signiert, noch nicht Developer-ID-signiert oder notarisiert:
 [SIGNIERUNG.md](SIGNIERUNG.md). Der neue eingebettete 3D-Pfad bleibt experimentell;
 automatische Tests ersetzen keine längere Prüfung von Gast, Spielen und FPS auf dem M4.
 
-[Projekt](README.md) · [Entwickler](AUTHORS.md) · [Fehler melden](https://github.com/PwnedG0blin/OpenGuest/issues/new/choose)
+[Projekt](README.md) · [Entwickler](AUTHORS.md) · [Fehler melden](https://github.com/PwnedG0blin/Stratovo/issues/new/choose)
 
 ## Dateiaustausch · alle drei Gäste
 

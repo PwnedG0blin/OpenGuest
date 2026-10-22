@@ -4,7 +4,7 @@ Stratovo wird von **PwnedG0blin** entwickelt. Beiträge zu Quellcode, Dokumentat
 
 ## Fehler und Vorschläge
 
-Für Fehler das [Fehlerformular](https://github.com/PwnedG0blin/OpenGuest/issues/new?template=bug_report.yml) verwenden. App-Version, macOS-Version, Mac-Chip, Gastsystem und genaue Schritte angeben. Ein bereinigter Auszug aus **Gesamtprotokoll exportieren** hilft bei der Diagnose.
+Für Fehler das [Fehlerformular](https://github.com/PwnedG0blin/Stratovo/issues/new?template=bug_report.yml) verwenden. App-Version, macOS-Version, Mac-Chip, Gastsystem und genaue Schritte angeben. Ein bereinigter Auszug aus **Gesamtprotokoll exportieren** hilft bei der Diagnose.
 
 Für eine Funktionsidee beschreiben, welches konkrete Problem sie löst und in welchem Gast sie gebraucht wird. Größere Architekturänderungen bitte vorab als Issue besprechen. Sicherheitsrelevante Details gemäß [SECURITY.md](SECURITY.md) melden.
 

@@ -30,6 +30,6 @@ Die Test-App ist ad-hoc signiert und noch nicht mit Apple Developer ID signiert 
 
 ## Ein Problem melden
 
-Allgemeine Fehler über die [Issues](https://github.com/PwnedG0blin/OpenGuest/issues/new/choose) melden. Namen, E-Mail-Adressen, Gerätekennungen, Schlüssel und Zugangsdaten vorher aus Protokollen und Anhängen entfernen.
+Allgemeine Fehler über die [Issues](https://github.com/PwnedG0blin/Stratovo/issues/new/choose) melden. Namen, E-Mail-Adressen, Gerätekennungen, Schlüssel und Zugangsdaten vorher aus Protokollen und Anhängen entfernen.
 
 Für eine mögliche Sicherheitslücke keine ausnutzbaren Details oder privaten Daten öffentlich posten. Falls GitHub für dieses Repository **Report a vulnerability** anbietet, diesen privaten Meldeweg verwenden. Andernfalls zunächst ohne sensible Details nach einem geeigneten privaten Meldeweg fragen. Ein eingerichteter privater Kanal oder eine feste Reaktionsfrist wird derzeit nicht zugesagt.

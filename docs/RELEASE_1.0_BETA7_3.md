@@ -1,5 +1,8 @@
 # Stratovo 1.0 Beta 7.3 · Direct Android output for games
 
+The public repository is now **PwnedG0blin/Stratovo**. This version retains the
+Beta 7.2 update migration; older public apps need a manual update after the rename.
+
 Build **1028** adds an optional **Direkt · Spiele (Mac-GPU)** output mode.
 Choose it under Android → Android-Bildausgabe before starting Android.
 The emulator opens its own window with `-gpu host`; Stratovo does not start
@@ -22,7 +25,8 @@ firmware are preserved. Guest disks and saved data are unchanged.
 ## Compare on the user's Mac
 
 1. Keep the same Android device, CPU/RAM, resolution, refresh target, Vulkan
-   setting and game graphics options. Use a repeatable scene after warm-up.
+   setting and game graphics options. Select host GPU for the integrated player
+   as well, so the presentation path is the only variable. Use a repeatable scene after warm-up.
 2. Compare the integrated player at full resolution/32 Mbit/s with direct
    output, restarting Android between modes. Keep the game visible.
 3. Record in-game FPS (if available), visible artifacts, input response,
