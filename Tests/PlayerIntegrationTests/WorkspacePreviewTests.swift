@@ -63,7 +63,8 @@ final class WorkspacePreviewTests: XCTestCase {
         let previousOutput = outputModel.androidOutputMode
         defer { outputModel.androidOutputMode = previousOutput }
         outputModel.androidOutputMode = .direct
-        try render(AndroidOutputControls(model: outputModel).padding(20).modifier(WorkspaceDialogTheme()),
+        try render(AndroidOutputControls(model: outputModel).padding(20)
+                   .frame(width: 520, height: 320, alignment: .topLeading).modifier(WorkspaceDialogTheme()),
                    size: NSSize(width: 520, height: 320), appearance: .darkAqua,
                    to: directory.appendingPathComponent("android-direct-output.png"))
         let model = AppModel(applyPerformanceDefaults: false)
