@@ -14,7 +14,8 @@ public struct PrivateUpdateRun: Decodable, Sendable {
     }
     public var eligible: Bool {
         headSHA.count == 40 && headSHA.allSatisfy({ "0123456789abcdef".contains($0) }) &&
-        id > 0 && status == "completed" && conclusion == "success" && headBranch == "main" && event == "workflow_dispatch"
+        id > 0 && status == "completed" && conclusion == "success" && headBranch == "main" &&
+        (event == "workflow_dispatch" || event == "push")
     }
 }
 
