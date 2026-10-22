@@ -2,10 +2,11 @@ import XCTest
 @testable import StratovoCore
 
 final class PrivateUpdateArtifactTests: XCTestCase {
-    private func run(branch: String = "main", conclusion: String = "success") throws -> PrivateUpdateRun {
+    private func run(branch: String = "main", conclusion: String = "success", event: String = "workflow_dispatch",
+                     status: String = "completed", sha: String = String(repeating: "a", count: 40)) throws -> PrivateUpdateRun {
         try JSONDecoder().decode(PrivateUpdateRun.self, from: JSONSerialization.data(withJSONObject: [
-            "id": 12, "status": "completed", "conclusion": conclusion,
-            "head_branch": branch, "head_sha": String(repeating: "a", count: 40), "event": "workflow_dispatch"
+            "id": 12, "status": status, "conclusion": conclusion,
+            "head_branch": branch, "head_sha": sha, "event": event
         ]))
     }
     private func artifact(_ changes: [String: Any] = [:], fork: Bool = false) throws -> PrivateUpdateArtifact {
@@ -30,6 +31,21 @@ final class PrivateUpdateArtifactTests: XCTestCase {
             XCTAssertFalse(try artifact(change).isTrusted(run: run()))
         }
     }
+    func testAutomaticAndManualBuildsAreOfferedWithIdenticalTrustChecks() throws {
+        let good = try artifact()
+        for event in ["push", "workflow_dispatch"] {
+            XCTAssertTrue(good.isTrusted(run: try run(event: event)))
+            XCTAssertFalse(good.isTrusted(run: try run(branch: "feature", event: event)))
+            XCTAssertFalse(good.isTrusted(run: try run(conclusion: "failure", event: event)))
+            XCTAssertFalse(good.isTrusted(run: try run(event: event, status: "in_progress")))
+            XCTAssertFalse(good.isTrusted(run: try run(event: event, sha: String(repeating: "b", count: 40))))
+            XCTAssertFalse(try artifact(fork: true).isTrusted(run: run(event: event)))
+        }
+        for event in ["pull_request", "pull_request_target", "workflow_run", "repository_dispatch", "schedule"] {
+            XCTAssertFalse(good.isTrusted(run: try run(event: event)), event)
+        }
+    }
+
     func testArchiveRejectsTraversalAbsolutePathsAndOtherPayloads() {
         XCTAssertTrue(PrivateUpdateArtifact.safeArchiveEntries(["Stratovo.app/", "Stratovo.app/Contents/MacOS/Stratovo"]))
         for entries in [[], ["/Stratovo.app/Contents"], ["Stratovo.app/../other"], ["Other.app/x"], ["Stratovo.app\\evil"]] {
